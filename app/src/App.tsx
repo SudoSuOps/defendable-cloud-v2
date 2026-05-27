@@ -10,6 +10,7 @@ import { RunDetail } from "./pages/RunDetail";
 import { Datasets } from "./pages/Datasets";
 import { AgentProfiles, AgentProfileDetail } from "./pages/AgentProfiles";
 import { StackPlanner } from "./pages/StackPlanner";
+import { Incidents } from "./pages/Incidents";
 import { ShareView } from "./pages/ShareView";
 import { NotFound } from "./pages/NotFound";
 
@@ -39,6 +40,7 @@ export default function App() {
         <Route path="/plan" element={<Protected><StackPlanner /></Protected>} />
         <Route path="/agents" element={<Protected><AgentProfiles /></Protected>} />
         <Route path="/agents/:id" element={<Protected><AgentProfileDetail /></Protected>} />
+        <Route path="/incidents" element={<Protected><Incidents /></Protected>} />
         <Route path="/datasets" element={<Protected><Datasets /></Protected>} />
         <Route path="*" element={<NotFound />} />
       </Routes>

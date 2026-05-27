@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { api } from "../lib/api";
 import { Badge, Button, Card, ErrorNote, Spinner } from "../components/ui";
+import { IncidentCard, type Incident } from "./Incidents";
 
 interface Lane { flight_sheet_id: string; name: string; lane: string; status: string; honey: number; jelly: number; propolis: number; total: number; }
 interface FlagCount { label: string; count: number; severity: string | null; category: string; }
@@ -21,6 +22,7 @@ interface Profile {
   model: string | null; model_provider: string | null; served_by: string | null;
   runtime_host: string | null; runtime_os: string | null; runtime_hardware: string | null;
   tools: string[]; context_window: number | null; capability_tier: string | null; notes: string | null;
+  governance?: { requires_approval_client_output?: boolean; spend_cap_usd?: number; blocked_lanes?: string[]; notes?: string };
   summary?: { overall_status: string; evaluated_runs: number; verdict_counts: { honey: number; jelly: number; propolis: number }; latest: Latest | null; approved_lanes: string[]; blocked_lanes: string[]; recurring_flags: FlagCount[]; };
   capability?: Capability;
 }
@@ -95,12 +97,25 @@ export function AgentProfileDetail() {
   const { id } = useParams();
   const nav = useNavigate();
   const [p, setP] = useState<Profile | null>(null);
+  const [incidents, setIncidents] = useState<Incident[]>([]);
   const [err, setErr] = useState<string | null>(null);
-  useEffect(() => { api<Profile>(`/agent-profiles/${id}`).then(setP).catch((e) => setErr(e.message)); }, [id]);
+  const [busy, setBusy] = useState<string | null>(null);
+  function load() {
+    api<Profile>(`/agent-profiles/${id}`).then(setP).catch((e) => setErr(e.message));
+    api<{ incidents: Incident[] }>(`/incidents?agent_profile_id=${id}`).then((r) => setIncidents(r.incidents)).catch(() => {});
+  }
+  useEffect(() => { load(); }, [id]);
+  async function watchdog() {
+    setErr(null); setBusy("watchdog");
+    try { await api(`/agent-profiles/${id}/watchdog`, { method: "POST" }); load(); }
+    catch (e: any) { setErr(e.message); } finally { setBusy(null); }
+  }
 
-  if (err) return <ErrorNote>{err}</ErrorNote>;
+  if (err && !p) return <ErrorNote>{err}</ErrorNote>;
   if (!p || !p.capability) return <Spinner label="Loading profile…" />;
   const cap = p.capability;
+  const gov = p.governance || {};
+  const locked = gov.blocked_lanes || [];
 
   const stackRows: [string, string | null][] = [
     ["Harness — the body", p.harness ? `${p.harness}${p.harness_version ? ` v${p.harness_version}` : ""}` : null],
@@ -150,6 +165,23 @@ export function AgentProfileDetail() {
                 </span>
               </li>
             ))}
+          </ul>
+        )}
+      </Card>
+
+      {/* Agent Ops — governance + incidents */}
+      <Card className="mt-6" title="Agent Ops" subtitle="Everyone alerts; we receipt the incident"
+        actions={<Button variant="ghost" disabled={busy === "watchdog"} onClick={watchdog}>{busy === "watchdog" ? "Scanning…" : "Run watchdog scan"}</Button>}>
+        <p className="text-sm text-paper/55">Watchdog locks any lane with recurring critical flags and opens an incident — deterministic, straight from the receipts. Live dark/rogue triggers plug in when Core reports heartbeats.</p>
+        <dl className="mt-4 grid gap-x-8 gap-y-2 text-sm sm:grid-cols-2">
+          <div className="flex justify-between gap-3 border-b border-white/5 py-1"><dt className="text-paper/45">Locked lanes</dt><dd className={`text-right ${locked.length ? "text-red-300" : "text-paper/60"}`}>{locked.length ? locked.join(", ") : "none"}</dd></div>
+          <div className="flex justify-between gap-3 border-b border-white/5 py-1"><dt className="text-paper/45">Client-output approval</dt><dd className="text-right text-paper/70">{gov.requires_approval_client_output ? "required" : "—"}</dd></div>
+          {gov.spend_cap_usd != null && <div className="flex justify-between gap-3 border-b border-white/5 py-1"><dt className="text-paper/45">Spend cap</dt><dd className="text-right text-paper/70">${gov.spend_cap_usd}</dd></div>}
+          <div className="flex justify-between gap-3 border-b border-white/5 py-1"><dt className="text-paper/45">Tools (hands)</dt><dd className="text-right font-mono text-xs text-paper/70">{p.tools?.length ? p.tools.join(", ") : "—"}</dd></div>
+        </dl>
+        {incidents.length > 0 && (
+          <ul className="mt-4 space-y-3">
+            {incidents.map((inc) => <IncidentCard key={inc.id} inc={inc} onChange={load} />)}
           </ul>
         )}
       </Card>

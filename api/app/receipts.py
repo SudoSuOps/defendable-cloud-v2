@@ -192,13 +192,120 @@ def build_eval_payload(
     }
 
 
+def build_incident_payload(
+    *, receipt_id: str, org_seq: int, parent_hash: str, created_at: str,
+    org: dict, incident: dict, agent_profile: dict | None, share_url: str,
+) -> dict:
+    """Books-and-records for a failure: what tripped, the response, hashed + chained."""
+    return {
+        "schema": "defendablecloud.incident-receipt/v1",
+        "receipt_id": receipt_id,
+        "org_seq": org_seq,
+        "parent_hash": parent_hash,
+        "created_at": created_at,
+        "organization": {"id": org["id"], "name": org["name"]},
+        "incident": {
+            "id": incident["id"], "kind": incident["kind"], "tier": incident.get("tier"),
+            "title": incident["title"], "detail": incident.get("detail"),
+            "lane": incident.get("lane"), "response": incident.get("response") or [],
+            "status": incident.get("status"), "opened_at": incident.get("created_at"),
+        },
+        "agent_profile": agent_profile,
+        "share_url": share_url,
+    }
+
+
 def render_pdf(payload: dict, receipt_sha256: str) -> bytes:
     schema = str(payload.get("schema", ""))
     if schema.startswith("defendablecloud.cook"):
         return _render_cook(payload, receipt_sha256)
     if schema.startswith("defendablecloud.eval"):
         return _render_eval(payload, receipt_sha256)
+    if schema.startswith("defendablecloud.incident"):
+        return _render_incident(payload, receipt_sha256)
     return _render_run(payload, receipt_sha256)
+
+
+def _render_incident(payload: dict, receipt_sha256: str) -> bytes:
+    pdf = FPDF(unit="mm", format="A4")
+    pdf.set_auto_page_break(auto=True, margin=16)
+    pdf.add_page()
+
+    def line(text: str, h: float = 6) -> None:
+        pdf.cell(0, h, _s(text), new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+
+    def wrap(text: str, h: float = 5) -> None:
+        pdf.multi_cell(0, h, _s(text), new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+
+    def section(title: str) -> None:
+        pdf.set_text_color(168, 127, 51)
+        pdf.set_font("Helvetica", "B", 8)
+        line(title.upper())
+        pdf.set_text_color(20, 20, 20)
+
+    def row(k: str, v: str) -> None:
+        pdf.set_text_color(110, 110, 110)
+        pdf.set_font("Helvetica", "B", 8)
+        line(k.upper(), h=4.5)
+        pdf.set_text_color(20, 20, 20)
+        pdf.set_font("Helvetica", "", 10)
+        wrap(v, h=5.5)
+        pdf.ln(1)
+
+    inc = payload["incident"]
+    ap = payload.get("agent_profile")
+    pdf.set_text_color(168, 127, 51)
+    pdf.set_font("Helvetica", "B", 9)
+    line("DEFENDABLECLOUD  ·  AGENT OPS")
+    pdf.set_text_color(20, 20, 20)
+    pdf.set_font("Helvetica", "B", 18)
+    line("Incident Receipt", h=10)
+    pdf.set_font("Courier", "", 9)
+    pdf.set_text_color(90, 90, 90)
+    line(payload["receipt_id"], h=5)
+    line(payload["created_at"], h=5)
+    pdf.ln(3)
+
+    pdf.set_font("Helvetica", "B", 14)
+    pdf.set_text_color(20, 20, 20)
+    line(f'{inc["kind"].replace("_", " ").upper()}  ·  {(inc.get("tier") or "").upper()}  ·  {(inc.get("status") or "").upper()}', h=9)
+    pdf.set_font("Helvetica", "", 10)
+    wrap(inc["title"], h=6)
+    pdf.ln(2)
+
+    section("Incident")
+    if ap:
+        row("Agent", f'{ap.get("name") or "—"}  ·  tier {(ap.get("capability_tier") or "—").upper()}')
+    if inc.get("lane"):
+        row("Lane", inc["lane"])
+    if inc.get("detail"):
+        row("Detail", inc["detail"])
+    pdf.ln(1)
+
+    section("Response")
+    pdf.set_font("Courier", "", 9)
+    for r in (inc.get("response") or []):
+        wrap(f'- {str(r).replace("_", " ")}')
+    if not inc.get("response"):
+        wrap("- (none recorded)")
+    pdf.ln(2)
+
+    section("Integrity")
+    pdf.set_font("Courier", "", 8)
+    pdf.set_text_color(90, 90, 90)
+    wrap(f"receipt_sha256: {receipt_sha256}", h=4.5)
+    wrap(f'parent_hash:    {payload["parent_hash"]}', h=4.5)
+    wrap(f'org_seq:        {payload["org_seq"]}', h=4.5)
+    wrap(f'verify:         {payload["share_url"]}', h=4.5)
+    pdf.ln(4)
+    pdf.set_font("Helvetica", "I", 8)
+    pdf.set_text_color(120, 120, 120)
+    wrap(
+        "Everyone alerts; this is the proof. An incident records what tripped and the response "
+        "taken, hash-chained into the same ledger as the work receipts. Verify the chain above.",
+        h=4.5,
+    )
+    return bytes(pdf.output())
 
 
 def _render_run(payload: dict, receipt_sha256: str) -> bytes:

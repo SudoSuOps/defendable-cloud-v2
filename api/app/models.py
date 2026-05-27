@@ -211,7 +211,7 @@ class Receipt(Base):
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True)
     org_id: Mapped[str] = mapped_column(String(36), ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False, index=True)
-    run_id: Mapped[str] = mapped_column(String(36), ForeignKey("runs.id", ondelete="CASCADE"), nullable=False, index=True)
+    run_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("runs.id", ondelete="CASCADE"), nullable=True, index=True)
     receipt_id: Mapped[str] = mapped_column(String(128), unique=True, nullable=False, index=True)
     org_seq: Mapped[int] = mapped_column(BigInteger, nullable=False)  # monotonic per org
     parent_hash: Mapped[str] = mapped_column(String(64), nullable=False)
@@ -275,7 +275,7 @@ class Artifact(Base):
     __tablename__ = "artifacts"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True)
-    run_id: Mapped[str] = mapped_column(String(36), ForeignKey("runs.id", ondelete="CASCADE"), nullable=False, index=True)
+    run_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("runs.id", ondelete="CASCADE"), nullable=True, index=True)
     receipt_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("receipts.id", ondelete="CASCADE"), nullable=True, index=True)
     kind: Mapped[str] = mapped_column(String(24), nullable=False)  # receipt_json | receipt_pdf | evidence_bundle
     tigris_key: Mapped[str] = mapped_column(Text, nullable=False)
@@ -311,5 +311,34 @@ class AgentProfile(Base):
     context_window: Mapped[int | None] = mapped_column(Integer, nullable=True)
     capability_tier: Mapped[str | None] = mapped_column(String(16), nullable=True)   # edge | small | mid | frontier
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # Declared governance policy (rulebook): {requires_approval_client_output, spend_cap_usd, blocked_lanes:[name], notes}
+    governance: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     active: Mapped[bool] = mapped_column(default=True, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utc_now, nullable=False)
+
+
+class Incident(Base):
+    """Agent-ops incident — what tripped and the response, hash-chained as a receipt.
+
+    Everyone in the 'watch the agents' category ships alerts; we ship PROOF of the
+    incident. Deterministic trigger available today: a recurring critical flag on a
+    lane → lock the lane + open an incident (straight from the capability profile).
+    Live dark/rogue triggers plug into the same pipe once Core reports heartbeats.
+    """
+
+    __tablename__ = "incidents"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    org_id: Mapped[str] = mapped_column(String(36), ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False, index=True)
+    agent_profile_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("agent_profiles.id", ondelete="SET NULL"), nullable=True)
+    run_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("runs.id", ondelete="SET NULL"), nullable=True)
+    kind: Mapped[str] = mapped_column(String(24), nullable=False)        # rogue | dark | policy_violation | recurring_flag
+    tier: Mapped[str] = mapped_column(String(16), default="high", nullable=False)
+    title: Mapped[str] = mapped_column(String(300), nullable=False)
+    detail: Mapped[str | None] = mapped_column(Text, nullable=True)
+    lane: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    response: Mapped[list] = mapped_column(JSONB, default=list, nullable=False)
+    status: Mapped[str] = mapped_column(String(16), default="open", nullable=False)
+    receipt_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("receipts.id", ondelete="SET NULL"), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utc_now, nullable=False, index=True)
+    resolved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

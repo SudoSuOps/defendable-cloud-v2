@@ -110,7 +110,7 @@ async def compute_capability(db, profile: AgentProfile) -> dict:
 _FIELDS = (
     "name", "harness", "harness_version", "model", "model_provider", "served_by",
     "runtime_host", "runtime_os", "runtime_hardware", "tools", "context_window",
-    "capability_tier", "notes",
+    "capability_tier", "notes", "governance",
 )
 
 
@@ -122,6 +122,7 @@ def profile_out(p: AgentProfile) -> dict:
         "runtime_host": p.runtime_host, "runtime_os": p.runtime_os, "runtime_hardware": p.runtime_hardware,
         "tools": p.tools or [], "context_window": p.context_window,
         "capability_tier": p.capability_tier, "notes": p.notes,
+        "governance": p.governance or {},
         "created_at": iso(p.created_at),
     }
 

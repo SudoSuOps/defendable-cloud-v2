@@ -64,6 +64,18 @@ class AgentProfileIn(BaseModel):
     context_window: Optional[int] = None
     capability_tier: Optional[CapabilityTier] = None
     notes: Optional[str] = Field(default=None, max_length=2000)
+    governance: Optional[Dict[str, Any]] = None  # {requires_approval_client_output, spend_cap_usd, blocked_lanes:[name], notes}
+
+
+class IncidentIn(BaseModel):
+    agent_profile_id: Optional[str] = None
+    run_id: Optional[str] = None
+    kind: Literal["rogue", "dark", "policy_violation", "recurring_flag"] = "policy_violation"
+    tier: Optional[Literal["low", "mid", "high"]] = "high"
+    title: str = Field(min_length=1, max_length=300)
+    detail: Optional[str] = Field(default=None, max_length=4000)
+    lane: Optional[str] = Field(default=None, max_length=200)
+    response: list[str] = Field(default_factory=list)
 
 
 class EvidenceIn(BaseModel):
