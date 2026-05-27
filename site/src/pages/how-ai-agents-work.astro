@@ -1,0 +1,185 @@
+---
+import Layout from "../layouts/Layout.astro";
+import Nav from "../components/Nav.astro";
+import Footer from "../components/Footer.astro";
+import Section from "../components/Section.astro";
+import ValueCard from "../components/ValueCard.astro";
+
+// The five layers — an agent is a stack, not a thing.
+const layers = [
+  { title: "Model — the brain", body: "The LLM that reasons: Claude, Qwen, Hermes, Kimi, GPT. It does the thinking. Bigger isn't automatically better — it's about matching the brain to the work." },
+  { title: "Harness — the body", body: "The software loop that lets the model act: plan, call a tool, read the result, try again. OpenClaw, Claude Code, OpenHands. Out of the box it's empty scaffolding." },
+  { title: "Tools — the hands", body: "What the agent can actually touch: files, email, a calendar, a database, the web. No tools, no work done. The wrong tools, real risk." },
+  { title: "Instructions — the briefing", body: "The role, the rules, the task. “Do business stuff” fails. A clear assignment with boundaries is what turns a model into a worker." },
+  { title: "Runtime — the ground", body: "Where it runs: an office PC, a Mac mini, a Jetson, a hosted GPU. The runtime decides how big a brain you can load — and whether it survives 2 a.m." },
+];
+
+// How much brain the work needs.
+const tiers = [
+  { tier: "Edge", size: "3–4B", runs: "Mini PC · Jetson · CPU", good: "Intake, field extraction, routing, log and document summaries, simple structured output.", not: "Complex finance, long-context synthesis, client-ready recommendations." },
+  { tier: "Workhorse", size: "7–14B", runs: "Local 16–24GB GPU", good: "Structured analysis, basic underwriting with a rulebook, drafting, dataset review, repair loops.", not: "Senior memo synthesis, multi-document contradiction checks." },
+  { tier: "Senior", size: "27–34B", runs: "Hosted GPU (24GB+)", good: "Synthesis, client memos, business reasoning, risk narratives, investment-committee support.", not: "Rarely the bottleneck — but still rulebook-checked and human-approved." },
+  { tier: "Anchor", size: "70B+", runs: "Hosted multi-GPU", good: "High-stakes arbitration, complex synthesis, large context packages, second-pass review.", not: "Overkill — and expensive — for everyday workflows." },
+];
+
+// Where it lives.
+const deployments = [
+  { title: "Owner-compute", body: "Runs on your hardware. Best for privacy, local files, low-volume automation, and a fixed hardware cost. The tradeoff: smaller models, you become the operator, and 24/7 uptime is on you." },
+  { title: "Cloud-compute", body: "Runs on hosted GPU. Best for 24/7 uptime, stronger brains, higher volume, and client-facing work. The tradeoff: a monthly bill and usage-based inference cost." },
+  { title: "Hybrid", body: "A small local agent handles intake and evidence; a cloud brain handles the heavy reasoning. For most small businesses, this is the right answer — and the cheapest one that still does the hard jobs." },
+];
+
+// The real bill.
+const costs = [
+  "Model", "Compute", "Storage", "Uptime & monitoring", "Tools & API calls",
+  "Human review", "Maintenance & updates", "Evaluation & receipts", "Failure & repair",
+];
+
+// How DefendableCloud helps.
+const helps = [
+  { title: "Stack Planner", body: "Tell us the work. We map it to the brain it needs, the compute to run it, owner / cloud / hybrid, the cost band, and the tasks it can safely do." },
+  { title: "Evaluation", body: "We test the agent's work against a declared rulebook — schema, math, evidence, policy. Flags, not opinions. The outcome is decided by the rules, not a mood." },
+  { title: "Earned lanes", body: "An agent isn't trusted because of its name. It earns a lane by passing the rulebook on real assignments, on real hardware. The receipts keep the record." },
+  { title: "Receipts", body: "Every run — and every incident — issues a hash-chained, timestamped receipt you can store and share. Proof of what ran, what was checked, and who approved it." },
+];
+---
+
+<Layout
+  title="What an AI agent really is · DefendableCloud"
+  description="An AI agent isn't a chatbot or just a model — it's a stack: model, harness, tools, instructions, and the compute it runs on. Plain-English guidance on how agents work and what it takes to run one, before you trust it with your business."
+  path="/how-ai-agents-work"
+>
+  <Nav />
+  <main>
+    <header class="mx-auto max-w-container px-6 pt-20 pb-4 md:pt-28">
+      <div class="reveal mx-auto max-w-3xl text-center">
+        <p class="text-sm font-medium uppercase tracking-widest text-honey-300">Under the hood</p>
+        <h1 class="mt-4 text-4xl font-semibold tracking-tight text-paper md:text-5xl">
+          What an AI agent really is
+        </h1>
+        <p class="mt-5 text-lg leading-relaxed text-paper/70">
+          An AI agent isn't a chatbot, and it isn't just a model. It's a worker — and like any worker it
+          needs a workplace, tools, supervision, and proof of what it did. Here's the engine room, in plain
+          English, before you trust one with your business.
+        </p>
+      </div>
+    </header>
+
+    <Section
+      eyebrow="The stack"
+      title="An agent is five parts, not one"
+      intro="Strip away the buzz and every agent is the same five layers. Each does a different job — and each fails in a different way."
+    >
+      <div class="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        {layers.map((l) => <ValueCard title={l.title} body={l.body} />)}
+        <div class="reveal flex h-full flex-col justify-center rounded-xl border border-honey-400/20 bg-honey-300/[0.04] p-6">
+          <p class="text-sm leading-relaxed text-paper/75">
+            Same harness, bigger runtime, bigger brain. <span class="text-paper">A claw on an 8GB Jetson and the
+            same claw on a 192GB box are two different workers</span> — which is why capability has to be proven,
+            not claimed.
+          </p>
+        </div>
+      </div>
+    </Section>
+
+    <Section
+      eyebrow="The catch"
+      title="Installed isn't running"
+      intro="Standing an agent up and trusting it with your business are two different things."
+      class="border-t border-white/5"
+    >
+      <div class="reveal mx-auto mt-10 max-w-3xl rounded-xl border border-white/8 bg-white/[0.02] p-7">
+        <p class="text-paper/75">
+          An installed agent still needs an identity, a role, allowed actions, tool access, task boundaries,
+          approval rules, a plan for when it fails, and a way to prove the work. Skip those and you've hired a
+          worker and told them, <span class="text-paper">“do business stuff.”</span>
+        </p>
+        <p class="mt-4 text-paper/75">
+          That's the difference between a demo that looks impressive and a workflow you can stand behind.
+        </p>
+      </div>
+    </Section>
+
+    <Section
+      eyebrow="The brain"
+      title="How much model the work needs"
+      intro="Match the brain to the job. More isn't free — and smaller isn't always weaker. It depends on the work."
+      class="border-t border-white/5"
+    >
+      <div class="mt-12 grid gap-5 md:grid-cols-2">
+        {tiers.map((t) => (
+          <div class="reveal h-full rounded-xl border border-white/8 bg-white/[0.02] p-6">
+            <div class="flex items-baseline justify-between">
+              <h3 class="text-lg font-semibold text-paper">{t.tier}</h3>
+              <span class="font-mono text-xs uppercase tracking-widest text-honey-300/80">{t.size}</span>
+            </div>
+            <p class="mt-1 font-mono text-[11px] text-paper/40">{t.runs}</p>
+            <p class="mt-3 text-sm leading-relaxed text-paper/70"><span class="text-paper/50">Good for —</span> {t.good}</p>
+            <p class="mt-2 text-sm leading-relaxed text-paper/45"><span class="text-paper/40">Not the tool for —</span> {t.not}</p>
+          </div>
+        ))}
+      </div>
+    </Section>
+
+    <Section
+      eyebrow="The workplace"
+      title="Where the agent lives"
+      intro="An agent needs somewhere to run. There are three honest options — and one of them usually wins."
+      class="border-t border-white/5"
+    >
+      <div class="mt-12 grid gap-5 md:grid-cols-3">
+        {deployments.map((d) => <ValueCard title={d.title} body={d.body} />)}
+      </div>
+    </Section>
+
+    <Section
+      eyebrow="The bill"
+      title="The cost most sellers don't quote"
+      intro="Agents don't run on magic. Most vendors quote you one line — the model. Here's the rest of the bill, in the open."
+      class="border-t border-white/5"
+    >
+      <div class="reveal mx-auto mt-10 flex max-w-3xl flex-wrap justify-center gap-3">
+        {costs.map((c, i) => (
+          <span class={`rounded-lg border px-4 py-2.5 text-sm ${i === 0 ? "border-honey-400/40 bg-honey-300/[0.06] text-honey-200" : "border-white/8 bg-white/[0.02] text-paper/70"}`}>
+            {c}
+          </span>
+        ))}
+      </div>
+      <p class="reveal mx-auto mt-6 max-w-2xl text-center text-sm text-paper/45">
+        The first one is the one everybody names. The other eight are where the surprises live.
+      </p>
+    </Section>
+
+    <Section
+      eyebrow="The help"
+      title="What DefendableCloud does about it"
+      intro="We don't sell you an agent and walk away. We map the work to the right stack, test it against a declared rulebook, and issue proof — on real hardware."
+      class="border-t border-white/5"
+    >
+      <div class="mt-12 grid gap-5 sm:grid-cols-2">
+        {helps.map((h) => <ValueCard title={h.title} body={h.body} />)}
+      </div>
+
+      <div class="reveal mx-auto mt-14 max-w-2xl rounded-2xl border border-honey-400/20 bg-honey-300/[0.04] p-8 text-center">
+        <p class="text-xl font-semibold tracking-tight text-paper md:text-2xl">
+          Before you trust an agent, know the stack, the bill, and the proof.
+        </p>
+        <div class="mt-6 flex flex-wrap justify-center gap-3">
+          <a
+            href="https://app.defendablecloud.com"
+            class="rounded-md border border-honey-400/40 bg-honey-300/10 px-5 py-2.5 text-sm font-medium text-honey-200 transition-colors hover:bg-honey-300/20"
+          >
+            Open the Vault
+          </a>
+          <a
+            href="/contact"
+            class="rounded-md border border-white/10 px-5 py-2.5 text-sm font-medium text-paper/80 transition-colors hover:border-white/25 hover:text-paper"
+          >
+            Talk to us
+          </a>
+        </div>
+      </div>
+    </Section>
+  </main>
+  <Footer />
+</Layout>
