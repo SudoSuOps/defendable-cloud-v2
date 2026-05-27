@@ -1,0 +1,19 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html {
+  color-scheme: dark;
+}
+body {
+  background-color: #0a0a0a;
+  color: #e7e5e4;
+  -webkit-font-smoothing: antialiased;
+}
+
+.brand-grid {
+  background-image:
+    linear-gradient(to right, rgba(246, 198, 75, 0.04) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(246, 198, 75, 0.04) 1px, transparent 1px);
+  background-size: 64px 64px;
+}

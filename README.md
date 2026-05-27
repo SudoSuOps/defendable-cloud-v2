@@ -16,8 +16,21 @@ it does not go in v1.
 ```
 defendable-cloud-v2/
 ├── site/   Phase 1 · Astro marketing site → defendablecloud.com (CF Pages)
-├── api/    Phase 2 · FastAPI backend (Runs/Checks/Receipts) → Fly.io  [planned]
-└── app/    Phase 3 · React+Vite Vault portal → app.defendablecloud.com  [planned]
+├── api/    Phase 2 · FastAPI backend (Runs/Checks/Receipts) → Fly.io  [live: api.defendablecloud.com]
+└── app/    Phase 3 · React+Vite Vault portal → app.defendablecloud.com  [live: defendable-cloud-v2-app.pages.dev]
+```
+
+## app/ — the Vault portal (Phase 3, live)
+
+React 18 + Vite + Tailwind SPA. Sign in (magic link) → dashboard → new run →
+attach evidence → run checks → approve → **Generate Receipt** → share. Talks to
+the API at `VITE_API_BASE` (default `https://api.defendablecloud.com`).
+
+```bash
+cd app
+npm install
+npm run dev      # http://localhost:5173
+npm run build    # → app/dist  (deploy to CF Pages, SPA fallback via public/_redirects)
 ```
 
 ## site/ — marketing (Phase 1, live)
