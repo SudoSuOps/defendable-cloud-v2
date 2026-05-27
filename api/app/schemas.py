@@ -40,6 +40,16 @@ class RunIn(BaseModel):
     inputs: Dict[str, Any] = Field(default_factory=dict)
 
 
+class StackAssessmentIn(BaseModel):
+    jobs: list[str] = Field(default_factory=list)
+    needs_24_7: bool = False
+    client_facing: bool = False
+    high_stakes: bool = False
+    data_local_only: bool = False
+    deployment_pref: Optional[Literal["owner", "cloud", "hybrid", "no_pref"]] = "no_pref"
+    budget: Optional[Literal["low", "medium", "high"]] = None
+
+
 class AgentProfileIn(BaseModel):
     name: str = Field(min_length=1, max_length=120)
     harness: Optional[str] = Field(default=None, max_length=80)

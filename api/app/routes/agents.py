@@ -3,10 +3,11 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 
+from app import stack_planner
 from app.db import session_scope
 from app.deps import Principal, get_current_user
 from app.models import AgentProfile, CheckResult, FlightSheet, Run, Verdict
-from app.schemas import AgentProfileIn
+from app.schemas import AgentProfileIn, StackAssessmentIn
 from app.util import iso, new_id
 
 router = APIRouter(tags=["agent-profiles"])
@@ -160,6 +161,29 @@ async def get_profile(profile_id: str, current: Principal = Depends(get_current_
         if p is None or p.org_id != current.org_id:
             raise HTTPException(status_code=404, detail="agent profile not found")
         return {**profile_out(p), "capability": await compute_capability(db, p)}
+
+
+@router.get("/stack-planner/options")
+async def stack_options(_: Principal = Depends(get_current_user)):
+    return stack_planner.options()
+
+
+@router.post("/stack-assessment")
+async def stack_assessment(body: StackAssessmentIn, current: Principal = Depends(get_current_user)):
+    # Live context: lanes this org's profiles have already EARNED under the rulebook.
+    earned: list[dict] = []
+    async with session_scope() as db:
+        profs = (
+            await db.execute(
+                select(AgentProfile).where(AgentProfile.org_id == current.org_id, AgentProfile.active == True)  # noqa: E712
+            )
+        ).scalars().all()
+        for p in profs:
+            cap = await compute_capability(db, p)
+            for l in cap["lane_authorizations"]:
+                if l["status"] in ("approved", "restricted"):
+                    earned.append({"profile": p.name, "tier": p.capability_tier, "lane": l["name"], "status": l["status"]})
+    return stack_planner.assess(body.model_dump(), earned)
 
 
 @router.post("/agent-profiles")

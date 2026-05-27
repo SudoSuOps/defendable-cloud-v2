@@ -30,6 +30,7 @@ export function Shell({ children }: { children: ReactNode }) {
           {me && (
             <div className="flex items-center gap-5 text-sm">
               <Link to="/" className="text-paper/60 transition-colors hover:text-paper">Runs</Link>
+              <Link to="/plan" className="text-paper/60 transition-colors hover:text-paper">Plan</Link>
               <Link to="/agents" className="text-paper/60 transition-colors hover:text-paper">Agents</Link>
               <Link to="/datasets" className="text-paper/60 transition-colors hover:text-paper">Datasets</Link>
               <span className="hidden text-paper/40 sm:inline">{me.email}</span>
