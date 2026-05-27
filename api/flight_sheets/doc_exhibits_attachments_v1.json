@@ -1,0 +1,84 @@
+{
+  "slug": "doc_exhibits_attachments_v1",
+  "name": "Exhibits and Attachments Review",
+  "version": "1.0",
+  "lane": "other",
+  "summary": "Verify that all exhibits and attachments are properly listed, referenced within the document body, and correctly labeled",
+  "purpose": "Verify that all exhibits and attachments are properly listed, referenced within the document body, and correctly labeled. Documents with missing references or unlabeled exhibits fail attachment completeness standards.",
+  "assignment_instructions": "You are evaluating a document draft for exhibit and attachment completeness.\n\nGiven the document draft, perform the following:\n1. Extract ALL exhibits and attachments \u2014 these may be labeled as \"Exhibit A\", \"Attachment 1\", \"Appendix I\", or similar.\n2. For each exhibit/attachment, record its label, description, and whether it is referenced in the body of the document.\n3. Check if every exhibit/attachment listed has at least one in-body reference.\n4. Check if labels follow a consistent format (e.g., all \"Exhibit X\" or all \"Attachment N\").\n\nReturn a single JSON object with this exact structure:\n{\n  \"assignment_id\": \"doc_exhibits_attachments_v1\",\n  \"agent_summary\": \"One sentence summary\",\n  \"inputs_used\": [\"list of inputs examined\"],\n  \"missing_inputs\": [\"any missing inputs\"],\n  \"claims\": [\n    {\"claim\": \"\", \"evidence_reference\": \"\", \"confidence\": \"provided | inferred | missing\"}\n  ],\n  \"exhibits\": [\n    {\"label\": \"\", \"description\": \"\", \"referenced_in_body\": true, \"body_reference_location\": \"\"}\n  ],\n  \"attachments_referenced_in_body\": true,\n  \"all_labels_consistent\": true,\n  \"total_exhibits\": 0,\n  \"referenced_count\": 0,\n  \"unreferenced_count\": 0,\n  \"calculations\": [\n    {\"name\": \"reference_ratio\", \"formula\": \"referenced_count / total_exhibits\", \"inputs\": {}, \"result\": 0.0, \"units\": \"ratio\", \"assumptions\": []}\n  ],\n  \"risks\": [\n    {\"risk\": \"\", \"severity\": \"low | medium | high\", \"evidence_reference\": \"\"}\n  ],\n  \"assumptions\": [],\n  \"open_questions\": [],\n  \"final_output\": \"PASS or FAIL\",\n  \"self_check\": {\n    \"all_required_sections_completed\": true,\n    \"all_numbers_have_sources\": true,\n    \"assumptions_labeled\": true,\n    \"missing_inputs_disclosed\": true\n  }\n}\n\nScoring rules:\n- reference_ratio = referenced_count / total_exhibits\n- attachments_referenced_in_body must be true if ALL exhibits are referenced in the body\n- all_labels_consistent must be true if all exhibit labels follow the same naming convention\n- PASS if total_exhibits >= 0 AND attachments_referenced_in_body == true AND all_labels_consistent == true\n- FAIL if any exhibit is not referenced in the body OR labels are inconsistent\n- If no exhibits exist (total_exhibits == 0), final_output should be PASS with a note\n\nReturn only the JSON. No markdown fences, no prose. Use only the provided evidence unless explicitly allowed to assume; label every assumption; if a required input is missing, say so; do not fabricate facts or cite evidence that was not provided.",
+  "required_inputs": [
+    "document_draft"
+  ],
+  "expected_outputs": [
+    "assignment_id",
+    "agent_summary",
+    "inputs_used",
+    "missing_inputs",
+    "claims",
+    "exhibits",
+    "attachments_referenced_in_body",
+    "all_labels_consistent",
+    "total_exhibits",
+    "referenced_count",
+    "unreferenced_count",
+    "calculations",
+    "risks",
+    "assumptions",
+    "open_questions",
+    "final_output",
+    "self_check"
+  ],
+  "audit_checks": [
+    {
+      "key": "sections_present",
+      "label": "Required sections present",
+      "category": "structure",
+      "kind": "auto",
+      "severity": "critical"
+    },
+    {
+      "key": "output_nonempty",
+      "label": "Output is substantive",
+      "category": "structure",
+      "kind": "auto",
+      "severity": "noncritical"
+    },
+    {
+      "key": "unreferenced_exhibits",
+      "label": "One or more exhibits are not referenced in the document body",
+      "category": "evidence",
+      "kind": "checklist",
+      "severity": "noncritical"
+    },
+    {
+      "key": "inconsistent_labels",
+      "label": "Exhibit labels do not follow a consistent naming convention",
+      "category": "policy",
+      "kind": "checklist",
+      "severity": "noncritical"
+    },
+    {
+      "key": "false_pass_unreferenced",
+      "label": "final_output is PASS but exhibits are unreferenced",
+      "category": "evidence",
+      "kind": "checklist",
+      "severity": "critical"
+    },
+    {
+      "key": "false_pass_labels",
+      "label": "final_output is PASS but exhibit labels are inconsistent",
+      "category": "policy",
+      "kind": "checklist",
+      "severity": "critical"
+    },
+    {
+      "key": "missing_body_reference_location",
+      "label": "Referenced exhibit lacks body reference location",
+      "category": "evidence",
+      "kind": "checklist",
+      "severity": "noncritical"
+    }
+  ],
+  "pass_threshold": 80,
+  "fail_threshold": 60
+}

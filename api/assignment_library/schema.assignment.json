@@ -1,0 +1,163 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://defendable.cloud/schemas/assignment.json",
+  "title": "DefendableCloud Assignment",
+  "description": "Schema for a single eval assignment in the DefendableCloud Assignment Library.",
+  "type": "object",
+  "required": [
+    "assignment_id",
+    "name",
+    "lane",
+    "version",
+    "purpose",
+    "operator_instructions",
+    "agent_prompt",
+    "required_inputs",
+    "expected_outputs",
+    "required_output_schema",
+    "deterministic_checks",
+    "evidence_checks",
+    "flag_rules",
+    "severity_mapping",
+    "receipt_type",
+    "recommended_human_review",
+    "sample_submission_shape"
+  ],
+  "properties": {
+    "assignment_id": {
+      "type": "string",
+      "description": "Unique, versioned identifier. Format: {lane_short}_{topic}_{version}. Example: cre_memo_noi_cap_rate_v1",
+      "pattern": "^[a-z][a-z0-9_]*_v[0-9]+$"
+    },
+    "name": {
+      "type": "string",
+      "description": "Human-readable name for the assignment."
+    },
+    "lane": {
+      "type": "string",
+      "description": "Eval lane this assignment belongs to.",
+      "enum": [
+        "general_ai_agent_work_eval",
+        "cre_real_estate_memo_eval",
+        "dataset_quality_eval",
+        "compute_benchmark_eval",
+        "document_draft_eval",
+        "financial_math_reasoning_eval",
+        "evidence_extraction_eval",
+        "compliance_policy_checklist_eval",
+        "client_deliverable_readiness_eval",
+        "repair_fine_tune_candidate_eval"
+      ]
+    },
+    "version": {
+      "type": "string",
+      "description": "Semver version of this assignment.",
+      "pattern": "^[0-9]+\\.[0-9]+$"
+    },
+    "purpose": {
+      "type": "string",
+      "description": "What this assignment tests and why it matters."
+    },
+    "operator_instructions": {
+      "type": "string",
+      "description": "Step-by-step instructions for the human operator running this eval."
+    },
+    "agent_prompt": {
+      "type": "string",
+      "description": "The prompt sent to the AI agent being evaluated. Must enforce structured output."
+    },
+    "required_inputs": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "List of inputs the agent must receive to complete the assignment."
+    },
+    "expected_outputs": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "List of outputs the agent must produce."
+    },
+    "required_output_schema": {
+      "type": "object",
+      "description": "JSON Schema or markdown structure the agent output must conform to.",
+      "properties": {
+        "type": { "type": "string" },
+        "required": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      },
+      "required": ["type", "required"]
+    },
+    "deterministic_checks": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "List of deterministic, automatable checks performed by the referee.",
+      "examples": [
+        "json_valid",
+        "required_fields_present",
+        "calculation_present",
+        "evidence_references_present",
+        "assumptions_labeled"
+      ]
+    },
+    "math_checks": {
+      "type": "array",
+      "description": "Math-specific checks with formula references. Optional.",
+      "items": {
+        "type": "object",
+        "required": ["formula_id", "formula"],
+        "properties": {
+          "formula_id": { "type": "string" },
+          "formula": { "type": "string" },
+          "tolerance": { "type": "number" },
+          "units": { "type": "string" }
+        }
+      }
+    },
+    "evidence_checks": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Rules for evidence reference validation."
+    },
+    "flag_rules": {
+      "type": "array",
+      "description": "Flags the referee raises based on deterministic checks.",
+      "items": {
+        "type": "object",
+        "required": ["flag_id", "severity"],
+        "properties": {
+          "flag_id": { "type": "string" },
+          "severity": {
+            "type": "string",
+            "enum": ["honey", "jelly", "propolis"]
+          },
+          "condition": { "type": "string" }
+        }
+      }
+    },
+    "severity_mapping": {
+      "type": "object",
+      "required": ["honey", "jelly", "propolis"],
+      "properties": {
+        "honey": { "type": "string" },
+        "jelly": { "type": "string" },
+        "propolis": { "type": "string" }
+      }
+    },
+    "receipt_type": {
+      "type": "string",
+      "description": "Type of receipt generated after evaluation.",
+      "enum": ["eval_receipt", "audit_receipt", "repair_receipt", "compliance_receipt"]
+    },
+    "recommended_human_review": {
+      "type": "string",
+      "enum": ["required", "recommended", "optional"],
+      "description": "Whether human review is required, recommended, or optional."
+    },
+    "sample_submission_shape": {
+      "type": "object",
+      "description": "Example of what a valid agent submission looks like for this assignment."
+    }
+  },
+  "additionalProperties": false
+}

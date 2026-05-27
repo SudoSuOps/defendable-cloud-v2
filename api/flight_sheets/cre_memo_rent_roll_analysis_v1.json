@@ -1,0 +1,90 @@
+{
+  "slug": "cre_memo_rent_roll_analysis_v1",
+  "name": "Rent Roll Summary and Lease Review",
+  "version": "1.0",
+  "lane": "agent",
+  "summary": "Extract rent roll data from a property memo, calculate weighted average rent per unit, identify lease expiration concentration, and flag any units below market ",
+  "purpose": "Extract rent roll data from a property memo, calculate weighted average rent per unit, identify lease expiration concentration, and flag any units below market rent. This tests data extraction from tabular formats and summary statistics.",
+  "assignment_instructions": "Property Memo - Rent Roll: --- PROPERTY: Midtown Heights, 555 Midtown Ave, Houston, TX Total Units: 80 Unit Mix:\n  - 1BR/1BA: 30 units, avg rent $1,450/month, market rent $1,550\n  - 2BR/1BA: 25 units, avg rent $1,800/month, market rent $1,950\n  - 2BR/2BA: 15 units, avg rent $2,100/month, market rent $2,200\n  - 3BR/2BA: 10 units, avg rent $2,500/month, market rent $2,600\n\nLease Expiration Schedule (next 12 months):\n  - Q1 2026: 22 units (27.5%)\n  - Q2 2026: 18 units (22.5%)\n  - Q3 2026: 15 units (18.75%)\n  - Q4 2026: 12 units (15.0%)\n  - Beyond 2026: 13 units (16.25%)\n---\nCalculate and return ONLY a JSON object:\n1. Weighted Average Rent Per Unit = sum(unit_count * avg_rent) / total_units\n   (calculate monthly, then annualize)\n2. Below-Market Unit Count: count all units where avg_rent < market_rent 3. Lease Expiration Concentration: identify the quarter with highest % 4. Rent Roll Variance = sum(unit_count * (market_rent - avg_rent)) monthly\nJSON structure: {\n  \"assignment_id\": \"cre_memo_rent_roll_analysis_v1\",\n  \"agent_summary\": \"<string>\",\n  \"inputs_used\": [\"<string>\"],\n  \"missing_inputs\": [\"<string>\"],\n  \"claims\": [\n    {\n      \"claim\": \"<string>\",\n      \"evidence_reference\": \"<string>\",\n      \"confidence\": \"<provided | inferred | missing>\"\n    }\n  ],\n  \"calculations\": [\n    {\n      \"name\": \"<string>\",\n      \"formula\": \"<string>\",\n      \"inputs\": {\"<key>\": <number>},\n      \"result\": <number>,\n      \"units\": \"<string>\",\n      \"assumptions\": [\"<string>\"]\n    }\n  ],\n  \"risks\": [\n    {\n      \"risk\": \"<string>\",\n      \"severity\": \"<low | medium | high>\",\n      \"evidence_reference\": \"<string>\"\n    }\n  ],\n  \"assumptions\": [\"<string>\"],\n  \"open_questions\": [\"<string>\"],\n  \"final_output\": \"<string>\",\n  \"self_check\": {\n    \"all_required_sections_completed\": true,\n    \"all_numbers_have_sources\": true,\n    \"assumptions_labeled\": true,\n    \"missing_inputs_disclosed\": true\n  }\n}\nCRITICAL RULES: - Weighted average rent must use unit counts as weights. - Show both monthly and annual weighted average rent as separate\n  calculations or show monthly with annualized result.\n- Below-market unit count: ALL 80 units are below market (each unit\n  type's avg_rent is below its market_rent). The count is 80.\n- Lease expiration concentration is Q1 2026 at 27.5%. - If any unit type is below market, add a risk with severity \"medium\"\n  or \"high\" stating the number of units and estimated monthly variance.\n- Show the rent roll variance calculation. - Do not output any text outside the JSON object. Use only the provided evidence unless explicitly allowed to assume; label every assumption; if a required input is missing, say so; do not fabricate facts or cite evidence that was not provided.",
+  "required_inputs": [
+    "total_units",
+    "unit_1br_count",
+    "unit_1br_rent",
+    "unit_1br_market",
+    "unit_2br1ba_count",
+    "unit_2br1ba_rent",
+    "unit_2br1ba_market",
+    "unit_2br2ba_count",
+    "unit_2br2ba_rent",
+    "unit_2br2ba_market",
+    "unit_3br_count",
+    "unit_3br_rent",
+    "unit_3br_market"
+  ],
+  "expected_outputs": [
+    "assignment_id",
+    "agent_summary",
+    "inputs_used",
+    "missing_inputs",
+    "claims",
+    "calculations",
+    "risks",
+    "assumptions",
+    "open_questions",
+    "final_output",
+    "self_check"
+  ],
+  "audit_checks": [
+    {
+      "key": "sections_present",
+      "label": "Required sections present",
+      "category": "structure",
+      "kind": "auto",
+      "severity": "critical"
+    },
+    {
+      "key": "citations_present",
+      "label": "Evidence is referenced",
+      "category": "evidence",
+      "kind": "auto",
+      "severity": "noncritical"
+    },
+    {
+      "key": "missing_weighted_avg_rent",
+      "label": "Missing weighted avg rent",
+      "category": "structure",
+      "kind": "checklist",
+      "severity": "critical"
+    },
+    {
+      "key": "missing_below_market_count",
+      "label": "Missing below market count",
+      "category": "structure",
+      "kind": "checklist",
+      "severity": "noncritical"
+    },
+    {
+      "key": "wrong_weighted_avg",
+      "label": "Wrong weighted avg",
+      "category": "policy",
+      "kind": "checklist",
+      "severity": "critical"
+    },
+    {
+      "key": "no_lease_concentration_flag",
+      "label": "No lease concentration flag",
+      "category": "math",
+      "kind": "checklist",
+      "severity": "noncritical"
+    },
+    {
+      "key": "math_result_incorrect",
+      "label": "Math result incorrect",
+      "category": "math",
+      "kind": "checklist",
+      "severity": "critical"
+    }
+  ],
+  "pass_threshold": 80,
+  "fail_threshold": 60
+}

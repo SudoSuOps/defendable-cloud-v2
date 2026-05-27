@@ -1,0 +1,96 @@
+{
+  "slug": "fin_compound_interest_roi_v1",
+  "name": "Compound Interest and ROI",
+  "version": "1.0",
+  "lane": "agent",
+  "summary": "Calculate compound interest (future value) and Return on Investment (ROI) from principal, rate, time period, and investment values",
+  "purpose": "Calculate compound interest (future value) and Return on Investment (ROI) from principal, rate, time period, and investment values. These are fundamental investment metrics that must be computed with all inputs and steps disclosed.",
+  "assignment_instructions": "You are calculating Compound Interest (Future Value) and Return on Investment (ROI).\n\nGiven the financial inputs, compute the following with exact formulas:\n\n1. Compound Interest (Future Value) = Principal * (1 + Rate) ^ Time\n2. Total Interest Earned = Future Value - Principal\n3. ROI = ((Final Value - Initial Investment) / Initial Investment) * 100\n\nReturn a single JSON object with this exact structure:\n{\n  \"assignment_id\": \"fin_compound_interest_roi_v1\",\n  \"agent_summary\": \"One sentence summary\",\n  \"inputs_used\": [\"principal\", \"annual_rate\", \"time_years\", \"initial_investment\", \"final_value\"],\n  \"missing_inputs\": [\"any missing inputs\"],\n  \"claims\": [\n    {\"claim\": \"\", \"evidence_reference\": \"\", \"confidence\": \"provided | inferred | missing\"}\n  ],\n  \"calculations\": [\n    {\n      \"name\": \"compound_interest_future_value\",\n      \"formula\": \"Principal * (1 + Rate) ^ Time\",\n      \"inputs\": {\"principal\": 0, \"annual_rate\": 0, \"time_years\": 0},\n      \"result\": 0,\n      \"units\": \"currency\",\n      \"assumptions\": []\n    },\n    {\n      \"name\": \"total_interest_earned\",\n      \"formula\": \"Future Value - Principal\",\n      \"inputs\": {\"future_value\": 0, \"principal\": 0},\n      \"result\": 0,\n      \"units\": \"currency\",\n      \"assumptions\": []\n    },\n    {\n      \"name\": \"roi\",\n      \"formula\": \"((Final Value - Initial Investment) / Initial Investment) * 100\",\n      \"inputs\": {\"final_value\": 0, \"initial_investment\": 0},\n      \"result\": 0,\n      \"units\": \"percent\",\n      \"assumptions\": []\n    }\n  ],\n  \"risks\": [\n    {\"risk\": \"\", \"severity\": \"low | medium | high\", \"evidence_reference\": \"\"}\n  ],\n  \"assumptions\": [],\n  \"open_questions\": [],\n  \"final_output\": \"PASS or FAIL\",\n  \"self_check\": {\n    \"all_required_sections_completed\": true,\n    \"all_numbers_have_sources\": true,\n    \"assumptions_labeled\": true,\n    \"missing_inputs_disclosed\": true\n  }\n}\n\nRules:\n- ALL input values must be echoed in each calculation's inputs sub-object\n- result must be a numeric value (not a string)\n- annual_rate must be in decimal form (e.g., 0.07 for 7%)\n- time_years must be a positive number\n- initial_investment must not be zero (division by zero in ROI)\n- final_output is PASS if all 3 calculations are present with numeric results AND initial_investment != 0\n- final_output is FAIL if initial_investment == 0\n- Show formulas exactly as specified\n- compound_interest_future_value and total_interest_earned are in currency units\n- roi is expressed as a percentage\n\nReturn only the JSON. No markdown fences, no prose. Use only the provided evidence unless explicitly allowed to assume; label every assumption; if a required input is missing, say so; do not fabricate facts or cite evidence that was not provided.",
+  "required_inputs": [
+    "principal",
+    "annual_rate",
+    "time_years",
+    "initial_investment",
+    "final_value"
+  ],
+  "expected_outputs": [
+    "assignment_id",
+    "agent_summary",
+    "inputs_used",
+    "missing_inputs",
+    "claims",
+    "calculations",
+    "risks",
+    "assumptions",
+    "open_questions",
+    "final_output",
+    "self_check"
+  ],
+  "audit_checks": [
+    {
+      "key": "sections_present",
+      "label": "Required sections present",
+      "category": "structure",
+      "kind": "auto",
+      "severity": "critical"
+    },
+    {
+      "key": "citations_present",
+      "label": "Evidence is referenced",
+      "category": "evidence",
+      "kind": "auto",
+      "severity": "noncritical"
+    },
+    {
+      "key": "missing_calculation",
+      "label": "Not all 3 required calculations are present",
+      "category": "math",
+      "kind": "checklist",
+      "severity": "critical"
+    },
+    {
+      "key": "non_numeric_result",
+      "label": "One or more calculation results are not numeric",
+      "category": "math",
+      "kind": "checklist",
+      "severity": "critical"
+    },
+    {
+      "key": "future_value_mismatch",
+      "label": "Compound interest future value does not match formula",
+      "category": "math",
+      "kind": "checklist",
+      "severity": "critical"
+    },
+    {
+      "key": "interest_mismatch",
+      "label": "Total interest earned does not match future value minus principal",
+      "category": "math",
+      "kind": "checklist",
+      "severity": "critical"
+    },
+    {
+      "key": "roi_mismatch",
+      "label": "ROI calculation does not match formula",
+      "category": "math",
+      "kind": "checklist",
+      "severity": "critical"
+    },
+    {
+      "key": "zero_initial_investment",
+      "label": "Initial investment is zero \u2014 ROI is undefined",
+      "category": "policy",
+      "kind": "checklist",
+      "severity": "noncritical"
+    },
+    {
+      "key": "false_pass_zero_investment",
+      "label": "final_output is PASS but initial investment is zero",
+      "category": "policy",
+      "kind": "checklist",
+      "severity": "critical"
+    }
+  ],
+  "pass_threshold": 80,
+  "fail_threshold": 60
+}

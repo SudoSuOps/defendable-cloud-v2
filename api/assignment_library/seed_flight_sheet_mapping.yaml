@@ -1,0 +1,162 @@
+# DefendableCloud Seed Flight Sheet Mappings
+# Maps each of the five seeded Flight Sheets to the relevant assignment IDs.
+#
+# Usage:
+#   1. Load a Flight Sheet by name
+#   2. Look up its assignments in this mapping
+#   3. Pull each assignment from assignments.yaml by assignment_id
+#   4. Execute assignments in order or in parallel as configured
+#   5. Collect results for referee audit
+
+flight_sheets:
+
+  - flight_sheet_id: fs_genai_work_v1
+    name: AI Agent General Work Eval
+    description: General evaluation of AI agent capabilities across schema compliance, reasoning, instruction following, evidence handling, and error disclosure.
+    target_lane: general_ai_agent_work_eval
+    assignment_ids:
+      - genai_schema_compliance_v1
+      - genai_chain_of_thought_v1
+      - genai_instruction_following_v1
+      - genai_evidence_citation_v1
+      - genai_error_disclosure_v1
+    execution_mode: sequential
+    pass_criteria:
+      severity_cap: jelly
+      min_honey_count: 3
+      no_propolis_allowed: true
+    receipt_config:
+      type: eval_receipt
+      human_review: required
+      aggregate_by: severity_counts
+
+  - flight_sheet_id: fs_cre_memo_v1
+    name: CRE Memo Eval
+    description: Complete evaluation of AI agent performance on commercial real estate underwriting memos, from deal economics to risk assessment.
+    target_lane: cre_real_estate_memo_eval
+    assignment_ids:
+      - cre_memo_noi_cap_rate_v1
+      - cre_memo_dscr_ltv_v1
+      - cre_memo_price_per_unit_sqft_v1
+      - cre_memo_cash_on_cash_v1
+      - cre_memo_egi_vacancy_v1
+      - cre_memo_equity_multiple_irr_v1
+      - cre_memo_rent_roll_analysis_v1
+      - cre_memo_risk_assessment_v1
+    execution_mode: sequential
+    dependencies:
+      - assignment: cre_memo_risk_assessment_v1
+        requires:
+          - cre_memo_noi_cap_rate_v1
+          - cre_memo_dscr_ltv_v1
+    pass_criteria:
+      severity_cap: jelly
+      min_honey_count: 5
+      no_propolis_allowed: true
+      material_formula_tolerance: 0.001
+    receipt_config:
+      type: eval_receipt
+      human_review: required
+      aggregate_by: lane_summary
+      include_formulas: true
+
+  - flight_sheet_id: fs_dataset_quality_v1
+    name: Dataset Quality Eval
+    description: Comprehensive evaluation of AI agent dataset quality assessment capabilities, from schema validation to content safety.
+    target_lane: dataset_quality_eval
+    assignment_ids:
+      - dataset_schema_validation_v1
+      - dataset_missing_value_audit_v1
+      - dataset_duplicate_detection_v1
+      - dataset_class_balance_v1
+      - dataset_provenance_completeness_v1
+      - dataset_train_test_integrity_v1
+      - dataset_content_safety_scan_v1
+    execution_mode: parallel
+    pass_criteria:
+      severity_cap: jelly
+      min_honey_count: 4
+      no_propolis_allowed: true
+      threshold_overrides:
+        missing_value_rate: 0.10
+        duplicate_rate: 0.05
+        class_balance_ratio: 0.30
+    receipt_config:
+      type: eval_receipt
+      human_review: required
+      aggregate_by: check_counts
+      include_dataset_metrics: true
+
+  - flight_sheet_id: fs_compute_benchmark_v1
+    name: Compute Benchmark Eval
+    description: Evaluation of AI agent compute benchmark verification, from GPU specs to system readiness.
+    target_lane: compute_benchmark_eval
+    assignment_ids:
+      - compute_gpu_spec_verification_v1
+      - compute_benchmark_score_validation_v1
+      - compute_thermal_power_check_v1
+      - compute_efficiency_metrics_v1
+      - compute_memory_bandwidth_v1
+      - compute_inference_latency_v1
+      - compute_system_readiness_v1
+    execution_mode: parallel
+    pass_criteria:
+      severity_cap: jelly
+      min_honey_count: 5
+      no_propolis_allowed: true
+      threshold_overrides:
+        thermal_max_c: 85
+        min_gpu_utilization: 0.80
+        max_p99_latency_ms: 100
+    receipt_config:
+      type: eval_receipt
+      human_review: required
+      aggregate_by: benchmark_summary
+      include_hardware_specs: true
+
+  - flight_sheet_id: fs_document_draft_v1
+    name: Document Draft Eval
+    description: Evaluation of AI agent document drafting quality, from header completeness to exhibits and policy compliance.
+    target_lane: document_draft_eval
+    assignment_ids:
+      - doc_recipient_sender_subject_v1
+      - doc_requested_action_clarity_v1
+      - doc_facts_evidence_basis_v1
+      - doc_tone_policy_compliance_v1
+      - doc_exhibits_attachments_v1
+    execution_mode: sequential
+    pass_criteria:
+      severity_cap: jelly
+      min_honey_count: 3
+      no_propolis_allowed: true
+    receipt_config:
+      type: eval_receipt
+      human_review: required
+      aggregate_by: section_scores
+
+# Cross-lane aggregate Flight Sheet
+  - flight_sheet_id: fs_full_audit_v1
+    name: Full Multi-Lane Audit
+    description: Runs at least one assignment from every lane for a comprehensive agent audit.
+    target_lanes: all
+    assignment_ids:
+      # One from each lane
+      - genai_schema_compliance_v1
+      - cre_memo_noi_cap_rate_v1
+      - dataset_schema_validation_v1
+      - compute_gpu_spec_verification_v1
+      - doc_recipient_sender_subject_v1
+      - fin_gross_net_margin_v1
+      - evx_entity_extraction_v1
+      - comp_regulatory_checklist_v1
+      - client_branding_completeness_v1
+      - repair_systematic_failure_detection_v1
+    execution_mode: parallel
+    pass_criteria:
+      severity_cap: jelly
+      min_honey_count: 7
+      no_propolis_allowed: true
+    receipt_config:
+      type: audit_receipt
+      human_review: required
+      aggregate_by: lane_summary

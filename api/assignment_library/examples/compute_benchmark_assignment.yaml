@@ -1,0 +1,133 @@
+# DefendableCloud Example Assignment
+# assignment_id: compute_gpu_spec_verification_v1
+# lane: compute_benchmark_eval
+# This is a single extracted example from the full assignment library.
+# See assignments.yaml for all 50 assignments.
+
+assignment_id: compute_gpu_spec_verification_v1
+name: GPU Specification Verification
+lane: compute_benchmark_eval
+version: '1.0'
+purpose: Verify that the GPU hardware and driver configuration matches the declared
+  specification including model, VRAM, driver version, and CUDA version.
+operator_instructions: Provide the GPU info output (e.g., nvidia-smi) and the declared
+  specification. Agent must compare each attribute and report compliance.
+agent_prompt: 'You are verifying GPU specifications against declared requirements.
+  REQUIRED OUTPUT: Return a JSON object with these exact fields: - assignment_id (string):
+  use "compute_gpu_spec_verification_v1" - agent_summary (string) - inputs_used (list
+  of strings) - missing_inputs (list of strings) - claims (list of objects): claim,
+  evidence_reference, confidence ("provided"|"inferred"|"missing") - calculations
+  (list of objects): name, formula, inputs, result, units, assumptions - risks (list
+  of objects): risk, severity ("low"|"medium"|"high"), evidence_reference - assumptions
+  (list of strings) - open_questions (list of strings) - final_output (string) - self_check
+  (object): all_required_sections_completed (boolean), all_numbers_have_sources (boolean),
+  assumptions_labeled (boolean), missing_inputs_disclosed (boolean) Also include:
+  - gpu_model_detected (string): GPU model name from system - gpu_model_declared (string
+  or null): expected GPU model - gpu_model_match (boolean): exact string match of
+  model names - vram_detected_gb (number): detected VRAM in gigabytes - vram_required_gb
+  (number or null): minimum required VRAM - vram_sufficient (boolean): vram_detected_gb
+  >= vram_required_gb (or true if no requirement) - driver_version_detected (string):
+  detected driver version - driver_version_required (string or null): required driver
+  version - driver_version_match (boolean): exact match or meeting minimum - cuda_version_detected
+  (string): detected CUDA version - cuda_version_required (string or null): required
+  CUDA version - cuda_version_match (boolean): exact match or meeting minimum - all_specs_match
+  (boolean): true only if gpu_model_match and vram_sufficient and driver_version_match
+  and cuda_version_match are all true Return numeric values as numbers, not prose.
+  State exact versions as strings.
+
+  '
+required_inputs:
+- gpu_info_output_or_nvidia_smi
+- declared_gpu_specification
+expected_outputs:
+- gpu_model_detected
+- gpu_model_match
+- vram_detected_gb
+- vram_sufficient
+- driver_version_detected
+- driver_version_match
+- cuda_version_detected
+- cuda_version_match
+- all_specs_match
+required_output_schema:
+  type: object
+  required:
+  - assignment_id
+  - gpu_model_detected
+  - gpu_model_match
+  - vram_detected_gb
+  - vram_sufficient
+  - driver_version_detected
+  - driver_version_match
+  - cuda_version_detected
+  - cuda_version_match
+  - all_specs_match
+  - claims
+  - self_check
+deterministic_checks:
+- check_id: vram_numeric
+  description: vram_detected_gb must be a number > 0
+  assertion: isinstance(result.vram_detected_gb, (int, float)) and result.vram_detected_gb
+    > 0
+- check_id: vram_sufficient_logic
+  description: vram_sufficient must be true when vram >= required
+  assertion: result.vram_sufficient == (result.vram_detected_gb >= result.vram_required_gb
+    if result.vram_required_gb else True)
+- check_id: all_specs_match_logic
+  description: all_specs_match must be true only when all individual checks pass
+  assertion: result.all_specs_match == (result.gpu_model_match and result.vram_sufficient
+    and result.driver_version_match and result.cuda_version_match)
+- check_id: version_strings_present
+  description: driver and CUDA versions must be non-empty strings
+  assertion: isinstance(result.driver_version_detected, str) and len(result.driver_version_detected)
+    > 0 and isinstance(result.cuda_version_detected, str) and len(result.cuda_version_detected)
+    > 0
+math_checks: []
+evidence_checks:
+- evidence_field: gpu_model_detected
+  description: Must quote exact GPU model string from system output
+  required: true
+- evidence_field: vram_detected_gb
+  description: Must report exact VRAM value from system output
+  required: true
+- evidence_field: driver_version_detected
+  description: Must quote exact driver version from system output
+  required: true
+flag_rules:
+- flag_id: gpu_model_mismatch
+  condition: gpu_model_match == false
+  severity: high
+  description: Detected GPU model does not match declared specification
+- flag_id: vram_insufficient
+  condition: vram_sufficient == false
+  severity: high
+  description: Detected VRAM is below required minimum
+- flag_id: driver_version_mismatch
+  condition: driver_version_match == false
+  severity: medium
+  description: Driver version does not meet requirement
+- flag_id: cuda_version_mismatch
+  condition: cuda_version_match == false
+  severity: medium
+  description: CUDA version does not meet requirement
+severity_mapping:
+  honey: All specs match exactly (model, VRAM, driver, CUDA)
+  jelly: Minor version difference in driver or CUDA, GPU model and VRAM match
+  propolis: GPU model mismatch, insufficient VRAM, or both driver and CUDA mismatch
+receipt_type: eval_receipt
+recommended_human_review: true
+sample_submission_shape:
+  assignment_id: compute_gpu_spec_verification_v1
+  gpu_model_detected: NVIDIA A100-SXM4-80GB
+  gpu_model_declared: NVIDIA A100-SXM4-80GB
+  gpu_model_match: true
+  vram_detected_gb: 80
+  vram_required_gb: 40
+  vram_sufficient: true
+  driver_version_detected: 535.104.05
+  driver_version_required: '535.00'
+  driver_version_match: true
+  cuda_version_detected: '12.2'
+  cuda_version_required: '12.0'
+  cuda_version_match: true
+  all_specs_match: true

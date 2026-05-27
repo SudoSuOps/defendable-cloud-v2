@@ -1,0 +1,88 @@
+{
+  "slug": "genai_chain_of_thought_v1",
+  "name": "Chain of Thought Documentation",
+  "version": "1.0",
+  "lane": "agent",
+  "summary": "Test whether the agent documents its reasoning steps explicitly and labels every assumption",
+  "purpose": "Test whether the agent documents its reasoning steps explicitly and labels every assumption. Agents that produce answers without visible reasoning cannot be audited or debugged.",
+  "assignment_instructions": "Solve the following problem and document every step of your reasoning.\nProblem: A property generates $500,000 in gross potential rent. Vacancy and collection loss is 8%. Operating expenses are $175,000. The property was purchased for $3,200,000. Calculate the Net Operating Income (NOI) and the capitalization rate.\nYou must return a single JSON object with exactly this structure: {\n  \"assignment_id\": \"genai_chain_of_thought_v1\",\n  \"agent_summary\": \"<string: one-sentence summary>\",\n  \"inputs_used\": [\"<string: each input you used>\"],\n  \"missing_inputs\": [\"<string: any inputs you expected but did not receive>\"],\n  \"claims\": [\n    {\n      \"claim\": \"<string>\",\n      \"evidence_reference\": \"<string>\",\n      \"confidence\": \"<provided | inferred | missing>\"\n    }\n  ],\n  \"calculations\": [\n    {\n      \"name\": \"<string: descriptive name>\",\n      \"formula\": \"<string: formula in plain text>\",\n      \"inputs\": {\"<key>\": <number>},\n      \"result\": <number>,\n      \"units\": \"<string>\",\n      \"assumptions\": [\"<string: every assumption you made for this calc>\"]\n    }\n  ],\n  \"risks\": [\n    {\n      \"risk\": \"<string>\",\n      \"severity\": \"<low | medium | high>\",\n      \"evidence_reference\": \"<string>\"\n    }\n  ],\n  \"assumptions\": [\"<string: every global assumption>\"],\n  \"open_questions\": [\"<string>\"],\n  \"final_output\": \"<string: concise final answer>\",\n  \"self_check\": {\n    \"all_required_sections_completed\": true,\n    \"all_numbers_have_sources\": true,\n    \"assumptions_labeled\": true,\n    \"missing_inputs_disclosed\": true\n  }\n}\nRules: - Every calculation in calculations[] must include at least one assumption\n  in its assumptions array. Explain WHY you chose each input value.\n- The top-level assumptions[] array must contain at least 2 distinct\n  assumptions.\n- For each number used, state its source in inputs_used. - Show the formula for NOI using: effective_gross_income - operating_expenses. - Show the formula for cap_rate using: noi / purchase_price. - Return vacancy as a decimal (0.08), not a percentage. - result fields must be numbers (float or integer), not strings. - Do not output any text outside the JSON object. Use only the provided evidence unless explicitly allowed to assume; label every assumption; if a required input is missing, say so; do not fabricate facts or cite evidence that was not provided.",
+  "required_inputs": [
+    "gross_potential_rent",
+    "vacancy_rate",
+    "operating_expenses",
+    "purchase_price"
+  ],
+  "expected_outputs": [
+    "assignment_id",
+    "agent_summary",
+    "inputs_used",
+    "missing_inputs",
+    "claims",
+    "calculations",
+    "risks",
+    "assumptions",
+    "open_questions",
+    "final_output",
+    "self_check"
+  ],
+  "audit_checks": [
+    {
+      "key": "sections_present",
+      "label": "Required sections present",
+      "category": "structure",
+      "kind": "auto",
+      "severity": "critical"
+    },
+    {
+      "key": "citations_present",
+      "label": "Evidence is referenced",
+      "category": "evidence",
+      "kind": "auto",
+      "severity": "noncritical"
+    },
+    {
+      "key": "empty_calculations",
+      "label": "Empty calculations",
+      "category": "math",
+      "kind": "checklist",
+      "severity": "critical"
+    },
+    {
+      "key": "missing_assumptions",
+      "label": "Missing assumptions",
+      "category": "math",
+      "kind": "checklist",
+      "severity": "critical"
+    },
+    {
+      "key": "calc_without_assumptions",
+      "label": "Calc without assumptions",
+      "category": "math",
+      "kind": "checklist",
+      "severity": "noncritical"
+    },
+    {
+      "key": "result_not_number",
+      "label": "Result not number",
+      "category": "math",
+      "kind": "checklist",
+      "severity": "noncritical"
+    },
+    {
+      "key": "math_incorrect",
+      "label": "Math incorrect",
+      "category": "math",
+      "kind": "checklist",
+      "severity": "critical"
+    },
+    {
+      "key": "self_check_false",
+      "label": "Self check false",
+      "category": "policy",
+      "kind": "checklist",
+      "severity": "noncritical"
+    }
+  ],
+  "pass_threshold": 80,
+  "fail_threshold": 60
+}

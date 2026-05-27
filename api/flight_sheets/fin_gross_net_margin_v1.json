@@ -1,0 +1,87 @@
+{
+  "slug": "fin_gross_net_margin_v1",
+  "name": "Gross Margin and Net Margin Calculation",
+  "version": "1.0",
+  "lane": "agent",
+  "summary": "Calculate gross margin and net margin from revenue, cost of goods sold, and net income",
+  "purpose": "Calculate gross margin and net margin from revenue, cost of goods sold, and net income. These are foundational profitability metrics that must be computed with precise formulas and disclosed assumptions.",
+  "assignment_instructions": "You are calculating gross margin and net margin from financial data.\n\nGiven the financial inputs, compute the following with exact formulas:\n\n1. Gross Profit = Revenue - COGS\n2. Gross Margin = (Gross Profit / Revenue) * 100\n3. Net Margin = (Net Income / Revenue) * 100\n\nReturn a single JSON object with this exact structure:\n{\n  \"assignment_id\": \"fin_gross_net_margin_v1\",\n  \"agent_summary\": \"One sentence summary\",\n  \"inputs_used\": [\"revenue\", \"cogs\", \"net_income\"],\n  \"missing_inputs\": [\"any missing inputs\"],\n  \"claims\": [\n    {\"claim\": \"\", \"evidence_reference\": \"\", \"confidence\": \"provided | inferred | missing\"}\n  ],\n  \"calculations\": [\n    {\n      \"name\": \"gross_profit\",\n      \"formula\": \"Revenue - COGS\",\n      \"inputs\": {\"revenue\": 0, \"cogs\": 0},\n      \"result\": 0,\n      \"units\": \"currency\",\n      \"assumptions\": []\n    },\n    {\n      \"name\": \"gross_margin\",\n      \"formula\": \"(Gross Profit / Revenue) * 100\",\n      \"inputs\": {\"gross_profit\": 0, \"revenue\": 0},\n      \"result\": 0,\n      \"units\": \"percent\",\n      \"assumptions\": []\n    },\n    {\n      \"name\": \"net_margin\",\n      \"formula\": \"(Net Income / Revenue) * 100\",\n      \"inputs\": {\"net_income\": 0, \"revenue\": 0},\n      \"result\": 0,\n      \"units\": \"percent\",\n      \"assumptions\": []\n    }\n  ],\n  \"risks\": [\n    {\"risk\": \"\", \"severity\": \"low | medium | high\", \"evidence_reference\": \"\"}\n  ],\n  \"assumptions\": [],\n  \"open_questions\": [],\n  \"final_output\": \"PASS or FAIL\",\n  \"self_check\": {\n    \"all_required_sections_completed\": true,\n    \"all_numbers_have_sources\": true,\n    \"assumptions_labeled\": true,\n    \"missing_inputs_disclosed\": true\n  }\n}\n\nRules:\n- ALL input values used in calculations must be echoed in the inputs sub-object\n- result must be a numeric value (not a string)\n- Gross margin and net margin must be expressed as percentages\n- final_output is PASS if all three calculations are present with numeric results\n- final_output is FAIL if revenue is zero or negative (division by zero / invalid)\n- Show formulas exactly as specified\n\nReturn only the JSON. No markdown fences, no prose. Use only the provided evidence unless explicitly allowed to assume; label every assumption; if a required input is missing, say so; do not fabricate facts or cite evidence that was not provided.",
+  "required_inputs": [
+    "revenue",
+    "cogs",
+    "net_income"
+  ],
+  "expected_outputs": [
+    "assignment_id",
+    "agent_summary",
+    "inputs_used",
+    "missing_inputs",
+    "claims",
+    "calculations",
+    "risks",
+    "assumptions",
+    "open_questions",
+    "final_output",
+    "self_check"
+  ],
+  "audit_checks": [
+    {
+      "key": "sections_present",
+      "label": "Required sections present",
+      "category": "structure",
+      "kind": "auto",
+      "severity": "critical"
+    },
+    {
+      "key": "citations_present",
+      "label": "Evidence is referenced",
+      "category": "evidence",
+      "kind": "auto",
+      "severity": "noncritical"
+    },
+    {
+      "key": "missing_calculation",
+      "label": "Not all required calculations (gross_profit, gross_margin, net_margin) are present",
+      "category": "math",
+      "kind": "checklist",
+      "severity": "critical"
+    },
+    {
+      "key": "non_numeric_result",
+      "label": "One or more calculation results are not numeric",
+      "category": "math",
+      "kind": "checklist",
+      "severity": "critical"
+    },
+    {
+      "key": "zero_revenue",
+      "label": "Revenue is zero or negative \u2014 margins cannot be computed",
+      "category": "policy",
+      "kind": "checklist",
+      "severity": "noncritical"
+    },
+    {
+      "key": "gross_margin_mismatch",
+      "label": "Gross margin calculation does not match expected formula result",
+      "category": "math",
+      "kind": "checklist",
+      "severity": "critical"
+    },
+    {
+      "key": "net_margin_mismatch",
+      "label": "Net margin calculation does not match expected formula result",
+      "category": "math",
+      "kind": "checklist",
+      "severity": "critical"
+    },
+    {
+      "key": "pass_with_zero_revenue",
+      "label": "final_output is PASS but revenue is zero or negative",
+      "category": "policy",
+      "kind": "checklist",
+      "severity": "critical"
+    }
+  ],
+  "pass_threshold": 80,
+  "fail_threshold": 60
+}

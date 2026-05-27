@@ -1,0 +1,77 @@
+{
+  "slug": "genai_evidence_citation_v1",
+  "name": "Evidence Citation Accuracy",
+  "version": "1.0",
+  "lane": "agent",
+  "summary": "Test whether the agent can cite specific evidence for every factual claim",
+  "purpose": "Test whether the agent can cite specific evidence for every factual claim. Every claim must reference a named source; claims without evidence references are flagged. This ensures traceability and auditability of agent outputs.",
+  "assignment_instructions": "Source text: --- Property: Sunrise Apartments, 123 Main St, Phoenix, AZ. Built: 2015. Units: 120. Occupancy: 92% as of June 2025. Gross Potential Rent: $1,440,000 annually. Operating Expenses: $580,000 annually (includes $220,000 property taxes, $180,000 insurance and maintenance, $120,000 management fees, $60,000 utilities). Purchase Price: $12,500,000. Loan Amount: $9,375,000. Interest Rate: 6.5%. Term: 30 years. ---\nQuestion: What is the NOI, cap rate, and debt service coverage ratio (DSCR)?\nYou must return a single JSON object with this exact structure: {\n  \"assignment_id\": \"genai_evidence_citation_v1\",\n  \"agent_summary\": \"<string>\",\n  \"inputs_used\": [\"<string: cite specific lines from source text>\"],\n  \"missing_inputs\": [\"<string: anything not in source text>\"],\n  \"claims\": [\n    {\n      \"claim\": \"<string: factual assertion>\",\n      \"evidence_reference\": \"<string: specific field name or quote from source>\",\n      \"confidence\": \"<provided | inferred | missing>\"\n    }\n  ],\n  \"calculations\": [\n    {\n      \"name\": \"<string>\",\n      \"formula\": \"<string>\",\n      \"inputs\": {\"<key>\": <number>},\n      \"result\": <number>,\n      \"units\": \"<string>\",\n      \"assumptions\": [\"<string>\"]\n    }\n  ],\n  \"risks\": [\n    {\n      \"risk\": \"<string>\",\n      \"severity\": \"<low | medium | high>\",\n      \"evidence_reference\": \"<string>\"\n    }\n  ],\n  \"assumptions\": [\"<string>\"],\n  \"open_questions\": [\"<string>\"],\n  \"final_output\": \"<string>\"\n}\nRules: - Every claim must have an evidence_reference that names a specific field\n  from the source text (e.g., \"Operating Expenses\", \"Purchase Price\",\n  \"Gross Potential Rent\"). Do NOT use \"none\" or empty string.\n- Every calculation must have a formula in plain text. - Every risk must have an evidence_reference from the source text. - If you cannot find evidence for a claim, set confidence to \"missing\"\n  and explain in open_questions.\n- Calculate NOI = effective_gross_income - operating_expenses.\n  effective_gross_income = gross_potential_rent * occupancy_rate.\n- Calculate cap_rate = noi / purchase_price. - Calculate annual_debt_service using loan_amount, interest_rate, term.\n  DSCR = noi / annual_debt_service.\n- Do not output any text outside the JSON object. Use only the provided evidence unless explicitly allowed to assume; label every assumption; if a required input is missing, say so; do not fabricate facts or cite evidence that was not provided.",
+  "required_inputs": [
+    "source_text"
+  ],
+  "expected_outputs": [
+    "assignment_id",
+    "agent_summary",
+    "inputs_used",
+    "missing_inputs",
+    "claims",
+    "calculations",
+    "risks",
+    "assumptions",
+    "open_questions",
+    "final_output"
+  ],
+  "audit_checks": [
+    {
+      "key": "sections_present",
+      "label": "Required sections present",
+      "category": "structure",
+      "kind": "auto",
+      "severity": "critical"
+    },
+    {
+      "key": "citations_present",
+      "label": "Evidence is referenced",
+      "category": "evidence",
+      "kind": "auto",
+      "severity": "noncritical"
+    },
+    {
+      "key": "empty_evidence_reference",
+      "label": "Empty evidence reference",
+      "category": "evidence",
+      "kind": "checklist",
+      "severity": "critical"
+    },
+    {
+      "key": "missing_calculation",
+      "label": "Missing calculation",
+      "category": "math",
+      "kind": "checklist",
+      "severity": "critical"
+    },
+    {
+      "key": "evidence_not_in_source",
+      "label": "Evidence not in source",
+      "category": "evidence",
+      "kind": "checklist",
+      "severity": "noncritical"
+    },
+    {
+      "key": "incorrect_confidence",
+      "label": "Incorrect confidence",
+      "category": "policy",
+      "kind": "checklist",
+      "severity": "noncritical"
+    },
+    {
+      "key": "math_result_incorrect",
+      "label": "Math result incorrect",
+      "category": "math",
+      "kind": "checklist",
+      "severity": "noncritical"
+    }
+  ],
+  "pass_threshold": 80,
+  "fail_threshold": 60
+}

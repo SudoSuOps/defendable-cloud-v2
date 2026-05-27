@@ -1,0 +1,110 @@
+{
+  "slug": "fin_wacc_calculation_v1",
+  "name": "WACC Calculation",
+  "version": "1.0",
+  "lane": "agent",
+  "summary": "Calculate the Weighted Average Cost of Capital (WACC) from equity, debt, costs of capital, and tax rate",
+  "purpose": "Calculate the Weighted Average Cost of Capital (WACC) from equity, debt, costs of capital, and tax rate. WACC is a critical discount rate for investment decisions and must be computed with all component values disclosed.",
+  "assignment_instructions": "You are calculating the Weighted Average Cost of Capital (WACC).\n\nGiven the financial inputs, compute WACC using the exact formula:\n\n1. Total Capital = Total Equity + Total Debt\n2. Weight of Equity (E/V) = Total Equity / Total Capital\n3. Weight of Debt (D/V) = Total Debt / Total Capital\n4. After-Tax Cost of Debt = Cost of Debt * (1 - Tax Rate)\n5. WACC = (E/V * Cost of Equity) + (D/V * After-Tax Cost of Debt)\n\nReturn a single JSON object with this exact structure:\n{\n  \"assignment_id\": \"fin_wacc_calculation_v1\",\n  \"agent_summary\": \"One sentence summary\",\n  \"inputs_used\": [\"total_equity\", \"total_debt\", \"cost_of_equity\", \"cost_of_debt\", \"tax_rate\"],\n  \"missing_inputs\": [\"any missing inputs\"],\n  \"claims\": [\n    {\"claim\": \"\", \"evidence_reference\": \"\", \"confidence\": \"provided | inferred | missing\"}\n  ],\n  \"calculations\": [\n    {\n      \"name\": \"total_capital\",\n      \"formula\": \"Total Equity + Total Debt\",\n      \"inputs\": {\"total_equity\": 0, \"total_debt\": 0},\n      \"result\": 0,\n      \"units\": \"currency\",\n      \"assumptions\": []\n    },\n    {\n      \"name\": \"weight_of_equity\",\n      \"formula\": \"Total Equity / Total Capital\",\n      \"inputs\": {\"total_equity\": 0, \"total_capital\": 0},\n      \"result\": 0,\n      \"units\": \"ratio\",\n      \"assumptions\": []\n    },\n    {\n      \"name\": \"weight_of_debt\",\n      \"formula\": \"Total Debt / Total Capital\",\n      \"inputs\": {\"total_debt\": 0, \"total_capital\": 0},\n      \"result\": 0,\n      \"units\": \"ratio\",\n      \"assumptions\": []\n    },\n    {\n      \"name\": \"after_tax_cost_of_debt\",\n      \"formula\": \"Cost of Debt * (1 - Tax Rate)\",\n      \"inputs\": {\"cost_of_debt\": 0, \"tax_rate\": 0},\n      \"result\": 0,\n      \"units\": \"ratio\",\n      \"assumptions\": []\n    },\n    {\n      \"name\": \"wacc\",\n      \"formula\": \"(E/V * Cost of Equity) + (D/V * After-Tax Cost of Debt)\",\n      \"inputs\": {\"weight_of_equity\": 0, \"cost_of_equity\": 0, \"weight_of_debt\": 0, \"after_tax_cost_of_debt\": 0},\n      \"result\": 0,\n      \"units\": \"ratio\",\n      \"assumptions\": []\n    }\n  ],\n  \"risks\": [\n    {\"risk\": \"\", \"severity\": \"low | medium | high\", \"evidence_reference\": \"\"}\n  ],\n  \"assumptions\": [],\n  \"open_questions\": [],\n  \"final_output\": \"PASS or FAIL\",\n  \"self_check\": {\n    \"all_required_sections_completed\": true,\n    \"all_numbers_have_sources\": true,\n    \"assumptions_labeled\": true,\n    \"missing_inputs_disclosed\": true\n  }\n}\n\nRules:\n- ALL input values must be echoed in each calculation's inputs sub-object\n- result must be a numeric value (not a string)\n- cost_of_equity, cost_of_debt, and tax_rate must be in decimal form (e.g., 0.12 for 12%)\n- Tax rate must be between 0 and 1 (0% to 100%)\n- total_capital must equal total_equity + total_debt\n- weight_of_equity + weight_of_debt must equal 1.0 (within rounding tolerance)\n- final_output is PASS if all 5 calculations are present with numeric results AND weights sum to 1.0\n- final_output is FAIL if total_capital == 0 OR tax_rate < 0 OR tax_rate > 1\n- Show formulas exactly as specified\n- WACC result must be expressed as a decimal ratio (not percentage)\n\nReturn only the JSON. No markdown fences, no prose. Use only the provided evidence unless explicitly allowed to assume; label every assumption; if a required input is missing, say so; do not fabricate facts or cite evidence that was not provided.",
+  "required_inputs": [
+    "total_equity",
+    "total_debt",
+    "cost_of_equity",
+    "cost_of_debt",
+    "tax_rate"
+  ],
+  "expected_outputs": [
+    "assignment_id",
+    "agent_summary",
+    "inputs_used",
+    "missing_inputs",
+    "claims",
+    "calculations",
+    "risks",
+    "assumptions",
+    "open_questions",
+    "final_output",
+    "self_check"
+  ],
+  "audit_checks": [
+    {
+      "key": "sections_present",
+      "label": "Required sections present",
+      "category": "structure",
+      "kind": "auto",
+      "severity": "critical"
+    },
+    {
+      "key": "citations_present",
+      "label": "Evidence is referenced",
+      "category": "evidence",
+      "kind": "auto",
+      "severity": "noncritical"
+    },
+    {
+      "key": "missing_calculation",
+      "label": "Not all 5 WACC component calculations are present",
+      "category": "math",
+      "kind": "checklist",
+      "severity": "critical"
+    },
+    {
+      "key": "non_numeric_result",
+      "label": "One or more calculation results are not numeric",
+      "category": "math",
+      "kind": "checklist",
+      "severity": "critical"
+    },
+    {
+      "key": "total_capital_mismatch",
+      "label": "Total capital does not equal equity plus debt",
+      "category": "math",
+      "kind": "checklist",
+      "severity": "critical"
+    },
+    {
+      "key": "weights_sum_error",
+      "label": "Weights of equity and debt do not sum to 1.0",
+      "category": "math",
+      "kind": "checklist",
+      "severity": "critical"
+    },
+    {
+      "key": "after_tax_cost_mismatch",
+      "label": "After-tax cost of debt calculation is incorrect",
+      "category": "math",
+      "kind": "checklist",
+      "severity": "critical"
+    },
+    {
+      "key": "wacc_mismatch",
+      "label": "WACC calculation does not match the formula",
+      "category": "math",
+      "kind": "checklist",
+      "severity": "critical"
+    },
+    {
+      "key": "invalid_tax_rate",
+      "label": "Tax rate is outside valid range [0, 1]",
+      "category": "policy",
+      "kind": "checklist",
+      "severity": "noncritical"
+    },
+    {
+      "key": "zero_total_capital",
+      "label": "Total capital is zero \u2014 WACC is undefined",
+      "category": "math",
+      "kind": "checklist",
+      "severity": "noncritical"
+    },
+    {
+      "key": "false_pass_invalid",
+      "label": "final_output is PASS but inputs are invalid",
+      "category": "policy",
+      "kind": "checklist",
+      "severity": "critical"
+    }
+  ],
+  "pass_threshold": 80,
+  "fail_threshold": 60
+}

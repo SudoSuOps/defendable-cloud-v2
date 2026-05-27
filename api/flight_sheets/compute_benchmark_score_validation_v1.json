@@ -1,0 +1,73 @@
+{
+  "slug": "compute_benchmark_score_validation_v1",
+  "name": "Benchmark Score Validation",
+  "version": "1.0",
+  "lane": "compute",
+  "summary": "Validate that a benchmark score is within the expected range for the given GPU model and that all metadata is present and correct",
+  "purpose": "Validate that a benchmark score is within the expected range for the given GPU model and that all metadata is present and correct.",
+  "assignment_instructions": "You are validating a compute benchmark score. REQUIRED OUTPUT: Return a JSON object with these exact fields: - assignment_id (string): use \"compute_benchmark_score_validation_v1\" - agent_summary (string) - inputs_used (list of strings) - missing_inputs (list of strings) - claims (list of objects): claim, evidence_reference, confidence (\"provided\"|\"inferred\"|\"missing\") - calculations (list of objects): name, formula, inputs, result, units, assumptions - risks (list of objects): risk, severity (\"low\"|\"medium\"|\"high\"), evidence_reference - assumptions (list of strings) - open_questions (list of strings) - final_output (string) - self_check (object): all_required_sections_completed (boolean), all_numbers_have_sources (boolean), assumptions_labeled (boolean), missing_inputs_disclosed (boolean) Also include: - benchmark_name (string): name of the benchmark - gpu_model (string): GPU model used - score (number): the benchmark score - score_units (string): units of the score (e.g., \"samples/sec\", \"TFLOPS\", \"ms\") - expected_range_min (number or null): known minimum for this GPU+benchmark - expected_range_max (number or null): known maximum for this GPU+benchmark - score_within_expected_range (boolean or null): expected_range_min <= score <= expected_range_max - score_not_null (boolean): score is not null and is numeric - units_correct (boolean): score_units is a recognized unit for this benchmark - score_percentile (number or null): where score falls within expected range as (score - min) / (max - min), null if range unknown Compute score_percentile as (score - expected_range_min) / (expected_range_max - expected_range_min) when both bounds are known. Return numeric values as numbers, not prose. Use only the provided evidence unless explicitly allowed to assume; label every assumption; if a required input is missing, say so; do not fabricate facts or cite evidence that was not provided.",
+  "required_inputs": [
+    "benchmark_result",
+    "benchmark_name",
+    "gpu_model",
+    "expected_range_optional"
+  ],
+  "expected_outputs": [
+    "assignment_id",
+    "benchmark_name",
+    "gpu_model",
+    "score",
+    "score_units",
+    "score_within_expected_range",
+    "score_not_null",
+    "units_correct",
+    "claims",
+    "self_check"
+  ],
+  "audit_checks": [
+    {
+      "key": "sections_present",
+      "label": "Required sections present",
+      "category": "structure",
+      "kind": "auto",
+      "severity": "critical"
+    },
+    {
+      "key": "specs_present",
+      "label": "Specs quantified",
+      "category": "structure",
+      "kind": "auto",
+      "severity": "noncritical"
+    },
+    {
+      "key": "score_below_expected",
+      "label": "Score below expected",
+      "category": "policy",
+      "kind": "checklist",
+      "severity": "critical"
+    },
+    {
+      "key": "score_above_expected",
+      "label": "Score above expected",
+      "category": "policy",
+      "kind": "checklist",
+      "severity": "noncritical"
+    },
+    {
+      "key": "score_is_null",
+      "label": "Score is null",
+      "category": "policy",
+      "kind": "checklist",
+      "severity": "critical"
+    },
+    {
+      "key": "units_unrecognized",
+      "label": "Units unrecognized",
+      "category": "policy",
+      "kind": "checklist",
+      "severity": "noncritical"
+    }
+  ],
+  "pass_threshold": 80,
+  "fail_threshold": 60
+}

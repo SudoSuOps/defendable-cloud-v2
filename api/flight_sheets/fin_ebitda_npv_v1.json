@@ -1,0 +1,98 @@
+{
+  "slug": "fin_ebitda_npv_v1",
+  "name": "EBITDA and NPV Calculation",
+  "version": "1.0",
+  "lane": "agent",
+  "summary": "Calculate EBITDA from its components (revenue, COGS, operating expenses, depreciation, amortization) and compute Net Present Value from a cash flow series and d",
+  "purpose": "Calculate EBITDA from its components (revenue, COGS, operating expenses, depreciation, amortization) and compute Net Present Value from a cash flow series and discount rate. These are core financial analysis computations.",
+  "assignment_instructions": "You are calculating EBITDA and Net Present Value (NPV).\n\nGiven the financial inputs, compute the following with exact formulas:\n\nPART 1 \u2014 EBITDA:\n1. EBITDA = Revenue - COGS - Operating Expenses + Depreciation + Amortization\n   (or equivalently: EBITDA = Operating Income + Depreciation + Amortization)\n\nPART 2 \u2014 NPV:\n2. For each cash flow in the cash_flows array:\n   discounted_cf = cash_flow / ((1 + discount_rate) ^ year)\n3. NPV = sum of all discounted_cf values\n\nReturn a single JSON object with this exact structure:\n{\n  \"assignment_id\": \"fin_ebitda_npv_v1\",\n  \"agent_summary\": \"One sentence summary\",\n  \"inputs_used\": [\"revenue\", \"cogs\", \"operating_expenses\", \"depreciation\", \"amortization\", \"cash_flows\", \"discount_rate\"],\n  \"missing_inputs\": [\"any missing inputs\"],\n  \"claims\": [\n    {\"claim\": \"\", \"evidence_reference\": \"\", \"confidence\": \"provided | inferred | missing\"}\n  ],\n  \"calculations\": [\n    {\n      \"name\": \"ebitda\",\n      \"formula\": \"Revenue - COGS - Operating Expenses + Depreciation + Amortization\",\n      \"inputs\": {\"revenue\": 0, \"cogs\": 0, \"operating_expenses\": 0, \"depreciation\": 0, \"amortization\": 0},\n      \"result\": 0,\n      \"units\": \"currency\",\n      \"assumptions\": []\n    },\n    {\n      \"name\": \"npv\",\n      \"formula\": \"SUM(cash_flow_t / (1 + discount_rate) ^ t) for t = 0 to n\",\n      \"inputs\": {\"cash_flows\": [], \"discount_rate\": 0},\n      \"intermediate_steps\": [{\"year\": 0, \"cash_flow\": 0, \"discount_factor\": 0, \"discounted_cf\": 0}],\n      \"result\": 0,\n      \"units\": \"currency\",\n      \"assumptions\": []\n    }\n  ],\n  \"risks\": [\n    {\"risk\": \"\", \"severity\": \"low | medium | high\", \"evidence_reference\": \"\"}\n  ],\n  \"assumptions\": [],\n  \"open_questions\": [],\n  \"final_output\": \"PASS or FAIL\",\n  \"self_check\": {\n    \"all_required_sections_completed\": true,\n    \"all_numbers_have_sources\": true,\n    \"assumptions_labeled\": true,\n    \"missing_inputs_disclosed\": true\n  }\n}\n\nRules:\n- ALL input values must be echoed in each calculation's inputs sub-object\n- result must be a numeric value (not a string)\n- The NPV calculation MUST include intermediate_steps showing year-by-year discounted cash flows\n- Year 0 cash flow is typically negative (initial investment) and has discount_factor = 1.0\n- discount_rate must be in decimal form (e.g., 0.10 for 10%)\n- final_output is PASS if both EBITDA and NPV have numeric results with intermediate_steps for NPV\n- final_output is FAIL if discount_rate < 0 or if intermediate_steps are missing\n- Show formulas exactly as specified\n\nReturn only the JSON. No markdown fences, no prose. Use only the provided evidence unless explicitly allowed to assume; label every assumption; if a required input is missing, say so; do not fabricate facts or cite evidence that was not provided.",
+  "required_inputs": [
+    "revenue",
+    "cogs",
+    "operating_expenses",
+    "depreciation",
+    "amortization",
+    "cash_flows",
+    "discount_rate"
+  ],
+  "expected_outputs": [
+    "assignment_id",
+    "agent_summary",
+    "inputs_used",
+    "missing_inputs",
+    "claims",
+    "calculations",
+    "risks",
+    "assumptions",
+    "open_questions",
+    "final_output",
+    "self_check"
+  ],
+  "audit_checks": [
+    {
+      "key": "sections_present",
+      "label": "Required sections present",
+      "category": "structure",
+      "kind": "auto",
+      "severity": "critical"
+    },
+    {
+      "key": "citations_present",
+      "label": "Evidence is referenced",
+      "category": "evidence",
+      "kind": "auto",
+      "severity": "noncritical"
+    },
+    {
+      "key": "missing_ebitda_calculation",
+      "label": "EBITDA calculation is missing",
+      "category": "math",
+      "kind": "checklist",
+      "severity": "critical"
+    },
+    {
+      "key": "missing_npv_calculation",
+      "label": "NPV calculation is missing",
+      "category": "math",
+      "kind": "checklist",
+      "severity": "critical"
+    },
+    {
+      "key": "non_numeric_result",
+      "label": "One or more calculation results are not numeric",
+      "category": "math",
+      "kind": "checklist",
+      "severity": "critical"
+    },
+    {
+      "key": "ebitda_mismatch",
+      "label": "EBITDA calculation does not match formula",
+      "category": "math",
+      "kind": "checklist",
+      "severity": "critical"
+    },
+    {
+      "key": "npv_missing_intermediate_steps",
+      "label": "NPV calculation is missing intermediate steps",
+      "category": "math",
+      "kind": "checklist",
+      "severity": "noncritical"
+    },
+    {
+      "key": "negative_discount_rate",
+      "label": "Discount rate is negative",
+      "category": "policy",
+      "kind": "checklist",
+      "severity": "noncritical"
+    },
+    {
+      "key": "npv_mismatch",
+      "label": "NPV result does not match sum of discounted cash flows",
+      "category": "math",
+      "kind": "checklist",
+      "severity": "critical"
+    }
+  ],
+  "pass_threshold": 80,
+  "fail_threshold": 60
+}

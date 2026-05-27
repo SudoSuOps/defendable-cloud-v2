@@ -1,0 +1,63 @@
+{
+  "slug": "dataset_missing_value_audit_v1",
+  "name": "Missing Value Audit",
+  "version": "1.0",
+  "lane": "dataset",
+  "summary": "Calculate the missing value rate per column and overall",
+  "purpose": "Calculate the missing value rate per column and overall. Flag columns or datasets with excessive missing data.",
+  "assignment_instructions": "You are auditing missing values in a dataset. REQUIRED OUTPUT: Return a JSON object with these exact fields: - assignment_id (string): use \"dataset_missing_value_audit_v1\" - agent_summary (string) - inputs_used (list of strings) - missing_inputs (list of strings) - claims (list of objects): claim, evidence_reference, confidence (\"provided\"|\"inferred\"|\"missing\") - calculations (list of objects): name, formula, inputs, result, units, assumptions - risks (list of objects): risk, severity (\"low\"|\"medium\"|\"high\"), evidence_reference - assumptions (list of strings) - open_questions (list of strings) - final_output (string) - self_check (object): all_required_sections_completed (boolean), all_numbers_have_sources (boolean), assumptions_labeled (boolean), missing_inputs_disclosed (boolean) Also include: - overall_missing_rate (number between 0 and 1): total missing cells / total cells - column_missing_rates (list of objects): column_name (string), missing_count (integer), total_rows (integer), missing_rate (number) - columns_above_threshold (list of strings): column names with missing_rate > 0.10 - total_rows (integer) - total_columns (integer) Compute overall_missing_rate as total_null_cells / (total_rows * total_columns). Compute each column's missing_rate as null_count_in_column / total_rows. Return numeric values as numbers, not prose. Include formulas in calculations array. Use only the provided evidence unless explicitly allowed to assume; label every assumption; if a required input is missing, say so; do not fabricate facts or cite evidence that was not provided.",
+  "required_inputs": [
+    "dataset_or_null_report",
+    "total_row_count",
+    "total_column_count"
+  ],
+  "expected_outputs": [
+    "assignment_id",
+    "overall_missing_rate",
+    "column_missing_rates",
+    "columns_above_threshold",
+    "total_rows",
+    "total_columns",
+    "calculations",
+    "self_check"
+  ],
+  "audit_checks": [
+    {
+      "key": "sections_present",
+      "label": "Required sections present",
+      "category": "structure",
+      "kind": "auto",
+      "severity": "critical"
+    },
+    {
+      "key": "output_nonempty",
+      "label": "Output is substantive",
+      "category": "structure",
+      "kind": "auto",
+      "severity": "noncritical"
+    },
+    {
+      "key": "high_overall_missing_rate",
+      "label": "High overall missing rate",
+      "category": "structure",
+      "kind": "checklist",
+      "severity": "critical"
+    },
+    {
+      "key": "column_missing_rate_high",
+      "label": "Column missing rate high",
+      "category": "structure",
+      "kind": "checklist",
+      "severity": "noncritical"
+    },
+    {
+      "key": "perfect_data",
+      "label": "Perfect data",
+      "category": "policy",
+      "kind": "checklist",
+      "severity": "noncritical"
+    }
+  ],
+  "pass_threshold": 80,
+  "fail_threshold": 60
+}

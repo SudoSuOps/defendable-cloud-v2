@@ -1,0 +1,89 @@
+{
+  "slug": "cre_memo_price_per_unit_sqft_v1",
+  "name": "Price Per Unit and Per Square Foot",
+  "version": "1.0",
+  "lane": "agent",
+  "summary": "Calculate price_per_unit and price_per_square foot from the purchase price and property characteristics, then compare against comparable sales data to assess pr",
+  "purpose": "Calculate price_per_unit and price_per_square foot from the purchase price and property characteristics, then compare against comparable sales data to assess pricing reasonableness.",
+  "assignment_instructions": "Property Memo (Subject): --- PROPERTY: Highland View Apartments, 555 Highland Ave, Denver, CO Purchase Price: $18,500,000 Total Units: 110 Total Rentable Sq Ft: 98,500 Year Built: 2015 ---\nComparable Sales: --- Comp 1: 123 Elm St, 108 units, 96,000 sq ft, sold $17,800,000 (Dec 2024) Comp 2: 456 Pine St, 115 units, 102,000 sq ft, sold $19,200,000 (Jan 2025) Comp 3: 789 Maple Ave, 105 units, 94,000 sq ft, sold $17,100,000 (Nov 2024) ---\nCalculate and return ONLY a JSON object:\n1. Subject Price Per Unit = purchase_price / total_units 2. Subject Price Per Sq Ft = purchase_price / total_rentable_sq_ft 3. For each comp, calculate price_per_unit and price_per_sq_ft 4. Determine the range (min, max, average) for price_per_unit across comps 5. Determine the range (min, max, average) for price_per_sq_ft across comps 6. Compare subject metrics to comparable ranges\nJSON structure: {\n  \"assignment_id\": \"cre_memo_price_per_unit_sqft_v1\",\n  \"agent_summary\": \"<string>\",\n  \"inputs_used\": [\"<string>\"],\n  \"missing_inputs\": [\"<string>\"],\n  \"claims\": [\n    {\n      \"claim\": \"<string>\",\n      \"evidence_reference\": \"<string>\",\n      \"confidence\": \"<provided | inferred | missing>\"\n    }\n  ],\n  \"calculations\": [\n    {\n      \"name\": \"<string>\",\n      \"formula\": \"<string>\",\n      \"inputs\": {\"<key>\": <number>},\n      \"result\": <number>,\n      \"units\": \"<string>\",\n      \"assumptions\": [\"<string>\"]\n    }\n  ],\n  \"risks\": [\n    {\n      \"risk\": \"<string>\",\n      \"severity\": \"<low | medium | high>\",\n      \"evidence_reference\": \"<string>\"\n    }\n  ],\n  \"assumptions\": [\"<string>\"],\n  \"open_questions\": [\"<string>\"],\n  \"final_output\": \"<string>\",\n  \"self_check\": {\n    \"all_required_sections_completed\": true,\n    \"all_numbers_have_sources\": true,\n    \"assumptions_labeled\": true,\n    \"missing_inputs_disclosed\": true\n  }\n}\nCRITICAL RULES: - Include separate calculations for subject price_per_unit and\n  subject price_per_sqft.\n- Include calculations for all 3 comps showing their price_per_unit\n  and price_per_sqft.\n- Include summary calculations for comp range min, max, and average\n  for both metrics.\n- claims[] must contain at least 2 entries comparing subject to comps. - price_per_unit units are \"USD per unit\". - price_per_sqft units are \"USD per sq ft\". - Do not output any text outside the JSON object. Use only the provided evidence unless explicitly allowed to assume; label every assumption; if a required input is missing, say so; do not fabricate facts or cite evidence that was not provided.",
+  "required_inputs": [
+    "purchase_price",
+    "total_units",
+    "total_rentable_sq_ft",
+    "comp1_price",
+    "comp1_units",
+    "comp1_sqft",
+    "comp2_price",
+    "comp2_units",
+    "comp2_sqft",
+    "comp3_price",
+    "comp3_units",
+    "comp3_sqft"
+  ],
+  "expected_outputs": [
+    "assignment_id",
+    "agent_summary",
+    "inputs_used",
+    "missing_inputs",
+    "claims",
+    "calculations",
+    "risks",
+    "assumptions",
+    "open_questions",
+    "final_output",
+    "self_check"
+  ],
+  "audit_checks": [
+    {
+      "key": "sections_present",
+      "label": "Required sections present",
+      "category": "structure",
+      "kind": "auto",
+      "severity": "critical"
+    },
+    {
+      "key": "citations_present",
+      "label": "Evidence is referenced",
+      "category": "evidence",
+      "kind": "auto",
+      "severity": "noncritical"
+    },
+    {
+      "key": "missing_price_per_unit",
+      "label": "Missing price per unit",
+      "category": "structure",
+      "kind": "checklist",
+      "severity": "critical"
+    },
+    {
+      "key": "missing_price_per_sqft",
+      "label": "Missing price per sqft",
+      "category": "structure",
+      "kind": "checklist",
+      "severity": "critical"
+    },
+    {
+      "key": "missing_comp_calculations",
+      "label": "Missing comp calculations",
+      "category": "math",
+      "kind": "checklist",
+      "severity": "noncritical"
+    },
+    {
+      "key": "no_comp_comparison",
+      "label": "No comp comparison",
+      "category": "policy",
+      "kind": "checklist",
+      "severity": "noncritical"
+    },
+    {
+      "key": "math_result_incorrect",
+      "label": "Math result incorrect",
+      "category": "math",
+      "kind": "checklist",
+      "severity": "noncritical"
+    }
+  ],
+  "pass_threshold": 80,
+  "fail_threshold": 60
+}

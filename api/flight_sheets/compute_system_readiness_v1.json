@@ -1,0 +1,76 @@
+{
+  "slug": "compute_system_readiness_v1",
+  "name": "System Readiness Verification",
+  "version": "1.0",
+  "lane": "compute",
+  "summary": "Check overall system readiness for compute benchmarking including disk space, network speed, GPU utilization, and system configuration",
+  "purpose": "Check overall system readiness for compute benchmarking including disk space, network speed, GPU utilization, and system configuration.",
+  "assignment_instructions": "You are verifying system readiness for compute benchmarking. REQUIRED OUTPUT: Return a JSON object with these exact fields: - assignment_id (string): use \"compute_system_readiness_v1\" - agent_summary (string) - inputs_used (list of strings) - missing_inputs (list of strings) - claims (list of objects): claim, evidence_reference, confidence (\"provided\"|\"inferred\"|\"missing\") - calculations (list of objects): name, formula, inputs, result, units, assumptions - risks (list of objects): risk, severity (\"low\"|\"medium\"|\"high\"), evidence_reference - assumptions (list of strings) - open_questions (list of strings) - final_output (string) - self_check (object): all_required_sections_completed (boolean), all_numbers_have_sources (boolean), assumptions_labeled (boolean), missing_inputs_disclosed (boolean) Also include: - disk_space_free_gb (number): free disk space in gigabytes - disk_space_min_required_gb (number): minimum required free space - disk_space_sufficient (boolean): disk_space_free_gb >= disk_space_min_required_gb - network_speed_gbps (number): measured network speed in Gbps - network_speed_min_gbps (number): minimum required network speed - network_speed_sufficient (boolean): network_speed_gbps >= network_speed_min_gbps - gpu_utilization_avg (number): average GPU utilization during test (0-1 or 0-100, specify) - gpu_utilization_threshold (number): minimum acceptable utilization - gpu_utilization_sufficient (boolean): gpu_utilization_avg >= gpu_utilization_threshold - gpu_utilization_scale (string): \"fraction\" if 0-1, \"percent\" if 0-100 - readiness_score (number between 0 and 1): count of passing checks / total checks - overall_ready (boolean): true if disk_space_sufficient and network_speed_sufficient and gpu_utilization_sufficient - failing_checks (list of strings): names of checks that failed Compute readiness_score as (number of true checks) / (total number of checks). The 3 checks are: disk_space_sufficient, network_speed_sufficient, gpu_utilization_sufficient. Return numeric values as numbers, not prose. Report gpu_utilization_scale so the referee knows how to interpret the value. Use only the provided evidence unless explicitly allowed to assume; label every assumption; if a required input is missing, say so; do not fabricate facts or cite evidence that was not provided.",
+  "required_inputs": [
+    "system_info_or_logs",
+    "disk_space_min_required_gb",
+    "network_speed_min_gbps",
+    "gpu_utilization_threshold"
+  ],
+  "expected_outputs": [
+    "assignment_id",
+    "disk_space_free_gb",
+    "disk_space_sufficient",
+    "network_speed_gbps",
+    "network_speed_sufficient",
+    "gpu_utilization_avg",
+    "gpu_utilization_sufficient",
+    "gpu_utilization_scale",
+    "readiness_score",
+    "overall_ready",
+    "failing_checks",
+    "claims",
+    "self_check"
+  ],
+  "audit_checks": [
+    {
+      "key": "sections_present",
+      "label": "Required sections present",
+      "category": "structure",
+      "kind": "auto",
+      "severity": "critical"
+    },
+    {
+      "key": "specs_present",
+      "label": "Specs quantified",
+      "category": "structure",
+      "kind": "auto",
+      "severity": "noncritical"
+    },
+    {
+      "key": "insufficient_disk_space",
+      "label": "Insufficient disk space",
+      "category": "policy",
+      "kind": "checklist",
+      "severity": "critical"
+    },
+    {
+      "key": "insufficient_network_speed",
+      "label": "Insufficient network speed",
+      "category": "policy",
+      "kind": "checklist",
+      "severity": "noncritical"
+    },
+    {
+      "key": "low_gpu_utilization",
+      "label": "Low gpu utilization",
+      "category": "policy",
+      "kind": "checklist",
+      "severity": "noncritical"
+    },
+    {
+      "key": "system_not_ready",
+      "label": "System not ready",
+      "category": "policy",
+      "kind": "checklist",
+      "severity": "critical"
+    }
+  ],
+  "pass_threshold": 80,
+  "fail_threshold": 60
+}

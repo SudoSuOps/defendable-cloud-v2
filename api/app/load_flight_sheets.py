@@ -26,10 +26,15 @@ FIELDS = (
 
 async def sync() -> None:
     files = sorted(LIBRARY.glob("*.json")) if LIBRARY.exists() else []
+    if not files:
+        print(f"[flight-sheets] no library files in {LIBRARY} — skipping (keeping existing)")
+        return
+    library_slugs: set[str] = set()
     added = updated = 0
     async with session_scope() as db:
         for f in files:
             fs = json.loads(f.read_text())
+            library_slugs.add(fs["slug"])
             row = (
                 await db.execute(select(FlightSheet).where(FlightSheet.slug == fs["slug"]))
             ).scalar_one_or_none()
@@ -41,7 +46,19 @@ async def sync() -> None:
                     setattr(row, k, fs[k])
                 row.active = True
                 updated += 1
-    print(f"[flight-sheets] synced {len(files)} file(s) from {LIBRARY} · {added} added · {updated} updated")
+
+        # Source-of-truth: anything not in the library is retired from the picker
+        # (deactivated, not deleted — historical runs keep their flight_sheet_id).
+        existing = (await db.execute(select(FlightSheet))).scalars().all()
+        deactivated = 0
+        for row in existing:
+            if row.slug not in library_slugs and row.active:
+                row.active = False
+                deactivated += 1
+    print(
+        f"[flight-sheets] synced {len(files)} file(s) from {LIBRARY} · "
+        f"{added} added · {updated} updated · {deactivated} deactivated"
+    )
 
 
 def main() -> None:

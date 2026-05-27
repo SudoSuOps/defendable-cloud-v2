@@ -1,0 +1,83 @@
+{
+  "slug": "dataset_content_safety_scan_v1",
+  "name": "Content Safety and PII Scan",
+  "version": "1.0",
+  "lane": "dataset",
+  "summary": "Scan a dataset for personally identifiable information (PII), toxic content, and unsafe material",
+  "purpose": "Scan a dataset for personally identifiable information (PII), toxic content, and unsafe material. Report detection counts and rates with evidence.",
+  "assignment_instructions": "You are scanning a dataset for content safety issues including PII, toxic content, and unsafe material. REQUIRED OUTPUT: Return a JSON object with these exact fields: - assignment_id (string): use \"dataset_content_safety_scan_v1\" - agent_summary (string) - inputs_used (list of strings) - missing_inputs (list of strings) - claims (list of objects): claim, evidence_reference, confidence (\"provided\"|\"inferred\"|\"missing\") - calculations (list of objects): name, formula, inputs, result, units, assumptions - risks (list of objects): risk, severity (\"low\"|\"medium\"|\"high\"), evidence_reference - assumptions (list of strings) - open_questions (list of strings) - final_output (string) - self_check (object): all_required_sections_completed (boolean), all_numbers_have_sources (boolean), assumptions_labeled (boolean), missing_inputs_disclosed (boolean) Also include: - total_rows_scanned (integer) - pii_detected (boolean): whether any PII was found - pii_field_count (integer): number of columns/fields containing PII - pii_fields (list of strings): names of fields where PII was detected - pii_row_count (integer): number of rows containing PII - pii_rate (number): pii_row_count / total_rows_scanned - toxic_content_detected (boolean): whether toxic content was found - toxic_content_count (integer): number of toxic samples - toxic_content_rate (number): toxic_content_count / total_rows_scanned - unsafe_flag_count (integer): total count of unsafe material flags - safety_score (number between 0 and 1): max(0, 1 - (pii_rate + toxic_content_rate + unsafe_rate)) - remediation_required (boolean): true if pii_rate > 0.01 or toxic_content_rate > 0.05 or unsafe_flag_count > 0 Compute pii_rate as pii_row_count / total_rows_scanned. Compute toxic_content_rate as toxic_content_count / total_rows_scanned. Return numeric values as numbers, not prose. Include all formulas in calculations array. Use only the provided evidence unless explicitly allowed to assume; label every assumption; if a required input is missing, say so; do not fabricate facts or cite evidence that was not provided.",
+  "required_inputs": [
+    "dataset_or_scan_report",
+    "pii_patterns_or_scanner_config",
+    "total_rows"
+  ],
+  "expected_outputs": [
+    "assignment_id",
+    "total_rows_scanned",
+    "pii_detected",
+    "pii_field_count",
+    "pii_row_count",
+    "pii_rate",
+    "toxic_content_detected",
+    "toxic_content_count",
+    "toxic_content_rate",
+    "unsafe_flag_count",
+    "safety_score",
+    "remediation_required",
+    "claims",
+    "self_check"
+  ],
+  "audit_checks": [
+    {
+      "key": "sections_present",
+      "label": "Required sections present",
+      "category": "structure",
+      "kind": "auto",
+      "severity": "critical"
+    },
+    {
+      "key": "output_nonempty",
+      "label": "Output is substantive",
+      "category": "structure",
+      "kind": "auto",
+      "severity": "noncritical"
+    },
+    {
+      "key": "pii_detected_high",
+      "label": "Pii detected high",
+      "category": "policy",
+      "kind": "checklist",
+      "severity": "critical"
+    },
+    {
+      "key": "pii_detected_low",
+      "label": "Pii detected low",
+      "category": "policy",
+      "kind": "checklist",
+      "severity": "noncritical"
+    },
+    {
+      "key": "toxic_content_high",
+      "label": "Toxic content high",
+      "category": "policy",
+      "kind": "checklist",
+      "severity": "critical"
+    },
+    {
+      "key": "toxic_content_low",
+      "label": "Toxic content low",
+      "category": "policy",
+      "kind": "checklist",
+      "severity": "noncritical"
+    },
+    {
+      "key": "unsafe_material",
+      "label": "Unsafe material",
+      "category": "policy",
+      "kind": "checklist",
+      "severity": "critical"
+    }
+  ],
+  "pass_threshold": 80,
+  "fail_threshold": 60
+}

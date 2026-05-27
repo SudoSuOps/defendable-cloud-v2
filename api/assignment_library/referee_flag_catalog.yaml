@@ -1,0 +1,428 @@
+# DefendableCloud Referee Flag Catalog
+# Reusable flags used across all eval lanes.
+# Each flag has: flag_id, name, severity, description, deterministic_check_type
+
+flags:
+  # ── Schema & Structure Flags ───────────────────────────────────────────
+
+  - flag_id: schema_failed
+    name: Schema Validation Failed
+    severity: propolis
+    description: Agent output does not conform to the required_output_schema. JSON parse failed or required fields are absent.
+    deterministic_check_type: json_schema_validate
+
+  - flag_id: required_field_missing
+    name: Required Field Missing
+    severity: propolis
+    description: One or more fields listed in required_output_schema.required are absent from the agent output.
+    deterministic_check_type: field_presence_check
+
+  - flag_id: invalid_field_type
+    name: Invalid Field Data Type
+    severity: propolis
+    description: A field exists but has the wrong data type (e.g., string instead of number).
+    deterministic_check_type: type_check
+
+  - flag_id: empty_required_section
+    name: Empty Required Section
+    severity: jelly
+    description: A required field or section is present but contains no meaningful content (empty string, empty array, null).
+    deterministic_check_type: emptiness_check
+
+  - flag_id: malformed_json
+    name: Malformed JSON Output
+    severity: propolis
+    description: The agent returned output that cannot be parsed as valid JSON.
+    deterministic_check_type: json_parse_check
+
+  # ── Math & Calculation Flags ───────────────────────────────────────────
+
+  - flag_id: material_formula_mismatch
+    name: Material Formula Mismatch
+    severity: propolis
+    description: A calculated value deviates from the expected formula result by more than the declared tolerance.
+    deterministic_check_type: formula_reconcile_check
+
+  - flag_id: minor_formula_mismatch
+    name: Minor Formula Mismatch
+    severity: jelly
+    description: A calculated value deviates slightly from the expected formula result but is within a repairable range.
+    deterministic_check_type: formula_reconcile_check
+
+  - flag_id: formula_inputs_missing
+    name: Formula Inputs Missing
+    severity: propolis
+    description: The agent attempted a calculation without providing all required formula inputs.
+    deterministic_check_type: input_presence_check
+
+  - flag_id: division_by_zero_risk
+    name: Division By Zero Risk
+    severity: propolis
+    description: A calculation involves division where the denominator could be or is zero.
+    deterministic_check_type: denominator_check
+
+  - flag_id: units_mismatch
+    name: Units Mismatch
+    severity: jelly
+    description: The result is numerically correct but uses incorrect units or missing units.
+    deterministic_check_type: unit_check
+
+  - flag_id: calculation_steps_missing
+    name: Calculation Steps Missing
+    severity: jelly
+    description: The agent provided a final number but did not show the formula, inputs, or intermediate steps.
+    deterministic_check_type: step_presence_check
+
+  # ── Evidence & Claim Flags ─────────────────────────────────────────────
+
+  - flag_id: unsupported_material_claim
+    name: Unsupported Material Claim
+    severity: propolis
+    description: A material claim (financial, legal, technical) is made without an evidence_reference.
+    deterministic_check_type: evidence_reference_check
+
+  - flag_id: unsupported_minor_claim
+    name: Unsupported Minor Claim
+    severity: jelly
+    description: A minor claim lacks an evidence_reference.
+    deterministic_check_type: evidence_reference_check
+
+  - flag_id: evidence_reference_invalid
+    name: Invalid Evidence Reference
+    severity: jelly
+    description: The evidence_reference points to a source not present in the provided inputs.
+    deterministic_check_type: evidence_source_check
+
+  - flag_id: required_evidence_missing
+    name: Required Evidence Missing
+    severity: propolis
+    description: Evidence required by the assignment (e.g., rent roll, T12) was not referenced in the output.
+    deterministic_check_type: evidence_presence_check
+
+  - flag_id: fabricated_evidence
+    name: Fabricated Evidence
+    severity: propolis
+    description: The agent referenced evidence that does not exist in the provided inputs.
+    deterministic_check_type: evidence_existence_check
+
+  - flag_id: claim_confidence_missing
+    name: Claim Confidence Missing
+    severity: jelly
+    description: A claim object is missing the confidence field or has an invalid value.
+    deterministic_check_type: enum_check
+
+  # ── Input Disclosure Flags ─────────────────────────────────────────────
+
+  - flag_id: required_input_missing
+    name: Required Input Missing
+    severity: jelly
+    description: The agent did not list a required input in inputs_used or missing_inputs.
+    deterministic_check_type: input_coverage_check
+
+  - flag_id: missing_inputs_not_disclosed
+    name: Missing Inputs Not Disclosed
+    severity: jelly
+    description: An expected input was absent from the submission but not listed in missing_inputs.
+    deterministic_check_type: missing_input_disclosure_check
+
+  - flag_id: inputs_used_incomplete
+    name: Inputs Used Incomplete
+    severity: jelly
+    description: The agent used inputs but failed to list them in inputs_used.
+    deterministic_check_type: input_traceability_check
+
+  # ── Assumption & Risk Flags ────────────────────────────────────────────
+
+  - flag_id: assumption_not_labeled
+    name: Assumption Not Labeled
+    severity: jelly
+    description: An assumption is present but not clearly marked as such in the assumptions array.
+    deterministic_check_type: assumption_label_check
+
+  - flag_id: material_assumption_missing
+    name: Material Assumption Missing
+    severity: propolis
+    description: A material assumption underlying a calculation or claim is absent.
+    deterministic_check_type: assumption_presence_check
+
+  - flag_id: risk_without_severity
+    name: Risk Without Severity
+    severity: jelly
+    description: A risk object is missing the severity field or has an invalid value.
+    deterministic_check_type: enum_check
+
+  - flag_id: material_risk_omitted
+    name: Material Risk Omitted
+    severity: propolis
+    description: A material risk that should have been identified based on the evidence is absent from risks.
+    deterministic_check_type: risk_coverage_check
+
+  # ── Self-Check Flags ───────────────────────────────────────────────────
+
+  - flag_id: self_check_false_positive
+    name: Self-Check False Positive
+    severity: jelly
+    description: The agent's self_check reports all passed, but deterministic checks found failures.
+    deterministic_check_type: self_check_reconcile
+
+  - flag_id: self_check_missing
+    name: Self-Check Section Missing
+    severity: jelly
+    description: The self_check object is absent or incomplete.
+    deterministic_check_type: field_presence_check
+
+  # ── Completeness Flags ─────────────────────────────────────────────────
+
+  - flag_id: final_output_missing
+    name: Final Output Missing
+    severity: propolis
+    description: The final_output field is absent, empty, or does not summarize the assignment result.
+    deterministic_check_type: field_presence_check
+
+  - flag_id: open_questions_missing
+    name: Open Questions Missing
+    severity: jelly
+    description: The agent should have raised open questions but did not, or the open_questions field is absent.
+    deterministic_check_type: field_presence_check
+
+  - flag_id: claims_array_empty
+    name: Claims Array Empty
+    severity: propolis
+    description: The claims array is empty when the assignment requires at least one claim.
+    deterministic_check_type: array_emptiness_check
+
+  - flag_id: calculations_array_empty
+    name: Calculations Array Empty
+    severity: propolis
+    description: The calculations array is empty when the assignment requires at least one calculation.
+    deterministic_check_type: array_emptiness_check
+
+  # ── CRE-Specific Flags ─────────────────────────────────────────────────
+
+  - flag_id: cap_rate_out_of_range
+    name: Cap Rate Out of Reasonable Range
+    severity: propolis
+    description: The calculated cap_rate falls outside a reasonable range (e.g., < 1% or > 25%) for the property type.
+    deterministic_check_type: range_check
+
+  - flag_id: dscr_below_threshold
+    name: DSCR Below Minimum Threshold
+    severity: propolis
+    description: The Debt Service Coverage Ratio is below the minimum acceptable threshold (typically 1.20x).
+    deterministic_check_type: threshold_check
+
+  - flag_id: ltv_above_threshold
+    name: LTV Above Maximum Threshold
+    severity: propolis
+    description: The Loan-to-Value ratio exceeds the maximum acceptable threshold (typically 80%).
+    deterministic_check_type: threshold_check
+
+  - flag_id: noi_negative
+    name: Negative NOI
+    severity: propolis
+    description: The calculated Net Operating Income is negative, which is atypical for a viable deal.
+    deterministic_check_type: sign_check
+
+  # ── Dataset-Specific Flags ─────────────────────────────────────────────
+
+  - flag_id: duplicate_rate_above_threshold
+    name: Duplicate Rate Above Threshold
+    severity: jelly
+    description: The duplicate_row_rate exceeds the acceptable threshold (> 5%).
+    deterministic_check_type: threshold_check
+
+  - flag_id: missing_value_rate_above_threshold
+    name: Missing Value Rate Above Threshold
+    severity: jelly
+    description: The missing_value_rate exceeds the acceptable threshold (> 10%).
+    deterministic_check_type: threshold_check
+
+  - flag_id: schema_field_mismatch
+    name: Schema Field Mismatch
+    severity: propolis
+    description: The dataset fields do not match the declared schema.
+    deterministic_check_type: schema_match_check
+
+  - flag_id: hash_manifest_mismatch
+    name: Hash Manifest Mismatch
+    severity: propolis
+    description: The computed hash does not match the declared hash_manifest.
+    deterministic_check_type: hash_verify_check
+
+  - flag_id: unsafe_content_detected
+    name: Unsafe Content Detected
+    severity: propolis
+    description: The dataset contains PII, toxic content, or other unsafe material above threshold.
+    deterministic_check_type: content_scan_check
+
+  - flag_id: license_missing
+    name: License Field Missing
+    severity: jelly
+    description: The dataset metadata lacks a license field.
+    deterministic_check_type: field_presence_check
+
+  - flag_id: train_test_leak
+    name: Train/Test Split Leak
+    severity: propolis
+    description: The train and test sets contain overlapping records indicating data leakage.
+    deterministic_check_type: overlap_check
+
+  # ── Compute-Specific Flags ─────────────────────────────────────────────
+
+  - flag_id: benchmark_below_expected
+    name: Benchmark Score Below Expected
+    severity: jelly
+    description: The benchmark score is below the expected range for the GPU model.
+    deterministic_check_type: range_check
+
+  - flag_id: thermal_above_threshold
+    name: Thermal Reading Above Threshold
+    severity: propolis
+    description: GPU temperature exceeds the safe operating threshold (e.g., 85C).
+    deterministic_check_type: threshold_check
+
+  - flag_id: driver_version_mismatch
+    name: Driver Version Mismatch
+    severity: jelly
+    description: The reported driver version does not match the required version.
+    deterministic_check_type: version_match_check
+
+  - flag_id: cuda_version_mismatch
+    name: CUDA Version Mismatch
+    severity: jelly
+    description: The reported CUDA version is incompatible with the benchmark requirements.
+    deterministic_check_type: version_match_check
+
+  - flag_id: vram_insufficient
+    name: VRAM Insufficient
+    severity: propolis
+    description: Available VRAM is less than the minimum required for the benchmark.
+    deterministic_check_type: threshold_check
+
+  - flag_id: power_limit_anomaly
+    name: Power Limit Anomaly
+    severity: jelly
+    description: The power limit is outside the expected range for the GPU model.
+    deterministic_check_type: range_check
+
+  - flag_id: disk_space_insufficient
+    name: Disk Space Insufficient
+    severity: propolis
+    description: Available disk space is below the minimum required for the benchmark.
+    deterministic_check_type: threshold_check
+
+  - flag_id: network_speed_below_threshold
+    name: Network Speed Below Threshold
+    severity: jelly
+    description: Network speed is below the minimum required for distributed benchmarks.
+    deterministic_check_type: threshold_check
+
+  # ── Document-Specific Flags ────────────────────────────────────────────
+
+  - flag_id: recipient_missing
+    name: Recipient Missing
+    severity: propolis
+    description: The document draft does not specify a recipient.
+    deterministic_check_type: field_presence_check
+
+  - flag_id: sender_missing
+    name: Sender Missing
+    severity: jelly
+    description: The document draft does not specify a sender.
+    deterministic_check_type: field_presence_check
+
+  - flag_id: subject_missing
+    name: Subject Missing
+    severity: propolis
+    description: The document draft lacks a subject line or topic statement.
+    deterministic_check_type: field_presence_check
+
+  - flag_id: requested_action_missing
+    name: Requested Action Missing
+    severity: propolis
+    description: The document draft does not specify what action the recipient should take.
+    deterministic_check_type: field_presence_check
+
+  - flag_id: date_missing
+    name: Date Missing
+    severity: jelly
+    description: The document draft lacks a date or contains an invalid date.
+    deterministic_check_type: field_presence_check
+
+  - flag_id: tone_check_failed
+    name: Tone Check Failed
+    severity: jelly
+    description: The document tone does not match the required tone (formal, informal, technical, etc.).
+    deterministic_check_type: keyword_or_enum_check
+
+  - flag_id: policy_checklist_incomplete
+    name: Policy Checklist Incomplete
+    severity: propolis
+    description: One or more required policy checklist items are not addressed.
+    deterministic_check_type: checklist_coverage_check
+
+  # ── Compliance-Specific Flags ──────────────────────────────────────────
+
+  - flag_id: compliance_item_failed
+    name: Compliance Item Failed
+    severity: propolis
+    description: One or more compliance checklist items returned a fail status.
+    deterministic_check_type: checklist_coverage_check
+
+  - flag_id: regulatory_reference_missing
+    name: Regulatory Reference Missing
+    severity: propolis
+    description: A compliance check lacks the required regulatory citation.
+    deterministic_check_type: evidence_reference_check
+
+  - flag_id: control_test_not_documented
+    name: Control Test Not Documented
+    severity: jelly
+    description: A control test was performed but not documented with evidence.
+    deterministic_check_type: evidence_presence_check
+
+  # ── Client Deliverable Flags ───────────────────────────────────────────
+
+  - flag_id: branding_missing
+    name: Branding Missing
+    severity: jelly
+    description: Client branding elements (logo, colors, header) are absent.
+    deterministic_check_type: field_presence_check
+
+  - flag_id: confidentiality_notice_missing
+    name: Confidentiality Notice Missing
+    severity: propolis
+    description: The deliverable lacks a confidentiality or proprietary notice.
+    deterministic_check_type: field_presence_check
+
+  - flag_id: version_control_missing
+    name: Version Control Missing
+    severity: jelly
+    description: The deliverable lacks version number, date, or change log.
+    deterministic_check_type: field_presence_check
+
+  - flag_id: approval_signature_missing
+    name: Approval Signature Missing
+    severity: jelly
+    description: Required approval signature or sign-off block is absent.
+    deterministic_check_type: field_presence_check
+
+  # ── Repair / Fine-Tune Flags ───────────────────────────────────────────
+
+  - flag_id: repair_candidate_identified
+    name: Repair Candidate Identified
+    severity: jelly
+    description: The submission contains patterns that indicate a systematic failure requiring model repair.
+    deterministic_check_type: pattern_check
+
+  - flag_id: fine_tune_recommended
+    name: Fine-Tune Recommended
+    severity: jelly
+    description: The failure pattern suggests fine-tuning would improve performance.
+    deterministic_check_type: pattern_check
+
+  - flag_id: systematic_bias_detected
+    name: Systematic Bias Detected
+    severity: propolis
+    description: The submission shows systematic bias across multiple test cases.
+    deterministic_check_type: pattern_check

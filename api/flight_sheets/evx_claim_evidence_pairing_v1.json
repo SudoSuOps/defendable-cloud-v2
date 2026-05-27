@@ -1,0 +1,94 @@
+{
+  "slug": "evx_claim_evidence_pairing_v1",
+  "name": "Claim-Evidence Pairing",
+  "version": "1.0",
+  "lane": "agent",
+  "summary": "Evaluate the agent's ability to match stated claims against supporting evidence in provided documents",
+  "purpose": "Evaluate the agent's ability to match stated claims against supporting evidence in provided documents. The agent must identify which claims are supported by evidence, which lack evidence, and classify the nature of each match.",
+  "assignment_instructions": "You are given a list of claims and one or more source documents. Your task is to match each claim to supporting evidence found in the documents.\nFor each claim, return an object with exactly these fields: - \"claim\": the exact claim text as provided - \"evidence\": the specific text from the source document that supports or contradicts the claim - \"match_type\": one of [\"direct\", \"indirect\", \"unsupported\", \"contradicted\"] where:\n    - \"direct\" = evidence directly and explicitly supports the claim\n    - \"indirect\" = evidence supports the claim through inference or context\n    - \"unsupported\" = no evidence found in any source document\n    - \"contradicted\" = evidence in source documents directly contradicts the claim\n- \"source_document\": identifier of the document containing the evidence (null if unsupported) - \"confidence\": one of [\"high\", \"medium\", \"low\"] indicating certainty of the match\nReturn ONLY a JSON object with this exact shape: {\n  \"assignment_id\": \"evx_claim_evidence_pairing_v1\",\n  \"agent_summary\": \"<summary of claim-evidence pairing results>\",\n  \"inputs_used\": [\"<document identifiers>\", \"claims_list\"],\n  \"missing_inputs\": [],\n  \"claim_evidence_pairs\": [\n    {\"claim\": \"Revenue grew 10%\", \"evidence\": \"Revenue increased by 10 percent to $11M\", \"match_type\": \"direct\", \"source_document\": \"doc_1\", \"confidence\": \"high\"}\n  ],\n  \"claims\": [],\n  \"calculations\": [],\n  \"risks\": [],\n  \"assumptions\": [],\n  \"open_questions\": [],\n  \"final_output\": \"<summary>\",\n  \"self_check\": {\n    \"all_required_sections_completed\": true,\n    \"all_numbers_have_sources\": true,\n    \"assumptions_labeled\": true,\n    \"missing_inputs_disclosed\": true\n  }\n}\nRules: - Every claim in the input list must appear in claim_evidence_pairs. - evidence must be an exact or near-exact quote from the source, not paraphrased. - If match_type is \"unsupported\", set evidence to null and source_document to null. - If match_type is \"contradicted\", the evidence field must contain the contradicting text. - Do not fabricate evidence. If not found, classify as unsupported. - confidence must reflect actual certainty; do not default to \"high\".",
+  "required_inputs": [
+    "claims_list",
+    "source_documents"
+  ],
+  "expected_outputs": [
+    "assignment_id",
+    "claim_evidence_pairs",
+    "inputs_used",
+    "missing_inputs",
+    "self_check"
+  ],
+  "audit_checks": [
+    {
+      "key": "sections_present",
+      "label": "Required sections present",
+      "category": "structure",
+      "kind": "auto",
+      "severity": "critical"
+    },
+    {
+      "key": "citations_present",
+      "label": "Evidence is referenced",
+      "category": "evidence",
+      "kind": "auto",
+      "severity": "noncritical"
+    },
+    {
+      "key": "missing_claim",
+      "label": "Missing claim",
+      "category": "structure",
+      "kind": "checklist",
+      "severity": "critical"
+    },
+    {
+      "key": "fabricated_evidence",
+      "label": "Fabricated evidence",
+      "category": "evidence",
+      "kind": "checklist",
+      "severity": "noncritical"
+    },
+    {
+      "key": "invalid_match_type",
+      "label": "Invalid match type",
+      "category": "policy",
+      "kind": "checklist",
+      "severity": "noncritical"
+    },
+    {
+      "key": "unsupported_with_evidence",
+      "label": "Unsupported with evidence",
+      "category": "evidence",
+      "kind": "checklist",
+      "severity": "noncritical"
+    },
+    {
+      "key": "direct_without_source",
+      "label": "Direct without source",
+      "category": "evidence",
+      "kind": "checklist",
+      "severity": "noncritical"
+    },
+    {
+      "key": "invalid_confidence",
+      "label": "Invalid confidence",
+      "category": "policy",
+      "kind": "checklist",
+      "severity": "noncritical"
+    },
+    {
+      "key": "claim_count_mismatch",
+      "label": "Claim count mismatch",
+      "category": "policy",
+      "kind": "checklist",
+      "severity": "critical"
+    },
+    {
+      "key": "self_check_false",
+      "label": "Self check false",
+      "category": "policy",
+      "kind": "checklist",
+      "severity": "noncritical"
+    }
+  ],
+  "pass_threshold": 80,
+  "fail_threshold": 60
+}

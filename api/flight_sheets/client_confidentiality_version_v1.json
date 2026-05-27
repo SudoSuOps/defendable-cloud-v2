@@ -1,0 +1,89 @@
+{
+  "slug": "client_confidentiality_version_v1",
+  "name": "Confidentiality Notice and Version Control",
+  "version": "1.0",
+  "lane": "other",
+  "summary": "Check that the deliverable contains a confidentiality notice, a version number, a current date, and a change log or version history",
+  "purpose": "Check that the deliverable contains a confidentiality notice, a version number, a current date, and a change log or version history. These are required legal and compliance elements for client-facing documents.",
+  "assignment_instructions": "You are a client deliverable readiness evaluator. Inspect the provided deliverable document for the following required elements:\n1. CONFIDENTIALITY NOTICE: A notice stating the document is confidential,\n   proprietary, or intended for specific recipients only. Check:\n   - present (boolean)\n   - location (string: page number or section)\n   - text (string: exact or approximate text found)\n   - classification_level (string: \"Confidential\", \"Proprietary\",\n     \"Internal Use Only\", \"Restricted\", or \"Not Specified\")\n\n2. VERSION NUMBER: A version identifier for this document. Check:\n   - present (boolean)\n   - version_string (string: the version text found, e.g., \"v2.3\")\n   - location (string: where it appears)\n\n3. DOCUMENT DATE: The date associated with this version of the document. Check:\n   - present (boolean)\n   - date_string (string: the date text found)\n   - date_parsed (string: ISO-8601 date if parseable, else \"unparseable\")\n   - is_current (boolean: true if the date is within 30 days of today,\n     false otherwise; if today's date is unavailable, set to \"unknown\")\n   - location (string: where it appears)\n\n4. CHANGE LOG / VERSION HISTORY: A record of changes across versions. Check:\n   - present (boolean)\n   - entry_count (integer: number of entries found, 0 if absent)\n   - location (string: where it appears)\n   - latest_entry (string: text of the most recent entry, \"\" if absent)\n\nReturn a single JSON object with this exact structure: {\n  \"assignment_id\": \"client_confidentiality_version_v1\",\n  \"agent_summary\": \"<one-sentence summary>\",\n  \"inputs_used\": [\"<list inputs>\"],\n  \"missing_inputs\": [\"<list missing inputs>\"],\n  \"claims\": [\n    {\n      \"claim\": \"<specific claim>\",\n      \"evidence_reference\": \"<page/section reference>\",\n      \"confidence\": \"provided | inferred | missing\"\n    }\n  ],\n  \"confidentiality_notice\": {\n    \"present\": true,\n    \"location\": \"\",\n    \"text\": \"\",\n    \"classification_level\": \"\"\n  },\n  \"version_control\": {\n    \"present\": true,\n    \"version_string\": \"\",\n    \"location\": \"\"\n  },\n  \"document_date\": {\n    \"present\": true,\n    \"date_string\": \"\",\n    \"date_parsed\": \"\",\n    \"is_current\": true,\n    \"location\": \"\"\n  },\n  \"change_log\": {\n    \"present\": true,\n    \"entry_count\": 0,\n    \"location\": \"\",\n    \"latest_entry\": \"\"\n  },\n  \"risks\": [\n    {\n      \"risk\": \"<risk description>\",\n      \"severity\": \"low | medium | high\",\n      \"evidence_reference\": \"\"\n    }\n  ],\n  \"assumptions\": [\"<assumptions>\"],\n  \"open_questions\": [\"<open questions>\"],\n  \"final_output\": \"<PASS, CONDITIONAL_PASS, or FAIL>\",\n  \"self_check\": {\n    \"all_required_sections_completed\": true,\n    \"all_numbers_have_sources\": true,\n    \"assumptions_labeled\": true,\n    \"missing_inputs_disclosed\": true\n  }\n}\nRules for final_output: - \"PASS\": All four elements (confidentiality_notice, version_control,\n  document_date, change_log) are present and the document date is current.\n- \"CONDITIONAL_PASS\": All elements are present but the date is older than\n  30 days, or the change log has fewer than 2 entries.\n- \"FAIL\": Any of confidentiality_notice, version_control, or document_date\n  is missing. Use only the provided evidence unless explicitly allowed to assume; label every assumption; if a required input is missing, say so; do not fabricate facts or cite evidence that was not provided.",
+  "required_inputs": [
+    "deliverable_document",
+    "reference_date"
+  ],
+  "expected_outputs": [
+    "assignment_id",
+    "agent_summary",
+    "inputs_used",
+    "missing_inputs",
+    "claims",
+    "confidentiality_notice",
+    "version_control",
+    "document_date",
+    "change_log",
+    "risks",
+    "assumptions",
+    "open_questions",
+    "final_output",
+    "self_check"
+  ],
+  "audit_checks": [
+    {
+      "key": "sections_present",
+      "label": "Required sections present",
+      "category": "structure",
+      "kind": "auto",
+      "severity": "critical"
+    },
+    {
+      "key": "output_nonempty",
+      "label": "Output is substantive",
+      "category": "structure",
+      "kind": "auto",
+      "severity": "noncritical"
+    },
+    {
+      "key": "missing_confidentiality_notice",
+      "label": "Confidentiality notice is missing - this is a legal/compliance risk",
+      "category": "structure",
+      "kind": "checklist",
+      "severity": "critical"
+    },
+    {
+      "key": "missing_version_number",
+      "label": "Version number is missing - clients cannot track document revisions",
+      "category": "math",
+      "kind": "checklist",
+      "severity": "critical"
+    },
+    {
+      "key": "missing_document_date",
+      "label": "Document date is missing - prevents currency verification",
+      "category": "structure",
+      "kind": "checklist",
+      "severity": "critical"
+    },
+    {
+      "key": "stale_document_date",
+      "label": "Document date is older than 30 days - may indicate outdated deliverable",
+      "category": "policy",
+      "kind": "checklist",
+      "severity": "noncritical"
+    },
+    {
+      "key": "missing_change_log",
+      "label": "Change log is missing - reduces transparency for the client",
+      "category": "structure",
+      "kind": "checklist",
+      "severity": "noncritical"
+    },
+    {
+      "key": "incomplete_self_check",
+      "label": "Agent did not complete all required self-check sections",
+      "category": "structure",
+      "kind": "checklist",
+      "severity": "critical"
+    }
+  ],
+  "pass_threshold": 80,
+  "fail_threshold": 60
+}

@@ -1,0 +1,89 @@
+{
+  "slug": "cre_memo_dscr_ltv_v1",
+  "name": "DSCR and LTV Analysis",
+  "version": "1.0",
+  "lane": "agent",
+  "summary": "Calculate Debt Service Coverage Ratio (DSCR) and Loan-to-Value (LTV) from deal terms, compare against standard lending thresholds (DSCR >= 1.20, LTV <= 0.80), a",
+  "purpose": "Calculate Debt Service Coverage Ratio (DSCR) and Loan-to-Value (LTV) from deal terms, compare against standard lending thresholds (DSCR >= 1.20, LTV <= 0.80), and flag threshold violations. This is a core credit-risk gate for CRE underwriting.",
+  "assignment_instructions": "Property Memo: --- PROPERTY: Lakeside Terrace, 321 Lake Dr, Orlando, FL Appraised Value: $11,500,000 Loan Amount: $8,625,000 Interest Rate: 7.25% Amortization: 30 years NOI (stabilized): $920,000 ---\nCalculate and return ONLY a JSON object:\n1. Loan-to-Value (LTV) = loan_amount / appraised_value 2. Annual Debt Service = loan_amount * [r(1+r)^n / ((1+r)^n - 1)]\n   where r = interest_rate / 12, n = amortization in months (360)\n3. Debt Service Coverage Ratio (DSCR) = noi / annual_debt_service\nJSON structure: {\n  \"assignment_id\": \"cre_memo_dscr_ltv_v1\",\n  \"agent_summary\": \"<string>\",\n  \"inputs_used\": [\"<string>\"],\n  \"missing_inputs\": [\"<string>\"],\n  \"claims\": [\n    {\n      \"claim\": \"<string>\",\n      \"evidence_reference\": \"<string>\",\n      \"confidence\": \"<provided | inferred | missing>\"\n    }\n  ],\n  \"calculations\": [\n    {\n      \"name\": \"<string>\",\n      \"formula\": \"<string>\",\n      \"inputs\": {\"<key>\": <number>},\n      \"result\": <number>,\n      \"units\": \"<string>\",\n      \"assumptions\": [\"<string>\"]\n    }\n  ],\n  \"risks\": [\n    {\n      \"risk\": \"<string>\",\n      \"severity\": \"<low | medium | high>\",\n      \"evidence_reference\": \"<string>\"\n    }\n  ],\n  \"assumptions\": [\"<string>\"],\n  \"open_questions\": [\"<string>\"],\n  \"final_output\": \"<string>\",\n  \"self_check\": {\n    \"all_required_sections_completed\": true,\n    \"all_numbers_have_sources\": true,\n    \"assumptions_labeled\": true,\n    \"missing_inputs_disclosed\": true\n  }\n}\nCRITICAL RULES: - Calculate annual_debt_service using the mortgage amortization formula\n  with monthly compounding. Then multiply by 12 for annual.\n- LTV threshold: LTV must be <= 0.80. If LTV > 0.80, add a risk entry\n  with severity \"high\" stating the LTV exceeds the threshold.\n- DSCR threshold: DSCR must be >= 1.20. If DSCR < 1.20, add a risk entry\n  with severity \"high\" stating the DSCR is below the threshold.\n- If both thresholds pass, include a risk entry with severity \"low\"\n  stating both thresholds are satisfied.\n- Show the full amortization formula in the formula field. - Do not output any text outside the JSON object. Use only the provided evidence unless explicitly allowed to assume; label every assumption; if a required input is missing, say so; do not fabricate facts or cite evidence that was not provided.",
+  "required_inputs": [
+    "appraised_value",
+    "loan_amount",
+    "interest_rate",
+    "amortization_years",
+    "noi"
+  ],
+  "expected_outputs": [
+    "assignment_id",
+    "agent_summary",
+    "inputs_used",
+    "missing_inputs",
+    "claims",
+    "calculations",
+    "risks",
+    "assumptions",
+    "open_questions",
+    "final_output",
+    "self_check"
+  ],
+  "audit_checks": [
+    {
+      "key": "sections_present",
+      "label": "Required sections present",
+      "category": "structure",
+      "kind": "auto",
+      "severity": "critical"
+    },
+    {
+      "key": "citations_present",
+      "label": "Evidence is referenced",
+      "category": "evidence",
+      "kind": "auto",
+      "severity": "noncritical"
+    },
+    {
+      "key": "missing_ltv_calculation",
+      "label": "Missing ltv calculation",
+      "category": "math",
+      "kind": "checklist",
+      "severity": "critical"
+    },
+    {
+      "key": "missing_dscr_calculation",
+      "label": "Missing dscr calculation",
+      "category": "math",
+      "kind": "checklist",
+      "severity": "critical"
+    },
+    {
+      "key": "ltv_exceeds_threshold",
+      "label": "Ltv exceeds threshold",
+      "category": "policy",
+      "kind": "checklist",
+      "severity": "noncritical"
+    },
+    {
+      "key": "dscr_below_threshold",
+      "label": "Dscr below threshold",
+      "category": "policy",
+      "kind": "checklist",
+      "severity": "noncritical"
+    },
+    {
+      "key": "incorrect_debt_service_formula",
+      "label": "Incorrect debt service formula",
+      "category": "math",
+      "kind": "checklist",
+      "severity": "noncritical"
+    },
+    {
+      "key": "math_result_incorrect",
+      "label": "Math result incorrect",
+      "category": "math",
+      "kind": "checklist",
+      "severity": "critical"
+    }
+  ],
+  "pass_threshold": 80,
+  "fail_threshold": 60
+}

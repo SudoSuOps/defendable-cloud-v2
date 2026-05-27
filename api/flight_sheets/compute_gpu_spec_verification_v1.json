@@ -1,0 +1,73 @@
+{
+  "slug": "compute_gpu_spec_verification_v1",
+  "name": "GPU Specification Verification",
+  "version": "1.0",
+  "lane": "compute",
+  "summary": "Verify that the GPU hardware and driver configuration matches the declared specification including model, VRAM, driver version, and CUDA version",
+  "purpose": "Verify that the GPU hardware and driver configuration matches the declared specification including model, VRAM, driver version, and CUDA version.",
+  "assignment_instructions": "You are verifying GPU specifications against declared requirements. REQUIRED OUTPUT: Return a JSON object with these exact fields: - assignment_id (string): use \"compute_gpu_spec_verification_v1\" - agent_summary (string) - inputs_used (list of strings) - missing_inputs (list of strings) - claims (list of objects): claim, evidence_reference, confidence (\"provided\"|\"inferred\"|\"missing\") - calculations (list of objects): name, formula, inputs, result, units, assumptions - risks (list of objects): risk, severity (\"low\"|\"medium\"|\"high\"), evidence_reference - assumptions (list of strings) - open_questions (list of strings) - final_output (string) - self_check (object): all_required_sections_completed (boolean), all_numbers_have_sources (boolean), assumptions_labeled (boolean), missing_inputs_disclosed (boolean) Also include: - gpu_model_detected (string): GPU model name from system - gpu_model_declared (string or null): expected GPU model - gpu_model_match (boolean): exact string match of model names - vram_detected_gb (number): detected VRAM in gigabytes - vram_required_gb (number or null): minimum required VRAM - vram_sufficient (boolean): vram_detected_gb >= vram_required_gb (or true if no requirement) - driver_version_detected (string): detected driver version - driver_version_required (string or null): required driver version - driver_version_match (boolean): exact match or meeting minimum - cuda_version_detected (string): detected CUDA version - cuda_version_required (string or null): required CUDA version - cuda_version_match (boolean): exact match or meeting minimum - all_specs_match (boolean): true only if gpu_model_match and vram_sufficient and driver_version_match and cuda_version_match are all true Return numeric values as numbers, not prose. State exact versions as strings. Use only the provided evidence unless explicitly allowed to assume; label every assumption; if a required input is missing, say so; do not fabricate facts or cite evidence that was not provided.",
+  "required_inputs": [
+    "gpu_info_output_or_nvidia_smi",
+    "declared_gpu_specification"
+  ],
+  "expected_outputs": [
+    "assignment_id",
+    "gpu_model_detected",
+    "gpu_model_match",
+    "vram_detected_gb",
+    "vram_sufficient",
+    "driver_version_detected",
+    "driver_version_match",
+    "cuda_version_detected",
+    "cuda_version_match",
+    "all_specs_match",
+    "claims",
+    "self_check"
+  ],
+  "audit_checks": [
+    {
+      "key": "sections_present",
+      "label": "Required sections present",
+      "category": "structure",
+      "kind": "auto",
+      "severity": "critical"
+    },
+    {
+      "key": "specs_present",
+      "label": "Specs quantified",
+      "category": "structure",
+      "kind": "auto",
+      "severity": "noncritical"
+    },
+    {
+      "key": "gpu_model_mismatch",
+      "label": "Gpu model mismatch",
+      "category": "policy",
+      "kind": "checklist",
+      "severity": "critical"
+    },
+    {
+      "key": "vram_insufficient",
+      "label": "Vram insufficient",
+      "category": "policy",
+      "kind": "checklist",
+      "severity": "critical"
+    },
+    {
+      "key": "driver_version_mismatch",
+      "label": "Driver version mismatch",
+      "category": "policy",
+      "kind": "checklist",
+      "severity": "noncritical"
+    },
+    {
+      "key": "cuda_version_mismatch",
+      "label": "Cuda version mismatch",
+      "category": "policy",
+      "kind": "checklist",
+      "severity": "noncritical"
+    }
+  ],
+  "pass_threshold": 80,
+  "fail_threshold": 60
+}

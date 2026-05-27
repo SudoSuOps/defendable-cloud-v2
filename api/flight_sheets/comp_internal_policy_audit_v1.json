@@ -1,0 +1,94 @@
+{
+  "slug": "comp_internal_policy_audit_v1",
+  "name": "Internal Policy Audit",
+  "version": "1.0",
+  "lane": "other",
+  "summary": "Evaluate the agent's ability to audit adherence to internal organizational policies, document control test results, and cite evidence for each policy item asses",
+  "purpose": "Evaluate the agent's ability to audit adherence to internal organizational policies, document control test results, and cite evidence for each policy item assessed. The agent must distinguish between policies that are followed, partially followed, and not followed based on documentary evidence.",
+  "assignment_instructions": "You are given an internal policy list and source documents describing actual organizational practices. Audit EACH policy and determine adherence status.\nFor each policy item, return an object with exactly these fields: - \"policy_id\": the identifier of the policy (e.g., \"POL-001\", \"HR-2023-04\") - \"policy_name\": the name or brief description of the policy - \"status\": one of [\"adhered\", \"violated\", \"partially_adhered\", \"not_verifiable\"] where:\n    - \"adhered\" = evidence shows the policy is fully followed\n    - \"violated\" = evidence shows clear violation or non-compliance\n    - \"partially_adhered\" = some aspects followed, others not\n    - \"not_verifiable\" = insufficient evidence to determine adherence\n- \"test_result\": a description of the specific control test performed to determine status (max 200 chars) - \"evidence\": the specific text from source documents supporting the test_result (null if not_verifiable) - \"source_document\": identifier of the document containing the evidence (null if not_verifiable) - \"deviation_details\": if status is violated or partially_adhered, describe the specific deviation; otherwise null\nReturn ONLY a JSON object with this exact shape: {\n  \"assignment_id\": \"comp_internal_policy_audit_v1\",\n  \"agent_summary\": \"<summary of internal policy audit>\",\n  \"inputs_used\": [\"internal_policy_list\", \"<document identifiers>\"],\n  \"missing_inputs\": [],\n  \"policy_items\": [\n    {\"policy_id\": \"POL-001\", \"policy_name\": \"Password complexity requirements\", \"status\": \"adhered\", \"test_result\": \"Reviewed IT policy doc and found mandated 12-char minimum with special characters\", \"evidence\": \"All passwords must be at least 12 characters and include one special character\", \"source_document\": \"doc_1\", \"deviation_details\": null}\n  ],\n  \"claims\": [],\n  \"calculations\": [],\n  \"risks\": [],\n  \"assumptions\": [],\n  \"open_questions\": [],\n  \"final_output\": \"<summary>\",\n  \"self_check\": {\n    \"all_required_sections_completed\": true,\n    \"all_numbers_have_sources\": true,\n    \"assumptions_labeled\": true,\n    \"missing_inputs_disclosed\": true\n  }\n}\nRules: - Every policy in the input internal_policy_list must appear in policy_items. - Do NOT change policy_id or policy_name from the input list. - test_result must describe WHAT you checked and WHAT you found, not just a conclusion. - evidence must be a direct quote or close paraphrase from source documents. - deviation_details must be non-null whenever status is violated or partially_adhered. - Default to \"not_verifiable\" when evidence is insufficient. Use only the provided evidence unless explicitly allowed to assume; label every assumption; if a required input is missing, say so; do not fabricate facts or cite evidence that was not provided.",
+  "required_inputs": [
+    "internal_policy_list",
+    "source_documents"
+  ],
+  "expected_outputs": [
+    "assignment_id",
+    "policy_items",
+    "inputs_used",
+    "missing_inputs",
+    "self_check"
+  ],
+  "audit_checks": [
+    {
+      "key": "sections_present",
+      "label": "Required sections present",
+      "category": "structure",
+      "kind": "auto",
+      "severity": "critical"
+    },
+    {
+      "key": "output_nonempty",
+      "label": "Output is substantive",
+      "category": "structure",
+      "kind": "auto",
+      "severity": "noncritical"
+    },
+    {
+      "key": "missing_policy",
+      "label": "Missing policy",
+      "category": "structure",
+      "kind": "checklist",
+      "severity": "critical"
+    },
+    {
+      "key": "fabricated_evidence",
+      "label": "Fabricated evidence",
+      "category": "evidence",
+      "kind": "checklist",
+      "severity": "noncritical"
+    },
+    {
+      "key": "invalid_status",
+      "label": "Invalid status",
+      "category": "policy",
+      "kind": "checklist",
+      "severity": "noncritical"
+    },
+    {
+      "key": "violated_without_deviation",
+      "label": "Violated without deviation",
+      "category": "policy",
+      "kind": "checklist",
+      "severity": "noncritical"
+    },
+    {
+      "key": "deviation_when_adhered",
+      "label": "Deviation when adhered",
+      "category": "policy",
+      "kind": "checklist",
+      "severity": "noncritical"
+    },
+    {
+      "key": "missing_test_result",
+      "label": "Missing test result",
+      "category": "structure",
+      "kind": "checklist",
+      "severity": "noncritical"
+    },
+    {
+      "key": "policy_count_mismatch",
+      "label": "Policy count mismatch",
+      "category": "policy",
+      "kind": "checklist",
+      "severity": "critical"
+    },
+    {
+      "key": "self_check_false",
+      "label": "Self check false",
+      "category": "policy",
+      "kind": "checklist",
+      "severity": "noncritical"
+    }
+  ],
+  "pass_threshold": 80,
+  "fail_threshold": 60
+}

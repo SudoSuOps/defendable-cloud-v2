@@ -1,0 +1,77 @@
+{
+  "slug": "compute_thermal_power_check_v1",
+  "name": "Thermal and Power Check",
+  "version": "1.0",
+  "lane": "compute",
+  "summary": "Verify that GPU temperature and power consumption are within safe operating limits during benchmark execution",
+  "purpose": "Verify that GPU temperature and power consumption are within safe operating limits during benchmark execution.",
+  "assignment_instructions": "You are checking GPU thermal and power metrics against safe limits. REQUIRED OUTPUT: Return a JSON object with these exact fields: - assignment_id (string): use \"compute_thermal_power_check_v1\" - agent_summary (string) - inputs_used (list of strings) - missing_inputs (list of strings) - claims (list of objects): claim, evidence_reference, confidence (\"provided\"|\"inferred\"|\"missing\") - calculations (list of objects): name, formula, inputs, result, units, assumptions - risks (list of objects): risk, severity (\"low\"|\"medium\"|\"high\"), evidence_reference - assumptions (list of strings) - open_questions (list of strings) - final_output (string) - self_check (object): all_required_sections_completed (boolean), all_numbers_have_sources (boolean), assumptions_labeled (boolean), missing_inputs_disclosed (boolean) Also include: - gpu_model (string): GPU model name - max_temperature_c (number): maximum temperature observed in degrees Celsius - avg_temperature_c (number): average temperature observed in degrees Celsius - thermal_limit_c (number): thermal limit for this GPU model (default 85) - thermal_safe (boolean): max_temperature_c < thermal_limit_c - max_power_w (number): maximum power draw observed in watts - avg_power_w (number): average power draw observed in watts - power_limit_w (number): power limit for this GPU model - power_within_spec (boolean): max_power_w <= power_limit_w - thermal_throttle_detected (boolean): whether thermal throttling was observed - overall_safe (boolean): thermal_safe and power_within_spec and not thermal_throttle_detected Compute thermal_safe as max_temperature_c < thermal_limit_c (strictly less than). Compute power_within_spec as max_power_w <= power_limit_w. Return numeric values as numbers, not prose. Temperatures and power must be numbers. Use only the provided evidence unless explicitly allowed to assume; label every assumption; if a required input is missing, say so; do not fabricate facts or cite evidence that was not provided.",
+  "required_inputs": [
+    "gpu_telemetry_log_or_nvidia_smi_output",
+    "gpu_model",
+    "thermal_limit_c_optional",
+    "power_limit_w_optional"
+  ],
+  "expected_outputs": [
+    "assignment_id",
+    "gpu_model",
+    "max_temperature_c",
+    "avg_temperature_c",
+    "thermal_limit_c",
+    "thermal_safe",
+    "max_power_w",
+    "avg_power_w",
+    "power_limit_w",
+    "power_within_spec",
+    "thermal_throttle_detected",
+    "overall_safe",
+    "claims",
+    "self_check"
+  ],
+  "audit_checks": [
+    {
+      "key": "sections_present",
+      "label": "Required sections present",
+      "category": "structure",
+      "kind": "auto",
+      "severity": "critical"
+    },
+    {
+      "key": "specs_present",
+      "label": "Specs quantified",
+      "category": "structure",
+      "kind": "auto",
+      "severity": "noncritical"
+    },
+    {
+      "key": "thermal_limit_exceeded",
+      "label": "Thermal limit exceeded",
+      "category": "policy",
+      "kind": "checklist",
+      "severity": "critical"
+    },
+    {
+      "key": "power_limit_exceeded",
+      "label": "Power limit exceeded",
+      "category": "policy",
+      "kind": "checklist",
+      "severity": "critical"
+    },
+    {
+      "key": "thermal_throttling",
+      "label": "Thermal throttling",
+      "category": "policy",
+      "kind": "checklist",
+      "severity": "noncritical"
+    },
+    {
+      "key": "all_metrics_safe",
+      "label": "All metrics safe",
+      "category": "policy",
+      "kind": "checklist",
+      "severity": "noncritical"
+    }
+  ],
+  "pass_threshold": 80,
+  "fail_threshold": 60
+}

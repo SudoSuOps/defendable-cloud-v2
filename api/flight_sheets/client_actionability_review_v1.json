@@ -1,0 +1,80 @@
+{
+  "slug": "client_actionability_review_v1",
+  "name": "Deliverable Actionability Review",
+  "version": "1.0",
+  "lane": "other",
+  "summary": "Verify that the deliverable contains clear, actionable next steps with assigned responsible parties and specific deadlines",
+  "purpose": "Verify that the deliverable contains clear, actionable next steps with assigned responsible parties and specific deadlines. A deliverable without actionability requires follow-up work before it is client-ready.",
+  "assignment_instructions": "You are a client deliverable readiness evaluator. Inspect the provided deliverable document for actionability. Identify all action items, next steps, recommendations, or to-do items present in the document.\nFor each action item found, extract: - action_id (string: sequential identifier, e.g., \"A001\") - requested_action (string: the specific action to be taken) - responsible_party (string: the person, team, or role assigned; \"\" if not named) - deadline (string: the specific deadline or date; \"\" if not specified) - deadline_type (string: \"date\", \"duration\", \"milestone\", or \"unspecified\") - source_location (string: page number or section where this action was found)\nAfter extracting all action items, compute: - total_actions_found (integer) - actions_with_named_party (integer: count where responsible_party != \"\") - actions_with_deadline (integer: count where deadline != \"\") - actions_fully_specified (integer: count where both responsible_party AND deadline are non-empty)\nReturn a single JSON object with this exact structure: {\n  \"assignment_id\": \"client_actionability_review_v1\",\n  \"agent_summary\": \"<one-sentence summary>\",\n  \"inputs_used\": [\"<list inputs>\"],\n  \"missing_inputs\": [\"<list missing inputs>\"],\n  \"claims\": [\n    {\n      \"claim\": \"<specific claim>\",\n      \"evidence_reference\": \"<page/section reference>\",\n      \"confidence\": \"provided | inferred | missing\"\n    }\n  ],\n  \"calculations\": [\n    {\n      \"name\": \"total_actions_found\",\n      \"formula\": \"count(action_items)\",\n      \"inputs\": {},\n      \"result\": 0,\n      \"units\": \"count\",\n      \"assumptions\": [\"assumed all numbered/bulleted directives are action items\"]\n    },\n    {\n      \"name\": \"actions_with_named_party\",\n      \"formula\": \"count(action_items where responsible_party != '')\",\n      \"inputs\": {},\n      \"result\": 0,\n      \"units\": \"count\",\n      \"assumptions\": []\n    },\n    {\n      \"name\": \"actions_with_deadline\",\n      \"formula\": \"count(action_items where deadline != '')\",\n      \"inputs\": {},\n      \"result\": 0,\n      \"units\": \"count\",\n      \"assumptions\": []\n    },\n    {\n      \"name\": \"actions_fully_specified\",\n      \"formula\": \"count(action_items where responsible_party != '' AND deadline != '')\",\n      \"inputs\": {},\n      \"result\": 0,\n      \"units\": \"count\",\n      \"assumptions\": []\n    },\n    {\n      \"name\": \"actionability_ratio\",\n      \"formula\": \"actions_fully_specified / total_actions_found\",\n      \"inputs\": {},\n      \"result\": 0.0,\n      \"units\": \"ratio (0.0 to 1.0)\",\n      \"assumptions\": [\"ratio is 0 if total_actions_found is 0\"]\n    }\n  ],\n  \"action_items\": [\n    {\n      \"action_id\": \"A001\",\n      \"requested_action\": \"\",\n      \"responsible_party\": \"\",\n      \"deadline\": \"\",\n      \"deadline_type\": \"\",\n      \"source_location\": \"\"\n    }\n  ],\n  \"risks\": [\n    {\n      \"risk\": \"<risk description>\",\n      \"severity\": \"low | medium | high\",\n      \"evidence_reference\": \"\"\n    }\n  ],\n  \"assumptions\": [\"<assumptions>\"],\n  \"open_questions\": [\"<open questions>\"],\n  \"final_output\": \"<PASS, CONDITIONAL_PASS, or FAIL>\",\n  \"self_check\": {\n    \"all_required_sections_completed\": true,\n    \"all_numbers_have_sources\": true,\n    \"assumptions_labeled\": true,\n    \"missing_inputs_disclosed\": true\n  }\n}\nRules for final_output: - \"PASS\": At least one action item exists, AND at least 80% of action items\n  have both a named responsible_party AND a specified deadline\n  (actionability_ratio >= 0.80).\n- \"CONDITIONAL_PASS\": At least one action item exists, but fewer than 80%\n  are fully specified (0 < actionability_ratio < 0.80).\n- \"FAIL\": No action items found (total_actions_found == 0), OR no action\n  items have either a responsible_party or a deadline. Use only the provided evidence unless explicitly allowed to assume; label every assumption; if a required input is missing, say so; do not fabricate facts or cite evidence that was not provided.",
+  "required_inputs": [
+    "deliverable_document",
+    "action_items_list"
+  ],
+  "expected_outputs": [
+    "assignment_id",
+    "agent_summary",
+    "inputs_used",
+    "missing_inputs",
+    "claims",
+    "calculations",
+    "action_items",
+    "risks",
+    "assumptions",
+    "open_questions",
+    "final_output",
+    "self_check"
+  ],
+  "audit_checks": [
+    {
+      "key": "sections_present",
+      "label": "Required sections present",
+      "category": "structure",
+      "kind": "auto",
+      "severity": "critical"
+    },
+    {
+      "key": "output_nonempty",
+      "label": "Output is substantive",
+      "category": "structure",
+      "kind": "auto",
+      "severity": "noncritical"
+    },
+    {
+      "key": "no_action_items_found",
+      "label": "No action items found in the deliverable - document is not actionable",
+      "category": "policy",
+      "kind": "checklist",
+      "severity": "critical"
+    },
+    {
+      "key": "unnamed_responsible_parties",
+      "label": "Some action items lack a named responsible party",
+      "category": "policy",
+      "kind": "checklist",
+      "severity": "noncritical"
+    },
+    {
+      "key": "missing_deadlines",
+      "label": "Some action items lack specified deadlines",
+      "category": "structure",
+      "kind": "checklist",
+      "severity": "noncritical"
+    },
+    {
+      "key": "low_actionability_ratio",
+      "label": "Actionability ratio is below 80% threshold",
+      "category": "math",
+      "kind": "checklist",
+      "severity": "noncritical"
+    },
+    {
+      "key": "incomplete_self_check",
+      "label": "Agent did not complete all required self-check sections",
+      "category": "structure",
+      "kind": "checklist",
+      "severity": "critical"
+    }
+  ],
+  "pass_threshold": 80,
+  "fail_threshold": 60
+}

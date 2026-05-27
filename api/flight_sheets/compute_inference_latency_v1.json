@@ -1,0 +1,71 @@
+{
+  "slug": "compute_inference_latency_v1",
+  "name": "Inference Latency Assessment",
+  "version": "1.0",
+  "lane": "compute",
+  "summary": "Measure inference latency percentiles (p50, p95, p99) and validate against real-time thresholds",
+  "purpose": "Measure inference latency percentiles (p50, p95, p99) and validate against real-time thresholds. Report all latency statistics with evidence.",
+  "assignment_instructions": "You are assessing inference latency for a model deployment. REQUIRED OUTPUT: Return a JSON object with these exact fields: - assignment_id (string): use \"compute_inference_latency_v1\" - agent_summary (string) - inputs_used (list of strings) - missing_inputs (list of strings) - claims (list of objects): claim, evidence_reference, confidence (\"provided\"|\"inferred\"|\"missing\") - calculations (list of objects): name, formula, inputs, result, units, assumptions - risks (list of objects): risk, severity (\"low\"|\"medium\"|\"high\"), evidence_reference - assumptions (list of strings) - open_questions (list of strings) - final_output (string) - self_check (object): all_required_sections_completed (boolean), all_numbers_have_sources (boolean), assumptions_labeled (boolean), missing_inputs_disclosed (boolean) Also include: - model_name (string) - gpu_model (string) - batch_size (integer) - total_requests (integer): number of requests in benchmark - latency_p50_ms (number): 50th percentile latency in milliseconds - latency_p95_ms (number): 95th percentile latency in milliseconds - latency_p99_ms (number): 99th percentile latency in milliseconds - latency_unit (string): must be \"ms\" - real_time_threshold_ms (number): threshold for real-time, default 100 - meets_real_time (boolean): latency_p99_ms < real_time_threshold_ms - p99_to_p50_ratio (number): latency_p99_ms / latency_p50_ms - tail_latency_severity (string): \"low\" if p99/p50 < 2, \"medium\" if 2-5, \"high\" if > 5 Compute meets_real_time as latency_p99_ms < real_time_threshold_ms (strictly less than). Compute p99_to_p50_ratio as latency_p99_ms / latency_p50_ms. Return numeric values as numbers, not prose. All latency values must be in milliseconds. Include percentile formulas in calculations array. Use only the provided evidence unless explicitly allowed to assume; label every assumption; if a required input is missing, say so; do not fabricate facts or cite evidence that was not provided.",
+  "required_inputs": [
+    "latency_benchmark_results",
+    "model_name",
+    "gpu_model",
+    "batch_size"
+  ],
+  "expected_outputs": [
+    "assignment_id",
+    "model_name",
+    "gpu_model",
+    "batch_size",
+    "total_requests",
+    "latency_p50_ms",
+    "latency_p95_ms",
+    "latency_p99_ms",
+    "latency_unit",
+    "real_time_threshold_ms",
+    "meets_real_time",
+    "p99_to_p50_ratio",
+    "tail_latency_severity",
+    "calculations",
+    "self_check"
+  ],
+  "audit_checks": [
+    {
+      "key": "sections_present",
+      "label": "Required sections present",
+      "category": "structure",
+      "kind": "auto",
+      "severity": "critical"
+    },
+    {
+      "key": "specs_present",
+      "label": "Specs quantified",
+      "category": "structure",
+      "kind": "auto",
+      "severity": "noncritical"
+    },
+    {
+      "key": "exceeds_real_time_threshold",
+      "label": "Exceeds real time threshold",
+      "category": "policy",
+      "kind": "checklist",
+      "severity": "critical"
+    },
+    {
+      "key": "high_tail_latency",
+      "label": "High tail latency",
+      "category": "policy",
+      "kind": "checklist",
+      "severity": "noncritical"
+    },
+    {
+      "key": "moderate_tail_latency",
+      "label": "Moderate tail latency",
+      "category": "policy",
+      "kind": "checklist",
+      "severity": "noncritical"
+    }
+  ],
+  "pass_threshold": 80,
+  "fail_threshold": 60
+}

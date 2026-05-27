@@ -1,0 +1,79 @@
+{
+  "slug": "client_branding_completeness_v1",
+  "name": "Branding and Formatting Completeness",
+  "version": "1.0",
+  "lane": "other",
+  "summary": "Verify that client branding elements (logo, brand colors, approved fonts, headers, footers) are present and correctly applied in the deliverable",
+  "purpose": "Verify that client branding elements (logo, brand colors, approved fonts, headers, footers) are present and correctly applied in the deliverable. Ensure the document format matches the client's template specification.",
+  "assignment_instructions": "You are a client deliverable readiness evaluator. Inspect the provided deliverable document and the client's branding template specification.\nCheck for the presence and correctness of each branding element listed in the template spec. For each element, record: - element_name (string) - present (boolean: true if found, false if missing) - matches_template (boolean: true if matches spec, false if deviates) - deviation_notes (string: empty if matches, description of deviation if not)\nBranding elements to check: 1. Client logo (position, size, resolution) 2. Primary brand colors (background, accents, text) 3. Approved fonts (header font, body font) 4. Header (content, height, page position) 5. Footer (content, height, page position, page numbers) 6. Margins (top, bottom, left, right as specified) 7. Cover page layout (if specified in template)\nReturn a single JSON object with this exact structure: {\n  \"assignment_id\": \"client_branding_completeness_v1\",\n  \"agent_summary\": \"<one-sentence summary of branding check result>\",\n  \"inputs_used\": [\"<list each input file or source used>\"],\n  \"missing_inputs\": [\"<list any expected but missing inputs>\"],\n  \"claims\": [\n    {\n      \"claim\": \"<specific claim about branding>\",\n      \"evidence_reference\": \"<page number, section, or element index>\",\n      \"confidence\": \"provided | inferred | missing\"\n    }\n  ],\n  \"branding_elements\": [\n    {\n      \"element_name\": \"<name>\",\n      \"present\": true,\n      \"matches_template\": true,\n      \"deviation_notes\": \"\"\n    }\n  ],\n  \"risks\": [\n    {\n      \"risk\": \"<risk description>\",\n      \"severity\": \"low | medium | high\",\n      \"evidence_reference\": \"<where the risk was found>\"\n    }\n  ],\n  \"assumptions\": [\"<list assumptions made during evaluation>\"],\n  \"open_questions\": [\"<list any unresolved questions>\"],\n  \"final_output\": \"<PASS, CONDITIONAL_PASS, or FAIL based on checks>\",\n  \"self_check\": {\n    \"all_required_sections_completed\": true,\n    \"all_numbers_have_sources\": true,\n    \"assumptions_labeled\": true,\n    \"missing_inputs_disclosed\": true\n  }\n}\nRules for final_output: - \"PASS\": All branding elements present and match template (or deviations are cosmetic/minor). - \"CONDITIONAL_PASS\": Minor deviations that do not affect client perception (e.g., slight color variation within tolerance). - \"FAIL\": Any required branding element is missing or significantly deviates from template. Use only the provided evidence unless explicitly allowed to assume; label every assumption; if a required input is missing, say so; do not fabricate facts or cite evidence that was not provided.",
+  "required_inputs": [
+    "deliverable_document",
+    "branding_template_spec"
+  ],
+  "expected_outputs": [
+    "assignment_id",
+    "agent_summary",
+    "inputs_used",
+    "missing_inputs",
+    "claims",
+    "branding_elements",
+    "risks",
+    "assumptions",
+    "open_questions",
+    "final_output",
+    "self_check"
+  ],
+  "audit_checks": [
+    {
+      "key": "sections_present",
+      "label": "Required sections present",
+      "category": "structure",
+      "kind": "auto",
+      "severity": "critical"
+    },
+    {
+      "key": "output_nonempty",
+      "label": "Output is substantive",
+      "category": "structure",
+      "kind": "auto",
+      "severity": "noncritical"
+    },
+    {
+      "key": "missing_logo",
+      "label": "Client logo is missing from the deliverable",
+      "category": "structure",
+      "kind": "checklist",
+      "severity": "critical"
+    },
+    {
+      "key": "incorrect_fonts",
+      "label": "Approved fonts not used correctly",
+      "category": "policy",
+      "kind": "checklist",
+      "severity": "noncritical"
+    },
+    {
+      "key": "missing_header_footer",
+      "label": "Header or footer is missing",
+      "category": "structure",
+      "kind": "checklist",
+      "severity": "noncritical"
+    },
+    {
+      "key": "color_deviation",
+      "label": "Brand colors deviate from template specification",
+      "category": "policy",
+      "kind": "checklist",
+      "severity": "noncritical"
+    },
+    {
+      "key": "missing_self_check",
+      "label": "Agent failed to complete all required self-check sections",
+      "category": "structure",
+      "kind": "checklist",
+      "severity": "critical"
+    }
+  ],
+  "pass_threshold": 80,
+  "fail_threshold": 60
+}

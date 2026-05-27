@@ -1,0 +1,93 @@
+{
+  "slug": "evx_entity_extraction_v1",
+  "name": "Named Entity Extraction",
+  "version": "1.0",
+  "lane": "agent",
+  "summary": "Evaluate the agent's ability to extract named entities (people, organizations, locations, dates) from provided source documents with exact source references and",
+  "purpose": "Evaluate the agent's ability to extract named entities (people, organizations, locations, dates) from provided source documents with exact source references and position markers. Every extracted entity must be traceable to its origin.",
+  "assignment_instructions": "You are given one or more source documents. Your task is to extract ALL named entities of the following types: person, organization, location, date.\nFor each entity found, return an object with exactly these fields: - \"type\": one of [\"person\", \"organization\", \"location\", \"date\"] - \"value\": the exact text of the entity as it appears in the source - \"source_document\": identifier of the document (use \"doc_1\", \"doc_2\", etc.) - \"position\": an object with \"start_char\" (integer, 0-based) and \"end_char\" (integer)\nReturn ONLY a JSON object with this exact shape: {\n  \"assignment_id\": \"evx_entity_extraction_v1\",\n  \"agent_summary\": \"<brief description of extraction results>\",\n  \"inputs_used\": [\"<list of document identifiers processed>\"],\n  \"missing_inputs\": [],\n  \"entities\": [\n    {\"type\": \"person\", \"value\": \"Jane Doe\", \"source_document\": \"doc_1\", \"position\": {\"start_char\": 42, \"end_char\": 50}}\n  ],\n  \"claims\": [],\n  \"calculations\": [],\n  \"risks\": [],\n  \"assumptions\": [],\n  \"open_questions\": [],\n  \"final_output\": \"<summary of extraction>\",\n  \"self_check\": {\n    \"all_required_sections_completed\": true,\n    \"all_numbers_have_sources\": true,\n    \"assumptions_labeled\": true,\n    \"missing_inputs_disclosed\": true\n  }\n}\nRules: - Extract EVERY instance; do not deduplicate. - If source documents are missing or empty, return missing_inputs. - Do not infer entities not present in the text. - Position must be character-accurate against the provided text. - If you cannot locate an entity's character position, set position to null and note in assumptions. Use only the provided evidence unless explicitly allowed to assume; label every assumption; if a required input is missing, say so; do not fabricate facts or cite evidence that was not provided.",
+  "required_inputs": [
+    "source_documents"
+  ],
+  "expected_outputs": [
+    "assignment_id",
+    "entities",
+    "inputs_used",
+    "missing_inputs",
+    "self_check"
+  ],
+  "audit_checks": [
+    {
+      "key": "sections_present",
+      "label": "Required sections present",
+      "category": "structure",
+      "kind": "auto",
+      "severity": "critical"
+    },
+    {
+      "key": "citations_present",
+      "label": "Evidence is referenced",
+      "category": "evidence",
+      "kind": "auto",
+      "severity": "noncritical"
+    },
+    {
+      "key": "hallucinated_entity",
+      "label": "Hallucinated entity",
+      "category": "policy",
+      "kind": "checklist",
+      "severity": "noncritical"
+    },
+    {
+      "key": "invalid_entity_type",
+      "label": "Invalid entity type",
+      "category": "policy",
+      "kind": "checklist",
+      "severity": "noncritical"
+    },
+    {
+      "key": "missing_position",
+      "label": "Missing position",
+      "category": "structure",
+      "kind": "checklist",
+      "severity": "noncritical"
+    },
+    {
+      "key": "empty_entity_value",
+      "label": "Empty entity value",
+      "category": "policy",
+      "kind": "checklist",
+      "severity": "noncritical"
+    },
+    {
+      "key": "invalid_position_range",
+      "label": "Invalid position range",
+      "category": "policy",
+      "kind": "checklist",
+      "severity": "noncritical"
+    },
+    {
+      "key": "unreferenced_source",
+      "label": "Unreferenced source",
+      "category": "evidence",
+      "kind": "checklist",
+      "severity": "noncritical"
+    },
+    {
+      "key": "missing_inputs_not_disclosed",
+      "label": "Missing inputs not disclosed",
+      "category": "structure",
+      "kind": "checklist",
+      "severity": "critical"
+    },
+    {
+      "key": "self_check_false",
+      "label": "Self check false",
+      "category": "policy",
+      "kind": "checklist",
+      "severity": "noncritical"
+    }
+  ],
+  "pass_threshold": 80,
+  "fail_threshold": 60
+}

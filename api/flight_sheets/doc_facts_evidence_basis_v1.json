@@ -1,0 +1,84 @@
+{
+  "slug": "doc_facts_evidence_basis_v1",
+  "name": "Facts and Evidence Basis",
+  "version": "1.0",
+  "lane": "other",
+  "summary": "Verify that every factual claim in the document draft references supporting evidence, and that any facts without evidence are explicitly disclosed as missing",
+  "purpose": "Verify that every factual claim in the document draft references supporting evidence, and that any facts without evidence are explicitly disclosed as missing. Documents must not present unsupported assertions as established facts.",
+  "assignment_instructions": "You are evaluating a document draft for factual grounding.\n\nGiven the document draft, perform the following steps:\n1. Extract EVERY factual claim \u2014 a statement presented as objectively true (not opinion, not hypothesis).\n2. For each factual claim, determine whether it has a supporting evidence reference in the document (citation, source document, data reference, etc.).\n3. List all factual claims with their evidence references in the facts_used array.\n4. List all factual claims that lack evidence in the missing_facts array.\n5. For each claim, set confidence to \"provided\" if evidence is in the document, \"inferred\" if the agent can infer it from context, or \"missing\" if no evidence exists.\n\nReturn a single JSON object with this exact structure:\n{\n  \"assignment_id\": \"doc_facts_evidence_basis_v1\",\n  \"agent_summary\": \"One sentence summary\",\n  \"inputs_used\": [\"list of inputs examined\"],\n  \"missing_inputs\": [\"any missing inputs\"],\n  \"claims\": [\n    {\"claim\": \"\", \"evidence_reference\": \"\", \"confidence\": \"provided | inferred | missing\"}\n  ],\n  \"facts_used\": [\n    {\"claim\": \"\", \"evidence_reference\": \"\", \"confidence\": \"provided | inferred | missing\"}\n  ],\n  \"missing_facts\": [\n    {\"claim\": \"\", \"reason_missing\": \"\", \"severity\": \"low | medium | high\"}\n  ],\n  \"total_claims\": 0,\n  \"claims_with_evidence\": 0,\n  \"claims_without_evidence\": 0,\n  \"evidence_ratio\": 0.0,\n  \"calculations\": [\n    {\"name\": \"evidence_ratio\", \"formula\": \"claims_with_evidence / total_claims\", \"inputs\": {}, \"result\": 0.0, \"units\": \"ratio\", \"assumptions\": []}\n  ],\n  \"risks\": [\n    {\"risk\": \"\", \"severity\": \"low | medium | high\", \"evidence_reference\": \"\"}\n  ],\n  \"assumptions\": [],\n  \"open_questions\": [],\n  \"final_output\": \"PASS or FAIL\",\n  \"self_check\": {\n    \"all_required_sections_completed\": true,\n    \"all_numbers_have_sources\": true,\n    \"assumptions_labeled\": true,\n    \"missing_inputs_disclosed\": true\n  }\n}\n\nScoring rules:\n- evidence_ratio = claims_with_evidence / total_claims (as a float)\n- PASS if evidence_ratio >= 0.80 AND no high-severity missing facts\n- FAIL if evidence_ratio < 0.80 OR any missing_fact has severity \"high\"\n- total_claims must equal facts_used.length + missing_facts.length\n- Every factual claim in the document MUST appear in either facts_used OR missing_facts\n\nReturn only the JSON. No markdown fences, no prose. Use only the provided evidence unless explicitly allowed to assume; label every assumption; if a required input is missing, say so; do not fabricate facts or cite evidence that was not provided.",
+  "required_inputs": [
+    "document_draft"
+  ],
+  "expected_outputs": [
+    "assignment_id",
+    "agent_summary",
+    "inputs_used",
+    "missing_inputs",
+    "claims",
+    "facts_used",
+    "missing_facts",
+    "total_claims",
+    "claims_with_evidence",
+    "claims_without_evidence",
+    "evidence_ratio",
+    "calculations",
+    "risks",
+    "assumptions",
+    "open_questions",
+    "final_output",
+    "self_check"
+  ],
+  "audit_checks": [
+    {
+      "key": "sections_present",
+      "label": "Required sections present",
+      "category": "structure",
+      "kind": "auto",
+      "severity": "critical"
+    },
+    {
+      "key": "output_nonempty",
+      "label": "Output is substantive",
+      "category": "structure",
+      "kind": "auto",
+      "severity": "noncritical"
+    },
+    {
+      "key": "low_evidence_ratio",
+      "label": "Evidence ratio is below 50% \u2014 majority of claims lack evidence",
+      "category": "math",
+      "kind": "checklist",
+      "severity": "noncritical"
+    },
+    {
+      "key": "medium_evidence_gap",
+      "label": "Evidence ratio is between 50% and 80% \u2014 significant gaps in fact support",
+      "category": "math",
+      "kind": "checklist",
+      "severity": "noncritical"
+    },
+    {
+      "key": "high_severity_missing_fact",
+      "label": "At least one factual claim with high severity lacks evidence",
+      "category": "evidence",
+      "kind": "checklist",
+      "severity": "critical"
+    },
+    {
+      "key": "false_pass_low_ratio",
+      "label": "final_output is PASS but evidence ratio is below 0.80 threshold",
+      "category": "math",
+      "kind": "checklist",
+      "severity": "critical"
+    },
+    {
+      "key": "claim_count_mismatch",
+      "label": "Claim count arithmetic does not match",
+      "category": "policy",
+      "kind": "checklist",
+      "severity": "critical"
+    }
+  ],
+  "pass_threshold": 80,
+  "fail_threshold": 60
+}

@@ -1,0 +1,86 @@
+{
+  "slug": "cre_memo_noi_cap_rate_v1",
+  "name": "NOI and Cap Rate Review",
+  "version": "1.0",
+  "lane": "agent",
+  "summary": "Extract deal economics from a property memo, calculate Net Operating Income (NOI) and Capitalization Rate, and return structured JSON with all formulas shown",
+  "purpose": "Extract deal economics from a property memo, calculate Net Operating Income (NOI) and Capitalization Rate, and return structured JSON with all formulas shown. This is the foundational economics check for any CRE deal memo.",
+  "assignment_instructions": "Property Memo: --- PROPERTY: Riverview Commons, 789 River Rd, Tampa, FL Year Built: 2010, Renovated: 2022 Total Units: 85 Gross Potential Rent (GPR): $1,785,000/year Market Vacancy Rate: 6.5% Operating Expenses:\n  - Property Taxes: $210,000\n  - Insurance: $68,000\n  - Maintenance/Repairs: $112,000\n  - Management Fees: $89,250\n  - Utilities: $47,500\n  - Marketing/Admin: $23,000\nPurchase Price: $14,200,000 ---\nCalculate the following and return ONLY a JSON object: 1. Effective Gross Income (EGI) = GPR * (1 - vacancy_rate) 2. Total Operating Expenses = sum of all expense line items 3. Net Operating Income (NOI) = EGI - Total Operating Expenses 4. Capitalization Rate = NOI / Purchase Price\nJSON structure: {\n  \"assignment_id\": \"cre_memo_noi_cap_rate_v1\",\n  \"agent_summary\": \"<string>\",\n  \"inputs_used\": [\"<string: each source field used>\"],\n  \"missing_inputs\": [\"<string>\"],\n  \"claims\": [\n    {\n      \"claim\": \"<string>\",\n      \"evidence_reference\": \"<string>\",\n      \"confidence\": \"<provided | inferred | missing>\"\n    }\n  ],\n  \"calculations\": [\n    {\n      \"name\": \"<string>\",\n      \"formula\": \"<string>\",\n      \"inputs\": {\"<key>\": <number>},\n      \"result\": <number>,\n      \"units\": \"<string>\",\n      \"assumptions\": [\"<string>\"]\n    }\n  ],\n  \"risks\": [\n    {\n      \"risk\": \"<string>\",\n      \"severity\": \"<low | medium | high>\",\n      \"evidence_reference\": \"<string>\"\n    }\n  ],\n  \"assumptions\": [\"<string>\"],\n  \"open_questions\": [\"<string>\"],\n  \"final_output\": \"<string>\",\n  \"self_check\": {\n    \"all_required_sections_completed\": true,\n    \"all_numbers_have_sources\": true,\n    \"assumptions_labeled\": true,\n    \"missing_inputs_disclosed\": true\n  }\n}\nRules: - Vacancy rate must be expressed as a decimal (0.065) in calculations. - Purchase price must be numeric, not a formatted string. - Show the sum of operating expenses as a separate calculation. - All expense line items must appear in calculations[].inputs. - Do not output any text outside the JSON object. Use only the provided evidence unless explicitly allowed to assume; label every assumption; if a required input is missing, say so; do not fabricate facts or cite evidence that was not provided.",
+  "required_inputs": [
+    "gross_potential_rent",
+    "vacancy_rate",
+    "property_taxes",
+    "insurance",
+    "maintenance_repairs",
+    "management_fees",
+    "utilities",
+    "marketing_admin",
+    "purchase_price"
+  ],
+  "expected_outputs": [
+    "assignment_id",
+    "agent_summary",
+    "inputs_used",
+    "missing_inputs",
+    "claims",
+    "calculations",
+    "risks",
+    "assumptions",
+    "open_questions",
+    "final_output",
+    "self_check"
+  ],
+  "audit_checks": [
+    {
+      "key": "sections_present",
+      "label": "Required sections present",
+      "category": "structure",
+      "kind": "auto",
+      "severity": "critical"
+    },
+    {
+      "key": "citations_present",
+      "label": "Evidence is referenced",
+      "category": "evidence",
+      "kind": "auto",
+      "severity": "noncritical"
+    },
+    {
+      "key": "missing_noi_calculation",
+      "label": "Missing noi calculation",
+      "category": "math",
+      "kind": "checklist",
+      "severity": "critical"
+    },
+    {
+      "key": "missing_cap_rate_calculation",
+      "label": "Missing cap rate calculation",
+      "category": "math",
+      "kind": "checklist",
+      "severity": "critical"
+    },
+    {
+      "key": "vacancy_as_percentage",
+      "label": "Vacancy as percentage",
+      "category": "policy",
+      "kind": "checklist",
+      "severity": "noncritical"
+    },
+    {
+      "key": "math_result_incorrect",
+      "label": "Math result incorrect",
+      "category": "math",
+      "kind": "checklist",
+      "severity": "critical"
+    },
+    {
+      "key": "missing_expense_line_item",
+      "label": "Missing expense line item",
+      "category": "structure",
+      "kind": "checklist",
+      "severity": "noncritical"
+    }
+  ],
+  "pass_threshold": 80,
+  "fail_threshold": 60
+}

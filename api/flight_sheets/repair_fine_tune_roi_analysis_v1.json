@@ -1,0 +1,81 @@
+{
+  "slug": "repair_fine_tune_roi_analysis_v1",
+  "name": "Fine-Tune ROI and Recommendation",
+  "version": "1.0",
+  "lane": "agent",
+  "summary": "Evaluate whether fine-tuning the model is cost-effective based on detected failure patterns",
+  "purpose": "Evaluate whether fine-tuning the model is cost-effective based on detected failure patterns. Output a structured recommendation with estimated cost, expected improvement, ROI analysis, and priority level.",
+  "assignment_instructions": "You are a repair and fine-tune candidate evaluator. Your task is to determine whether fine-tuning the model is a cost-effective remediation for the detected failure patterns.\nYou will receive: - failure_patterns (array of detected patterns from prior analysis) - current_operational_costs (object with cost data)\nFrom the failure patterns, determine: - pattern_count_by_type (object: count of patterns per pattern_type) - total_submissions_affected (integer: total unique submissions with any failure) - worst_affected_assignment (string: assignment_id with most failures)\nFrom the operational costs, extract: - per_inference_cost_usd (float: cost per API call in USD) - monthly_inference_volume (integer: number of inferences per month) - estimated_fine_tune_cost_usd (float: one-time fine-tuning cost in USD) - current_monthly_cost_usd (float: per_inference_cost_usd * monthly_inference_volume)\nCompute ROI metrics: - current_annual_cost_usd (float: current_monthly_cost_usd * 12) - estimated_failure_rate (float: total_submissions_affected / total_submissions_analyzed from prior analysis, or 0.0 if unavailable) - cost_of_failures_annual_usd (float: estimated failure remediation cost per year - use operator-provided value or compute as current_annual_cost_usd * estimated_failure_rate * 0.5) - projected_improvement_rate (float: expected reduction in failure rate after fine-tune, default to 0.60 if not provided) - annual_savings_usd (float: cost_of_failures_annual_usd * projected_improvementment_rate) - payback_period_months (float: estimated_fine_tune_cost_usd / (annual_savings_usd / 12), or -1.0 if annual_savings_usd == 0) - three_year_roi_ratio (float: (annual_savings_usd * 3 - estimated_fine_tune_cost_usd) / estimated_fine_tune_cost_usd, or 0.0 if fine_tune_cost == 0)\nDetermine recommendation: - priority (string: one of \"critical\", \"high\", \"medium\", \"low\", \"not_recommended\") - recommended_action (string: \"fine_tune\", \"prompt_engineering\", \"hybrid\", or \"monitor\") - justification (string: detailed reasoning)\nPriority rules: - \"critical\": estimated_failure_rate > 0.30 OR pattern count for\n  hallucination or reasoning_error > 2\n- \"high\": estimated_failure_rate > 0.15 OR annual_savings_usd > estimated_fine_tune_cost_usd - \"medium\": estimated_failure_rate > 0.05 OR payback_period_months <= 12 - \"low\": estimated_failure_rate > 0.01 OR any patterns detected - \"not_recommended\": estimated_failure_rate == 0 AND no patterns detected\nReturn a single JSON object with this exact structure: {\n  \"assignment_id\": \"repair_fine_tune_roi_analysis_v1\",\n  \"agent_summary\": \"<one-sentence summary>\",\n  \"inputs_used\": [\"<list inputs>\"],\n  \"missing_inputs\": [\"<list missing inputs>\"],\n  \"claims\": [\n    {\n      \"claim\": \"<specific claim>\",\n      \"evidence_reference\": \"<pattern_id or calculation name>\",\n      \"confidence\": \"provided | inferred | missing\"\n    }\n  ],\n  \"calculations\": [\n    {\n      \"name\": \"current_monthly_cost_usd\",\n      \"formula\": \"per_inference_cost_usd * monthly_inference_volume\",\n      \"inputs\": {},\n      \"result\": 0.0,\n      \"units\": \"USD\",\n      \"assumptions\": []\n    },\n    {\n      \"name\": \"current_annual_cost_usd\",\n      \"formula\": \"current_monthly_cost_usd * 12\",\n      \"inputs\": {},\n      \"result\": 0.0,\n      \"units\": \"USD\",\n      \"assumptions\": []\n    },\n    {\n      \"name\": \"estimated_failure_rate\",\n      \"formula\": \"total_submissions_affected / total_submissions_analyzed\",\n      \"inputs\": {},\n      \"result\": 0.0,\n      \"units\": \"ratio (0.0 to 1.0)\",\n      \"assumptions\": [\"uses data from prior failure pattern detection\"]\n    },\n    {\n      \"name\": \"cost_of_failures_annual_usd\",\n      \"formula\": \"current_annual_cost_usd * estimated_failure_rate * 0.5\",\n      \"inputs\": {},\n      \"result\": 0.0,\n      \"units\": \"USD\",\n      \"assumptions\": [\"assumes failure remediation cost is 50% of annual inference cost proportional to failure rate\"]\n    },\n    {\n      \"name\": \"annual_savings_usd\",\n      \"formula\": \"cost_of_failures_annual_usd * projected_improvement_rate\",\n      \"inputs\": {},\n      \"result\": 0.0,\n      \"units\": \"USD\",\n      \"assumptions\": [\"projected_improvement_rate defaults to 0.60 if not provided\"]\n    },\n    {\n      \"name\": \"payback_period_months\",\n      \"formula\": \"estimated_fine_tune_cost_usd / (annual_savings_usd / 12)\",\n      \"inputs\": {},\n      \"result\": 0.0,\n      \"units\": \"months\",\n      \"assumptions\": [\"returns -1.0 if annual_savings_usd == 0 (division by zero protection)\"]\n    },\n    {\n      \"name\": \"three_year_roi_ratio\",\n      \"formula\": \"(annual_savings_usd * 3 - estimated_fine_tune_cost_usd) / estimated_fine_tune_cost_usd\",\n      \"inputs\": {},\n      \"result\": 0.0,\n      \"units\": \"ratio\",\n      \"assumptions\": [\"returns 0.0 if estimated_fine_tune_cost_usd == 0\"]\n    }\n  ],\n  \"fine_tune_recommendation\": {\n    \"priority\": \"\",\n    \"recommended_action\": \"\",\n    \"justification\": \"\",\n    \"estimated_cost_usd\": 0.0,\n    \"expected_improvement_rate\": 0.0,\n    \"projected_annual_savings_usd\": 0.0,\n    \"payback_period_months\": 0.0,\n    \"three_year_roi_ratio\": 0.0\n  },\n  \"risks\": [\n    {\n      \"risk\": \"<risk description>\",\n      \"severity\": \"low | medium | high\",\n      \"evidence_reference\": \"\"\n    }\n  ],\n  \"assumptions\": [\"<assumptions>\"],\n  \"open_questions\": [\"<open questions>\"],\n  \"final_output\": \"<PASS, CONDITIONAL_PASS, or FAIL>\",\n  \"self_check\": {\n    \"all_required_sections_completed\": true,\n    \"all_numbers_have_sources\": true,\n    \"assumptions_labeled\": true,\n    \"missing_inputs_disclosed\": true\n  }\n}\nRules for final_output (evaluating the ROI analysis itself): - \"PASS\": All 7 calculations present with numeric results, fine_tune_recommendation\n  has all required fields with valid enum values, priority determination follows\n  the priority rules, and all financial values are non-negative numbers.\n- \"CONDITIONAL_PASS\": Calculations present but some inputs were missing (marked in\n  missing_inputs), OR priority determination required inference due to edge cases.\n- \"FAIL\": Missing fine_tune_recommendation object, calculations missing, invalid\n  priority value, or negative financial values where positives are expected. Use only the provided evidence unless explicitly allowed to assume; label every assumption; if a required input is missing, say so; do not fabricate facts or cite evidence that was not provided.",
+  "required_inputs": [
+    "failure_patterns",
+    "current_operational_costs",
+    "total_submissions_analyzed"
+  ],
+  "expected_outputs": [
+    "assignment_id",
+    "agent_summary",
+    "inputs_used",
+    "missing_inputs",
+    "claims",
+    "calculations",
+    "fine_tune_recommendation",
+    "risks",
+    "assumptions",
+    "open_questions",
+    "final_output",
+    "self_check"
+  ],
+  "audit_checks": [
+    {
+      "key": "sections_present",
+      "label": "Required sections present",
+      "category": "structure",
+      "kind": "auto",
+      "severity": "critical"
+    },
+    {
+      "key": "citations_present",
+      "label": "Evidence is referenced",
+      "category": "evidence",
+      "kind": "auto",
+      "severity": "noncritical"
+    },
+    {
+      "key": "missing_cost_inputs",
+      "label": "Required cost inputs are missing - ROI analysis is incomplete",
+      "category": "structure",
+      "kind": "checklist",
+      "severity": "critical"
+    },
+    {
+      "key": "negative_financial_value",
+      "label": "Financial values should not be negative (except payback_period which can be -1.0 for undefined)",
+      "category": "policy",
+      "kind": "checklist",
+      "severity": "critical"
+    },
+    {
+      "key": "improvement_rate_out_of_range",
+      "label": "Expected improvement rate must be between 0 and 1",
+      "category": "policy",
+      "kind": "checklist",
+      "severity": "noncritical"
+    },
+    {
+      "key": "priority_mismatch",
+      "label": "Priority determination is inconsistent with failure pattern data",
+      "category": "policy",
+      "kind": "checklist",
+      "severity": "noncritical"
+    },
+    {
+      "key": "incomplete_self_check",
+      "label": "Agent did not complete all required self-check sections",
+      "category": "structure",
+      "kind": "checklist",
+      "severity": "critical"
+    }
+  ],
+  "pass_threshold": 80,
+  "fail_threshold": 60
+}

@@ -1,0 +1,83 @@
+{
+  "slug": "genai_instruction_following_v1",
+  "name": "Instruction Following Precision",
+  "version": "1.0",
+  "lane": "agent",
+  "summary": "Test whether the agent can follow multi-step instructions in the exact order specified, without skipping steps, reordering, or adding extraneous content",
+  "purpose": "Test whether the agent can follow multi-step instructions in the exact order specified, without skipping steps, reordering, or adding extraneous content. Precision in instruction following is critical for automated eval pipelines.",
+  "assignment_instructions": "Follow these steps in EXACT order. Do not skip, reorder, or add steps.\nStep 1: Create a calculations array with exactly 3 entries.\n  Entry 1: name=\"first_calc\", formula=\"a + b\", inputs={\"a\": 10, \"b\": 20},\n    result=30, units=\"count\", assumptions=[\"Assumed a and b are integers.\"]\n  Entry 2: name=\"second_calc\", formula=\"a * b\", inputs={\"a\": 5, \"b\": 6},\n    result=30, units=\"count\", assumptions=[\"Assumed multiplication.\"]\n  Entry 3: name=\"third_calc\", formula=\"b - a\", inputs={\"a\": 7, \"b\": 15},\n    result=8, units=\"count\", assumptions=[\"Assumed subtraction.\"]\n\nStep 2: Create a claims array with exactly 2 entries.\n  Entry 1: claim=\"The sum of 10 and 20 is 30.\",\n    evidence_reference=\"first_calc\", confidence=\"provided\"\n  Entry 2: claim=\"The product of 5 and 6 is 30.\",\n    evidence_reference=\"second_calc\", confidence=\"provided\"\n\nStep 3: Set the assignment_id field to exactly \"genai_instruction_following_v1\".\nStep 4: Set the agent_summary field to a non-empty string describing what you did.\nStep 5: Set the final_output field to EXACTLY this sentence:\n  \"Instructions followed in order.\"\n\nStep 6: Set the assumptions array to contain exactly:\n  [\"Assumed a and b are integers.\", \"Assumed multiplication.\", \"Assumed subtraction.\"]\n\nStep 7: Set the risks array to contain exactly 1 entry:\n  risk=\"No risks identified.\", severity=\"low\", evidence_reference=\"none\"\n\nStep 8: Set inputs_used to [\"a\", \"b\"] (in that order). Set missing_inputs to []. Set open_questions to [].\nReturn ONLY a JSON object with all 11 required top-level keys: assignment_id, agent_summary, inputs_used, missing_inputs, claims, calculations, risks, assumptions, open_questions, final_output, self_check.\nThe self_check object must have exactly these 4 boolean keys set to true: all_required_sections_completed, all_numbers_have_sources, assumptions_labeled, missing_inputs_disclosed. Use only the provided evidence unless explicitly allowed to assume; label every assumption; if a required input is missing, say so; do not fabricate facts or cite evidence that was not provided.",
+  "required_inputs": [],
+  "expected_outputs": [
+    "assignment_id",
+    "agent_summary",
+    "inputs_used",
+    "missing_inputs",
+    "claims",
+    "calculations",
+    "risks",
+    "assumptions",
+    "open_questions",
+    "final_output",
+    "self_check"
+  ],
+  "audit_checks": [
+    {
+      "key": "sections_present",
+      "label": "Required sections present",
+      "category": "structure",
+      "kind": "auto",
+      "severity": "critical"
+    },
+    {
+      "key": "citations_present",
+      "label": "Evidence is referenced",
+      "category": "evidence",
+      "kind": "auto",
+      "severity": "noncritical"
+    },
+    {
+      "key": "wrong_calculation_count",
+      "label": "Wrong calculation count",
+      "category": "math",
+      "kind": "checklist",
+      "severity": "critical"
+    },
+    {
+      "key": "wrong_claims_count",
+      "label": "Wrong claims count",
+      "category": "policy",
+      "kind": "checklist",
+      "severity": "noncritical"
+    },
+    {
+      "key": "final_output_mismatch",
+      "label": "Final output mismatch",
+      "category": "policy",
+      "kind": "checklist",
+      "severity": "critical"
+    },
+    {
+      "key": "instruction_order_violation",
+      "label": "Instruction order violation",
+      "category": "policy",
+      "kind": "checklist",
+      "severity": "critical"
+    },
+    {
+      "key": "assumptions_count_mismatch",
+      "label": "Assumptions count mismatch",
+      "category": "math",
+      "kind": "checklist",
+      "severity": "noncritical"
+    },
+    {
+      "key": "math_result_incorrect",
+      "label": "Math result incorrect",
+      "category": "math",
+      "kind": "checklist",
+      "severity": "critical"
+    }
+  ],
+  "pass_threshold": 80,
+  "fail_threshold": 60
+}

@@ -1,0 +1,699 @@
+# DefendableCloud Formula Catalog
+# Reusable formulas across all eval lanes.
+# Each formula has: formula_id, name, formula (LaTeX-like), variables, units, domain, tolerance_defaults
+
+formulas:
+  # ── CRE / Real Estate Formulas ─────────────────────────────────────────
+
+  - formula_id: noi
+    name: Net Operating Income
+    formula: "NOI = gross_income - operating_expenses"
+    variables:
+      - name: gross_income
+        type: number
+        required: true
+      - name: operating_expenses
+        type: number
+        required: true
+    units: "currency (USD)"
+    domain: cre
+    tolerance_defaults:
+      absolute: 0.01
+      relative: 0.001
+
+  - formula_id: cap_rate
+    name: Capitalization Rate
+    formula: "cap_rate = NOI / purchase_price"
+    variables:
+      - name: NOI
+        type: number
+        required: true
+      - name: purchase_price
+        type: number
+        required: true
+    units: "decimal (e.g., 0.05 = 5%)"
+    domain: cre
+    tolerance_defaults:
+      absolute: 0.0001
+      relative: 0.001
+
+  - formula_id: dscr
+    name: Debt Service Coverage Ratio
+    formula: "DSCR = NOI / annual_debt_service"
+    variables:
+      - name: NOI
+        type: number
+        required: true
+      - name: annual_debt_service
+        type: number
+        required: true
+    units: "ratio (e.g., 1.25x)"
+    domain: cre
+    tolerance_defaults:
+      absolute: 0.01
+      relative: 0.001
+
+  - formula_id: ltv
+    name: Loan-to-Value Ratio
+    formula: "LTV = loan_amount / appraised_value"
+    variables:
+      - name: loan_amount
+        type: number
+        required: true
+      - name: appraised_value
+        type: number
+        required: true
+    units: "decimal (e.g., 0.75 = 75%)"
+    domain: cre
+    tolerance_defaults:
+      absolute: 0.001
+      relative: 0.001
+
+  - formula_id: price_per_unit
+    name: Price Per Unit
+    formula: "price_per_unit = purchase_price / unit_count"
+    variables:
+      - name: purchase_price
+        type: number
+        required: true
+      - name: unit_count
+        type: integer
+        required: true
+    units: "currency per unit (USD)"
+    domain: cre
+    tolerance_defaults:
+      absolute: 0.01
+      relative: 0.001
+
+  - formula_id: price_per_sqft
+    name: Price Per Square Foot
+    formula: "price_per_sqft = purchase_price / square_feet"
+    variables:
+      - name: purchase_price
+        type: number
+        required: true
+      - name: square_feet
+        type: number
+        required: true
+    units: "currency per sq ft (USD)"
+    domain: cre
+    tolerance_defaults:
+      absolute: 0.01
+      relative: 0.001
+
+  - formula_id: effective_gross_income
+    name: Effective Gross Income
+    formula: "EGI = gross_potential_income - vacancy_loss + other_income"
+    variables:
+      - name: gross_potential_income
+        type: number
+        required: true
+      - name: vacancy_loss
+        type: number
+        required: true
+      - name: other_income
+        type: number
+        required: false
+        default: 0
+    units: "currency (USD)"
+    domain: cre
+    tolerance_defaults:
+      absolute: 0.01
+      relative: 0.001
+
+  - formula_id: cash_on_cash_return
+    name: Cash-on-Cash Return
+    formula: "cash_on_cash = annual_cash_flow / total_cash_invested"
+    variables:
+      - name: annual_cash_flow
+        type: number
+        required: true
+      - name: total_cash_invested
+        type: number
+        required: true
+    units: "decimal (e.g., 0.08 = 8%)"
+    domain: cre
+    tolerance_defaults:
+      absolute: 0.0001
+      relative: 0.001
+
+  - formula_id: equity_multiple
+    name: Equity Multiple
+    formula: "equity_multiple = total_cash_distributions / total_equity_invested"
+    variables:
+      - name: total_cash_distributions
+        type: number
+        required: true
+      - name: total_equity_invested
+        type: number
+        required: true
+    units: "multiple (e.g., 2.0x)"
+    domain: cre
+    tolerance_defaults:
+      absolute: 0.01
+      relative: 0.001
+
+  - formula_id: irr
+    name: Internal Rate of Return
+    formula: "NPV = 0 = sum(CF_t / (1 + IRR)^t) for t = 0..n"
+    variables:
+      - name: cash_flows
+        type: array
+        required: true
+      - name: periods
+        type: integer
+        required: true
+    units: "decimal (e.g., 0.15 = 15%)"
+    domain: cre
+    tolerance_defaults:
+      absolute: 0.0001
+      relative: 0.001
+
+  # ── Financial / Math Formulas ──────────────────────────────────────────
+
+  - formula_id: gross_margin
+    name: Gross Margin
+    formula: "gross_margin = (revenue - cost_of_goods_sold) / revenue"
+    variables:
+      - name: revenue
+        type: number
+        required: true
+      - name: cost_of_goods_sold
+        type: number
+        required: true
+    units: "decimal (e.g., 0.40 = 40%)"
+    domain: finance
+    tolerance_defaults:
+      absolute: 0.0001
+      relative: 0.001
+
+  - formula_id: net_margin
+    name: Net Profit Margin
+    formula: "net_margin = net_income / revenue"
+    variables:
+      - name: net_income
+        type: number
+        required: true
+      - name: revenue
+        type: number
+        required: true
+    units: "decimal (e.g., 0.10 = 10%)"
+    domain: finance
+    tolerance_defaults:
+      absolute: 0.0001
+      relative: 0.001
+
+  - formula_id: roe
+    name: Return on Equity
+    formula: "ROE = net_income / shareholders_equity"
+    variables:
+      - name: net_income
+        type: number
+        required: true
+      - name: shareholders_equity
+        type: number
+        required: true
+    units: "decimal (e.g., 0.12 = 12%)"
+    domain: finance
+    tolerance_defaults:
+      absolute: 0.0001
+      relative: 0.001
+
+  - formula_id: roa
+    name: Return on Assets
+    formula: "ROA = net_income / total_assets"
+    variables:
+      - name: net_income
+        type: number
+        required: true
+      - name: total_assets
+        type: number
+        required: true
+    units: "decimal (e.g., 0.08 = 8%)"
+    domain: finance
+    tolerance_defaults:
+      absolute: 0.0001
+      relative: 0.001
+
+  - formula_id: current_ratio
+    name: Current Ratio
+    formula: "current_ratio = current_assets / current_liabilities"
+    variables:
+      - name: current_assets
+        type: number
+        required: true
+      - name: current_liabilities
+        type: number
+        required: true
+    units: "ratio (e.g., 1.5x)"
+    domain: finance
+    tolerance_defaults:
+      absolute: 0.01
+      relative: 0.001
+
+  - formula_id: quick_ratio
+    name: Quick Ratio
+    formula: "quick_ratio = (current_assets - inventory) / current_liabilities"
+    variables:
+      - name: current_assets
+        type: number
+        required: true
+      - name: inventory
+        type: number
+        required: true
+      - name: current_liabilities
+        type: number
+        required: true
+    units: "ratio (e.g., 1.0x)"
+    domain: finance
+    tolerance_defaults:
+      absolute: 0.01
+      relative: 0.001
+
+  - formula_id: debt_to_equity
+    name: Debt-to-Equity Ratio
+    formula: "debt_to_equity = total_liabilities / shareholders_equity"
+    variables:
+      - name: total_liabilities
+        type: number
+        required: true
+      - name: shareholders_equity
+        type: number
+        required: true
+    units: "ratio (e.g., 0.5x)"
+    domain: finance
+    tolerance_defaults:
+      absolute: 0.001
+      relative: 0.001
+
+  - formula_id: ebitda
+    name: EBITDA
+    formula: "EBITDA = net_income + interest + taxes + depreciation + amortization"
+    variables:
+      - name: net_income
+        type: number
+        required: true
+      - name: interest
+        type: number
+        required: true
+      - name: taxes
+        type: number
+        required: true
+      - name: depreciation
+        type: number
+        required: true
+      - name: amortization
+        type: number
+        required: true
+    units: "currency (USD)"
+    domain: finance
+    tolerance_defaults:
+      absolute: 0.01
+      relative: 0.001
+
+  - formula_id: wacc
+    name: Weighted Average Cost of Capital
+    formula: "WACC = (E/V * Re) + (D/V * Rd * (1 - Tc))"
+    variables:
+      - name: E
+        type: number
+        required: true
+        description: market value of equity
+      - name: D
+        type: number
+        required: true
+        description: market value of debt
+      - name: V
+        type: number
+        required: true
+        description: E + D
+      - name: Re
+        type: number
+        required: true
+        description: cost of equity
+      - name: Rd
+        type: number
+        required: true
+        description: cost of debt
+      - name: Tc
+        type: number
+        required: true
+        description: corporate tax rate
+    units: "decimal (e.g., 0.08 = 8%)"
+    domain: finance
+    tolerance_defaults:
+      absolute: 0.0001
+      relative: 0.001
+
+  - formula_id: compound_interest
+    name: Compound Interest
+    formula: "A = P * (1 + r/n)^(n*t)"
+    variables:
+      - name: P
+        type: number
+        required: true
+        description: principal
+      - name: r
+        type: number
+        required: true
+        description: annual interest rate
+      - name: n
+        type: integer
+        required: true
+        description: compounding periods per year
+      - name: t
+        type: number
+        required: true
+        description: years
+    units: "currency (USD)"
+    domain: finance
+    tolerance_defaults:
+      absolute: 0.01
+      relative: 0.001
+
+  - formula_id: npv
+    name: Net Present Value
+    formula: "NPV = sum(CF_t / (1 + r)^t) - initial_investment"
+    variables:
+      - name: cash_flows
+        type: array
+        required: true
+      - name: r
+        type: number
+        required: true
+        description: discount rate
+      - name: initial_investment
+        type: number
+        required: true
+    units: "currency (USD)"
+    domain: finance
+    tolerance_defaults:
+      absolute: 0.01
+      relative: 0.001
+
+  # ── Compute Benchmark Formulas ─────────────────────────────────────────
+
+  - formula_id: benchmark_score_per_watt
+    name: Benchmark Score Per Watt
+    formula: "benchmark_score_per_watt = benchmark_score / watts"
+    variables:
+      - name: benchmark_score
+        type: number
+        required: true
+      - name: watts
+        type: number
+        required: true
+    units: "score per watt"
+    domain: compute
+    tolerance_defaults:
+      absolute: 0.01
+      relative: 0.001
+
+  - formula_id: benchmark_score_per_dollar
+    name: Benchmark Score Per Dollar
+    formula: "benchmark_score_per_dollar = benchmark_score / cost_usd"
+    variables:
+      - name: benchmark_score
+        type: number
+        required: true
+      - name: cost_usd
+        type: number
+        required: true
+    units: "score per USD"
+    domain: compute
+    tolerance_defaults:
+      absolute: 0.01
+      relative: 0.001
+
+  - formula_id: tflops_per_watt
+    name: TFLOPS Per Watt
+    formula: "tflops_per_watt = tflops / watts"
+    variables:
+      - name: tflops
+        type: number
+        required: true
+      - name: watts
+        type: number
+        required: true
+    units: "TFLOPS per watt"
+    domain: compute
+    tolerance_defaults:
+      absolute: 0.001
+      relative: 0.001
+
+  - formula_id: gpu_utilization_percent
+    name: GPU Utilization Percentage
+    formula: "gpu_utilization = gpu_time_active / total_time * 100"
+    variables:
+      - name: gpu_time_active
+        type: number
+        required: true
+      - name: total_time
+        type: number
+        required: true
+    units: "percent (%)"
+    domain: compute
+    tolerance_defaults:
+      absolute: 0.1
+      relative: 0.001
+
+  - formula_id: memory_bandwidth_utilization
+    name: Memory Bandwidth Utilization
+    formula: "mem_bw_util = measured_bandwidth / theoretical_max_bandwidth * 100"
+    variables:
+      - name: measured_bandwidth
+        type: number
+        required: true
+      - name: theoretical_max_bandwidth
+        type: number
+        required: true
+    units: "percent (%)"
+    domain: compute
+    tolerance_defaults:
+      absolute: 0.1
+      relative: 0.001
+
+  - formula_id: latency_p99
+    name: P99 Latency
+    formula: "p99 = percentile(latency_array, 99)"
+    variables:
+      - name: latency_array
+        type: array
+        required: true
+    units: "milliseconds"
+    domain: compute
+    tolerance_defaults:
+      absolute: 0.1
+      relative: 0.001
+
+  - formula_id: throughput_per_second
+    name: Throughput Per Second
+    formula: "throughput = total_items_processed / elapsed_seconds"
+    variables:
+      - name: total_items_processed
+        type: integer
+        required: true
+      - name: elapsed_seconds
+        type: number
+        required: true
+    units: "items per second"
+    domain: compute
+    tolerance_defaults:
+      absolute: 0.01
+      relative: 0.001
+
+  - formula_id: inference_tokens_per_second
+    name: Inference Tokens Per Second
+    formula: "tokens_per_sec = total_tokens_generated / elapsed_seconds"
+    variables:
+      - name: total_tokens_generated
+        type: integer
+        required: true
+      - name: elapsed_seconds
+        type: number
+        required: true
+    units: "tokens per second"
+    domain: compute
+    tolerance_defaults:
+      absolute: 0.01
+      relative: 0.001
+
+  - formula_id: cost_per_inference
+    name: Cost Per Inference
+    formula: "cost_per_inference = total_cost_usd / total_inferences"
+    variables:
+      - name: total_cost_usd
+        type: number
+        required: true
+      - name: total_inferences
+        type: integer
+        required: true
+    units: "USD per inference"
+    domain: compute
+    tolerance_defaults:
+      absolute: 0.0001
+      relative: 0.001
+
+  # ── Dataset Quality Formulas ───────────────────────────────────────────
+
+  - formula_id: duplicate_rate
+    name: Duplicate Row Rate
+    formula: "duplicate_rate = duplicate_rows / total_rows"
+    variables:
+      - name: duplicate_rows
+        type: integer
+        required: true
+      - name: total_rows
+        type: integer
+        required: true
+    units: "decimal (e.g., 0.02 = 2%)"
+    domain: dataset
+    tolerance_defaults:
+      absolute: 0.0001
+      relative: 0.001
+
+  - formula_id: missing_value_rate
+    name: Missing Value Rate
+    formula: "missing_value_rate = missing_cells / total_cells"
+    variables:
+      - name: missing_cells
+        type: integer
+        required: true
+      - name: total_cells
+        type: integer
+        required: true
+    units: "decimal (e.g., 0.05 = 5%)"
+    domain: dataset
+    tolerance_defaults:
+      absolute: 0.0001
+      relative: 0.001
+
+  - formula_id: class_balance_ratio
+    name: Class Balance Ratio
+    formula: "class_balance = min_class_count / max_class_count"
+    variables:
+      - name: min_class_count
+        type: integer
+        required: true
+      - name: max_class_count
+        type: integer
+        required: true
+    units: "decimal (e.g., 0.5 = 50%)"
+    domain: dataset
+    tolerance_defaults:
+      absolute: 0.001
+      relative: 0.001
+
+  - formula_id: schema_compliance_rate
+    name: Schema Compliance Rate
+    formula: "schema_compliance = compliant_fields / total_fields"
+    variables:
+      - name: compliant_fields
+        type: integer
+        required: true
+      - name: total_fields
+        type: integer
+        required: true
+    units: "decimal (e.g., 0.95 = 95%)"
+    domain: dataset
+    tolerance_defaults:
+      absolute: 0.001
+      relative: 0.001
+
+  - formula_id: outlier_rate
+    name: Outlier Rate
+    formula: "outlier_rate = outlier_count / total_rows"
+    variables:
+      - name: outlier_count
+        type: integer
+        required: true
+      - name: total_rows
+        type: integer
+        required: true
+    units: "decimal (e.g., 0.03 = 3%)"
+    domain: dataset
+    tolerance_defaults:
+      absolute: 0.0001
+      relative: 0.001
+
+  # ── Token / Cost Formulas ──────────────────────────────────────────────
+
+  - formula_id: cost_per_token
+    name: Cost Per Token
+    formula: "cost_per_token = total_cost / total_tokens"
+    variables:
+      - name: total_cost
+        type: number
+        required: true
+      - name: total_tokens
+        type: integer
+        required: true
+    units: "USD per token"
+    domain: cost
+    tolerance_defaults:
+      absolute: 0.000001
+      relative: 0.001
+
+  - formula_id: cost_per_1k_tokens
+    name: Cost Per 1K Tokens
+    formula: "cost_per_1k = (total_cost / total_tokens) * 1000"
+    variables:
+      - name: total_cost
+        type: number
+        required: true
+      - name: total_tokens
+        type: integer
+        required: true
+    units: "USD per 1,000 tokens"
+    domain: cost
+    tolerance_defaults:
+      absolute: 0.0001
+      relative: 0.001
+
+  - formula_id: cost_per_request
+    name: Cost Per Request
+    formula: "cost_per_request = total_cost / total_requests"
+    variables:
+      - name: total_cost
+        type: number
+        required: true
+      - name: total_requests
+        type: integer
+        required: true
+    units: "USD per request"
+    domain: cost
+    tolerance_defaults:
+      absolute: 0.0001
+      relative: 0.001
+
+  - formula_id: token_efficiency
+    name: Token Efficiency
+    formula: "token_efficiency = output_tokens / input_tokens"
+    variables:
+      - name: output_tokens
+        type: integer
+        required: true
+      - name: input_tokens
+        type: integer
+        required: true
+    units: "ratio (e.g., 0.5 = 50%)"
+    domain: cost
+    tolerance_defaults:
+      absolute: 0.001
+      relative: 0.001
+
+  - formula_id: error_rate
+    name: Error Rate
+    formula: "error_rate = failed_checks / total_checks"
+    variables:
+      - name: failed_checks
+        type: integer
+        required: true
+      - name: total_checks
+        type: integer
+        required: true
+    units: "decimal (e.g., 0.05 = 5%)"
+    domain: quality
+    tolerance_defaults:
+      absolute: 0.0001
+      relative: 0.001

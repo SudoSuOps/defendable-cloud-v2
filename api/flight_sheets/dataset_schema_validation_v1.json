@@ -1,0 +1,61 @@
+{
+  "slug": "dataset_schema_validation_v1",
+  "name": "Dataset Schema Validation",
+  "version": "1.0",
+  "lane": "dataset",
+  "summary": "Validate that a dataset's actual schema matches its declared specification including field names, types, and required fields",
+  "purpose": "Validate that a dataset's actual schema matches its declared specification including field names, types, and required fields.",
+  "assignment_instructions": "You are evaluating a dataset's schema compliance. REQUIRED OUTPUT: Return a JSON object with these exact fields: - assignment_id (string): use \"dataset_schema_validation_v1\" - agent_summary (string): summary of findings - inputs_used (list of strings): inputs you used - missing_inputs (list of strings): any missing inputs - claims (list of objects): each with claim (string), evidence_reference (string), confidence (one of: \"provided\", \"inferred\", \"missing\") - calculations (list of objects): each with name, formula, inputs (object), result (number or null), units (string), assumptions (list of strings) - risks (list of objects): each with risk (string), severity (\"low\"|\"medium\"|\"high\"), evidence_reference (string) - assumptions (list of strings) - open_questions (list of strings) - final_output (string): your conclusion - self_check (object): all_required_sections_completed (boolean), all_numbers_have_sources (boolean), assumptions_labeled (boolean), missing_inputs_disclosed (boolean) Also include these schema-specific fields: - schema_compliance_rate (number between 0 and 1) - field_checks (list of objects): each with field_name (string), declared_type (string), actual_type (string), compliant (boolean) - missing_required_fields (list of strings) - extra_fields_detected (list of strings) Compute schema_compliance_rate as: compliant_field_count / total_required_fields. Return as a number. If data is missing, set missing_inputs and flag the issue. Use only the provided evidence unless explicitly allowed to assume; label every assumption; if a required input is missing, say so; do not fabricate facts or cite evidence that was not provided.",
+  "required_inputs": [
+    "dataset_sample_or_path",
+    "declared_schema_specification"
+  ],
+  "expected_outputs": [
+    "assignment_id",
+    "schema_compliance_rate",
+    "field_checks",
+    "missing_required_fields",
+    "extra_fields_detected",
+    "claims",
+    "self_check"
+  ],
+  "audit_checks": [
+    {
+      "key": "sections_present",
+      "label": "Required sections present",
+      "category": "structure",
+      "kind": "auto",
+      "severity": "critical"
+    },
+    {
+      "key": "output_nonempty",
+      "label": "Output is substantive",
+      "category": "structure",
+      "kind": "auto",
+      "severity": "noncritical"
+    },
+    {
+      "key": "schema_compliance_below_100",
+      "label": "Schema compliance below 100",
+      "category": "structure",
+      "kind": "checklist",
+      "severity": "noncritical"
+    },
+    {
+      "key": "missing_required_field",
+      "label": "Missing required field",
+      "category": "structure",
+      "kind": "checklist",
+      "severity": "critical"
+    },
+    {
+      "key": "extra_fields_present",
+      "label": "Extra fields present",
+      "category": "structure",
+      "kind": "checklist",
+      "severity": "noncritical"
+    }
+  ],
+  "pass_threshold": 80,
+  "fail_threshold": 60
+}

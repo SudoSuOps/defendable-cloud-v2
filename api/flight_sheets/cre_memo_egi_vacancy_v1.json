@@ -1,0 +1,81 @@
+{
+  "slug": "cre_memo_egi_vacancy_v1",
+  "name": "Effective Gross Income and Vacancy Analysis",
+  "version": "1.0",
+  "lane": "agent",
+  "summary": "Calculate Effective Gross Income (EGI) from Gross Potential Rent (GPR) and vacancy, then analyze the vacancy rate against market benchmarks",
+  "purpose": "Calculate Effective Gross Income (EGI) from Gross Potential Rent (GPR) and vacancy, then analyze the vacancy rate against market benchmarks. This eval tests the agent's ability to handle income normalization and market comparison for vacancy assumptions.",
+  "assignment_instructions": "Property Memo: --- PROPERTY: Parkside Lofts, 777 Park Blvd, Charlotte, NC Gross Potential Rent: $3,200,000/year Reported Vacancy (as-is): 11.5% Market Vacancy (submarket average): 7.2% Other Income (parking, fees): $85,000/year ---\nCalculate and return ONLY a JSON object:\n1. Effective Gross Income (EGI) = gpr * (1 - reported_vacancy) + other_income 2. Vacancy Loss Amount = gpr * reported_vacancy 3. Vacancy Premium Over Market = reported_vacancy - market_vacancy 4. Potential EGI at Market Vacancy = gpr * (1 - market_vacancy) + other_income 5. EGI Uplift Opportunity = potential_egi_at_market - egi\nJSON structure: {\n  \"assignment_id\": \"cre_memo_egi_vacancy_v1\",\n  \"agent_summary\": \"<string>\",\n  \"inputs_used\": [\"<string>\"],\n  \"missing_inputs\": [\"<string>\"],\n  \"claims\": [\n    {\n      \"claim\": \"<string>\",\n      \"evidence_reference\": \"<string>\",\n      \"confidence\": \"<provided | inferred | missing>\"\n    }\n  ],\n  \"calculations\": [\n    {\n      \"name\": \"<string>\",\n      \"formula\": \"<string>\",\n      \"inputs\": {\"<key>\": <number>},\n      \"result\": <number>,\n      \"units\": \"<string>\",\n      \"assumptions\": [\"<string>\"]\n    }\n  ],\n  \"risks\": [\n    {\n      \"risk\": \"<string>\",\n      \"severity\": \"<low | medium | high>\",\n      \"evidence_reference\": \"<string>\"\n    }\n  ],\n  \"assumptions\": [\"<string>\"],\n  \"open_questions\": [\"<string>\"],\n  \"final_output\": \"<string>\",\n  \"self_check\": {\n    \"all_required_sections_completed\": true,\n    \"all_numbers_have_sources\": true,\n    \"assumptions_labeled\": true,\n    \"missing_inputs_disclosed\": true\n  }\n}\nCRITICAL RULES: - Reported vacancy must be expressed as decimal (0.115) in calculations. - Market vacancy must be expressed as decimal (0.072) in calculations. - Include other_income in EGI calculation. - The vacancy premium over market is 4.3 percentage points (0.043). - If reported_vacancy > market_vacancy, add a risk entry explaining\n  the implication (e.g., value-add opportunity or operational risk).\n- claims[] must include at least one entry comparing reported vacancy\n  to market vacancy.\n- Show all 5 calculations separately. - Do not output any text outside the JSON object. Use only the provided evidence unless explicitly allowed to assume; label every assumption; if a required input is missing, say so; do not fabricate facts or cite evidence that was not provided.",
+  "required_inputs": [
+    "gross_potential_rent",
+    "reported_vacancy",
+    "market_vacancy",
+    "other_income"
+  ],
+  "expected_outputs": [
+    "assignment_id",
+    "agent_summary",
+    "inputs_used",
+    "missing_inputs",
+    "claims",
+    "calculations",
+    "risks",
+    "assumptions",
+    "open_questions",
+    "final_output",
+    "self_check"
+  ],
+  "audit_checks": [
+    {
+      "key": "sections_present",
+      "label": "Required sections present",
+      "category": "structure",
+      "kind": "auto",
+      "severity": "critical"
+    },
+    {
+      "key": "citations_present",
+      "label": "Evidence is referenced",
+      "category": "evidence",
+      "kind": "auto",
+      "severity": "noncritical"
+    },
+    {
+      "key": "missing_egi_calculation",
+      "label": "Missing egi calculation",
+      "category": "math",
+      "kind": "checklist",
+      "severity": "critical"
+    },
+    {
+      "key": "vacancy_not_decimal",
+      "label": "Vacancy not decimal",
+      "category": "policy",
+      "kind": "checklist",
+      "severity": "noncritical"
+    },
+    {
+      "key": "other_income_excluded",
+      "label": "Other income excluded",
+      "category": "policy",
+      "kind": "checklist",
+      "severity": "critical"
+    },
+    {
+      "key": "no_vacancy_comparison",
+      "label": "No vacancy comparison",
+      "category": "policy",
+      "kind": "checklist",
+      "severity": "noncritical"
+    },
+    {
+      "key": "math_result_incorrect",
+      "label": "Math result incorrect",
+      "category": "math",
+      "kind": "checklist",
+      "severity": "critical"
+    }
+  ],
+  "pass_threshold": 80,
+  "fail_threshold": 60
+}

@@ -1,0 +1,230 @@
+# DefendableCloud Example Assignment
+# assignment_id: cre_memo_noi_cap_rate_v1
+# lane: cre_real_estate_memo_eval
+# This is a single extracted example from the full assignment library.
+# See assignments.yaml for all 50 assignments.
+
+assignment_id: cre_memo_noi_cap_rate_v1
+name: NOI and Cap Rate Review
+lane: cre_real_estate_memo_eval
+version: '1.0'
+purpose: 'Extract deal economics from a property memo, calculate Net Operating Income
+  (NOI) and Capitalization Rate, and return structured JSON with all formulas shown.
+  This is the foundational economics check for any CRE deal memo.
+
+  '
+operator_instructions: "1. Provide the agent with a property memo containing GPR,\
+  \ vacancy,\n   operating expenses, and purchase price.\n2. Verify the agent returns\
+  \ calculations for effective_gross_income,\n   noi, and cap_rate with correct formulas.\n\
+  3. Check that all three math_checks pass within tolerance. 4. Verify every number\
+  \ in calculations[].inputs has a source citation. 5. Publish eval_receipt.\n"
+agent_prompt: "Property Memo: --- PROPERTY: Riverview Commons, 789 River Rd, Tampa,\
+  \ FL Year Built: 2010, Renovated: 2022 Total Units: 85 Gross Potential Rent (GPR):\
+  \ $1,785,000/year Market Vacancy Rate: 6.5% Operating Expenses:\n  - Property Taxes:\
+  \ $210,000\n  - Insurance: $68,000\n  - Maintenance/Repairs: $112,000\n  - Management\
+  \ Fees: $89,250\n  - Utilities: $47,500\n  - Marketing/Admin: $23,000\nPurchase\
+  \ Price: $14,200,000 ---\nCalculate the following and return ONLY a JSON object:\
+  \ 1. Effective Gross Income (EGI) = GPR * (1 - vacancy_rate) 2. Total Operating\
+  \ Expenses = sum of all expense line items 3. Net Operating Income (NOI) = EGI -\
+  \ Total Operating Expenses 4. Capitalization Rate = NOI / Purchase Price\nJSON structure:\
+  \ {\n  \"assignment_id\": \"cre_memo_noi_cap_rate_v1\",\n  \"agent_summary\": \"\
+  <string>\",\n  \"inputs_used\": [\"<string: each source field used>\"],\n  \"missing_inputs\"\
+  : [\"<string>\"],\n  \"claims\": [\n    {\n      \"claim\": \"<string>\",\n    \
+  \  \"evidence_reference\": \"<string>\",\n      \"confidence\": \"<provided | inferred\
+  \ | missing>\"\n    }\n  ],\n  \"calculations\": [\n    {\n      \"name\": \"<string>\"\
+  ,\n      \"formula\": \"<string>\",\n      \"inputs\": {\"<key>\": <number>},\n\
+  \      \"result\": <number>,\n      \"units\": \"<string>\",\n      \"assumptions\"\
+  : [\"<string>\"]\n    }\n  ],\n  \"risks\": [\n    {\n      \"risk\": \"<string>\"\
+  ,\n      \"severity\": \"<low | medium | high>\",\n      \"evidence_reference\"\
+  : \"<string>\"\n    }\n  ],\n  \"assumptions\": [\"<string>\"],\n  \"open_questions\"\
+  : [\"<string>\"],\n  \"final_output\": \"<string>\",\n  \"self_check\": {\n    \"\
+  all_required_sections_completed\": true,\n    \"all_numbers_have_sources\": true,\n\
+  \    \"assumptions_labeled\": true,\n    \"missing_inputs_disclosed\": true\n  }\n\
+  }\nRules: - Vacancy rate must be expressed as a decimal (0.065) in calculations.\
+  \ - Purchase price must be numeric, not a formatted string. - Show the sum of operating\
+  \ expenses as a separate calculation. - All expense line items must appear in calculations[].inputs.\
+  \ - Do not output any text outside the JSON object.\n"
+required_inputs:
+- gross_potential_rent: 1785000
+- vacancy_rate: 0.065
+- property_taxes: 210000
+- insurance: 68000
+- maintenance_repairs: 112000
+- management_fees: 89250
+- utilities: 47500
+- marketing_admin: 23000
+- purchase_price: 14200000
+expected_outputs:
+- effective_gross_income: 1669025.0
+- total_operating_expenses: 549750.0
+- noi: 1119275.0
+- cap_rate: 0.0788222
+- All expense line items listed in calculations[].inputs
+- vacancy_rate expressed as decimal 0.065
+required_output_schema:
+  type: object
+  required:
+  - assignment_id
+  - agent_summary
+  - inputs_used
+  - missing_inputs
+  - claims
+  - calculations
+  - risks
+  - assumptions
+  - open_questions
+  - final_output
+  - self_check
+deterministic_checks:
+- name: assignment_id_exact
+  description: assignment_id equals "cre_memo_noi_cap_rate_v1"
+- name: calculations_has_egi
+  description: calculations contains entry named "Effective Gross Income" or equivalent
+- name: calculations_has_opex_total
+  description: calculations contains entry for total operating expenses
+- name: calculations_has_noi
+  description: calculations contains entry named "Net Operating Income" or equivalent
+- name: calculations_has_cap_rate
+  description: calculations contains entry named "Capitalization Rate" or equivalent
+- name: vacancy_rate_is_decimal
+  description: vacancy_rate in inputs is decimal (0.065) not percentage (6.5)
+- name: all_expense_line_items_present
+  description: All 6 expense line items appear in calculations[].inputs
+math_checks:
+- formula_id: effective_gross_income
+  formula: gross_potential_rent * (1 - vacancy_rate)
+  inputs:
+    gross_potential_rent: 1785000
+    vacancy_rate: 0.065
+  expected_result: 1669025.0
+  tolerance: 1.0
+- formula_id: total_operating_expenses
+  formula: sum of all expense line items
+  inputs:
+    property_taxes: 210000
+    insurance: 68000
+    maintenance_repairs: 112000
+    management_fees: 89250
+    utilities: 47500
+    marketing_admin: 23000
+  expected_result: 549750.0
+  tolerance: 1.0
+- formula_id: noi
+  formula: effective_gross_income - total_operating_expenses
+  inputs:
+    effective_gross_income: 1669025
+    total_operating_expenses: 549750
+  expected_result: 1119275.0
+  tolerance: 1.0
+- formula_id: cap_rate
+  formula: noi / purchase_price
+  inputs:
+    noi: 1119275
+    purchase_price: 14200000
+  expected_result: 0.0788222
+  tolerance: 0.0001
+evidence_checks:
+- name: gpr_cited
+  description: Gross Potential Rent is cited in inputs_used
+- name: purchase_price_cited
+  description: Purchase Price is cited in inputs_used
+- name: all_expenses_cited
+  description: Every expense line item is cited in inputs_used or calculations
+flag_rules:
+- flag_id: missing_noi_calculation
+  severity: propolis
+  condition: calculations array is missing NOI entry
+- flag_id: missing_cap_rate_calculation
+  severity: propolis
+  condition: calculations array is missing cap rate entry
+- flag_id: vacancy_as_percentage
+  severity: jelly
+  condition: vacancy_rate is expressed as 6.5 instead of 0.065 in calc inputs
+- flag_id: math_result_incorrect
+  severity: propolis
+  condition: Any math check result deviates beyond tolerance
+- flag_id: missing_expense_line_item
+  severity: jelly
+  condition: Any of the 6 expense line items is absent from calculations
+severity_mapping:
+  honey: Minor formatting variation (e.g., calculation name wording)
+  jelly: Missing expense item or wrong vacancy format
+  propolis: Missing NOI or cap rate calculation, or incorrect math
+receipt_type: eval_receipt
+recommended_human_review: recommended
+sample_submission_shape:
+  assignment_id: cre_memo_noi_cap_rate_v1
+  agent_summary: Calculated EGI, NOI, and cap rate from property memo.
+  inputs_used:
+  - 'GPR: $1,785,000'
+  - 'Vacancy Rate: 6.5%'
+  - 'Property Taxes: $210,000'
+  - 'Insurance: $68,000'
+  - 'Maintenance/Repairs: $112,000'
+  - 'Management Fees: $89,250'
+  - 'Utilities: $47,500'
+  - 'Marketing/Admin: $23,000'
+  - 'Purchase Price: $14,200,000'
+  missing_inputs: []
+  claims:
+  - claim: NOI is $1,119,275.
+    evidence_reference: Operating Expenses
+    confidence: provided
+  - claim: Cap rate is approximately 7.88%.
+    evidence_reference: Purchase Price
+    confidence: provided
+  calculations:
+  - name: Effective Gross Income
+    formula: gross_potential_rent * (1 - vacancy_rate)
+    inputs:
+      gross_potential_rent: 1785000
+      vacancy_rate: 0.065
+    result: 1669025
+    units: USD
+    assumptions:
+    - Vacancy rate of 6.5% per memo.
+  - name: Total Operating Expenses
+    formula: property_taxes + insurance + maintenance + management + utilities + marketing
+    inputs:
+      property_taxes: 210000
+      insurance: 68000
+      maintenance_repairs: 112000
+      management_fees: 89250
+      utilities: 47500
+      marketing_admin: 23000
+    result: 549750
+    units: USD
+    assumptions:
+    - All six expense line items per memo.
+  - name: Net Operating Income
+    formula: effective_gross_income - total_operating_expenses
+    inputs:
+      effective_gross_income: 1669025
+      total_operating_expenses: 549750
+    result: 1119275
+    units: USD
+    assumptions:
+    - Stabilized expense run rate per memo.
+  - name: Capitalization Rate
+    formula: noi / purchase_price
+    inputs:
+      noi: 1119275
+      purchase_price: 14200000
+    result: 0.0788222
+    units: ratio
+    assumptions:
+    - Purchase price of $14.2M per memo.
+  risks:
+  - risk: Cap rate below 8% may not meet investor hurdle.
+    severity: medium
+    evidence_reference: Purchase Price
+  assumptions:
+  - Vacancy rate of 6.5% reflects stabilized operations.
+  - Operating expenses are representative of trailing 12 months.
+  open_questions: []
+  final_output: 'EGI: $1,669,025; NOI: $1,119,275; Cap Rate: 7.88%'
+  self_check:
+    all_required_sections_completed: true
+    all_numbers_have_sources: true
+    assumptions_labeled: true
+    missing_inputs_disclosed: true

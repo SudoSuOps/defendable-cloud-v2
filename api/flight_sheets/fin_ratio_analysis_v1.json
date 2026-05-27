@@ -1,0 +1,103 @@
+{
+  "slug": "fin_ratio_analysis_v1",
+  "name": "Financial Ratio Analysis",
+  "version": "1.0",
+  "lane": "agent",
+  "summary": "Calculate the current ratio, quick ratio, and debt-to-equity ratio from balance sheet inputs",
+  "purpose": "Calculate the current ratio, quick ratio, and debt-to-equity ratio from balance sheet inputs. These liquidity and leverage ratios are essential for financial health assessment and must be computed precisely.",
+  "assignment_instructions": "You are calculating three key financial ratios from balance sheet data.\n\nGiven the financial inputs, compute the following with exact formulas:\n\n1. Current Ratio = Current Assets / Current Liabilities\n2. Quick Ratio = (Current Assets - Inventory) / Current Liabilities\n3. Debt-to-Equity Ratio = Total Debt / Shareholders' Equity\n\nReturn a single JSON object with this exact structure:\n{\n  \"assignment_id\": \"fin_ratio_analysis_v1\",\n  \"agent_summary\": \"One sentence summary\",\n  \"inputs_used\": [\"current_assets\", \"current_liabilities\", \"inventory\", \"total_debt\", \"shareholders_equity\"],\n  \"missing_inputs\": [\"any missing inputs\"],\n  \"claims\": [\n    {\"claim\": \"\", \"evidence_reference\": \"\", \"confidence\": \"provided | inferred | missing\"}\n  ],\n  \"calculations\": [\n    {\n      \"name\": \"current_ratio\",\n      \"formula\": \"Current Assets / Current Liabilities\",\n      \"inputs\": {\"current_assets\": 0, \"current_liabilities\": 0},\n      \"result\": 0,\n      \"units\": \"ratio\",\n      \"assumptions\": []\n    },\n    {\n      \"name\": \"quick_ratio\",\n      \"formula\": \"(Current Assets - Inventory) / Current Liabilities\",\n      \"inputs\": {\"current_assets\": 0, \"inventory\": 0, \"current_liabilities\": 0},\n      \"result\": 0,\n      \"units\": \"ratio\",\n      \"assumptions\": []\n    },\n    {\n      \"name\": \"debt_to_equity_ratio\",\n      \"formula\": \"Total Debt / Shareholders Equity\",\n      \"inputs\": {\"total_debt\": 0, \"shareholders_equity\": 0},\n      \"result\": 0,\n      \"units\": \"ratio\",\n      \"assumptions\": []\n    }\n  ],\n  \"risks\": [\n    {\"risk\": \"\", \"severity\": \"low | medium | high\", \"evidence_reference\": \"\"}\n  ],\n  \"assumptions\": [],\n  \"open_questions\": [],\n  \"final_output\": \"PASS or FAIL\",\n  \"self_check\": {\n    \"all_required_sections_completed\": true,\n    \"all_numbers_have_sources\": true,\n    \"assumptions_labeled\": true,\n    \"missing_inputs_disclosed\": true\n  }\n}\n\nRules:\n- ALL input values used must be echoed in each calculation's inputs sub-object\n- result must be a numeric value (not a string)\n- Current liabilities and shareholders equity must not be zero (division by zero)\n- final_output is PASS if all three ratios are calculated with numeric results AND no division by zero\n- final_output is FAIL if current_liabilities == 0 OR shareholders_equity == 0\n- Show formulas exactly as specified\n- Ratios are unitless (units: \"ratio\")\n\nReturn only the JSON. No markdown fences, no prose. Use only the provided evidence unless explicitly allowed to assume; label every assumption; if a required input is missing, say so; do not fabricate facts or cite evidence that was not provided.",
+  "required_inputs": [
+    "current_assets",
+    "current_liabilities",
+    "inventory",
+    "total_debt",
+    "shareholders_equity"
+  ],
+  "expected_outputs": [
+    "assignment_id",
+    "agent_summary",
+    "inputs_used",
+    "missing_inputs",
+    "claims",
+    "calculations",
+    "risks",
+    "assumptions",
+    "open_questions",
+    "final_output",
+    "self_check"
+  ],
+  "audit_checks": [
+    {
+      "key": "sections_present",
+      "label": "Required sections present",
+      "category": "structure",
+      "kind": "auto",
+      "severity": "critical"
+    },
+    {
+      "key": "citations_present",
+      "label": "Evidence is referenced",
+      "category": "evidence",
+      "kind": "auto",
+      "severity": "noncritical"
+    },
+    {
+      "key": "missing_calculation",
+      "label": "Not all three required ratio calculations are present",
+      "category": "math",
+      "kind": "checklist",
+      "severity": "critical"
+    },
+    {
+      "key": "non_numeric_result",
+      "label": "One or more calculation results are not numeric",
+      "category": "math",
+      "kind": "checklist",
+      "severity": "critical"
+    },
+    {
+      "key": "zero_current_liabilities",
+      "label": "Current liabilities is zero \u2014 current and quick ratios undefined",
+      "category": "math",
+      "kind": "checklist",
+      "severity": "noncritical"
+    },
+    {
+      "key": "zero_equity",
+      "label": "Shareholders equity is zero \u2014 debt-to-equity ratio undefined",
+      "category": "math",
+      "kind": "checklist",
+      "severity": "noncritical"
+    },
+    {
+      "key": "current_ratio_mismatch",
+      "label": "Current ratio calculation does not match formula",
+      "category": "math",
+      "kind": "checklist",
+      "severity": "critical"
+    },
+    {
+      "key": "quick_ratio_mismatch",
+      "label": "Quick ratio calculation does not match formula",
+      "category": "math",
+      "kind": "checklist",
+      "severity": "critical"
+    },
+    {
+      "key": "debt_equity_mismatch",
+      "label": "Debt-to-equity ratio calculation does not match formula",
+      "category": "math",
+      "kind": "checklist",
+      "severity": "critical"
+    },
+    {
+      "key": "pass_with_zero_divisor",
+      "label": "final_output is PASS but a divisor is zero",
+      "category": "policy",
+      "kind": "checklist",
+      "severity": "critical"
+    }
+  ],
+  "pass_threshold": 80,
+  "fail_threshold": 60
+}

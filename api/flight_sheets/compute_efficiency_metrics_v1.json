@@ -1,0 +1,69 @@
+{
+  "slug": "compute_efficiency_metrics_v1",
+  "name": "Efficiency Metrics Calculation",
+  "version": "1.0",
+  "lane": "compute",
+  "summary": "Calculate score-per-watt and score-per-dollar efficiency metrics for a benchmark result",
+  "purpose": "Calculate score-per-watt and score-per-dollar efficiency metrics for a benchmark result. Verify inputs and show formulas.",
+  "assignment_instructions": "You are calculating efficiency metrics for a benchmark result. REQUIRED OUTPUT: Return a JSON object with these exact fields: - assignment_id (string): use \"compute_efficiency_metrics_v1\" - agent_summary (string) - inputs_used (list of strings) - missing_inputs (list of strings) - claims (list of objects): claim, evidence_reference, confidence (\"provided\"|\"inferred\"|\"missing\") - calculations (list of objects): name, formula, inputs, result, units, assumptions - risks (list of objects): risk, severity (\"low\"|\"medium\"|\"high\"), evidence_reference - assumptions (list of strings) - open_questions (list of strings) - final_output (string) - self_check (object): all_required_sections_completed (boolean), all_numbers_have_sources (boolean), assumptions_labeled (boolean), missing_inputs_disclosed (boolean) Also include: - benchmark_name (string) - gpu_model (string) - benchmark_score (number) - score_units (string) - avg_power_w (number): average power draw during benchmark - gpu_cost_usd (number): acquisition cost of GPU in USD - score_per_watt (number or null): benchmark_score / avg_power_w, null if avg_power_w is 0 - score_per_watt_units (string): \"{score_units}/W\" - score_per_dollar (number or null): benchmark_score / gpu_cost_usd, null if gpu_cost_usd is 0 - score_per_dollar_units (string): \"{score_units}/USD\" - cost_valid (boolean): gpu_cost_usd > 0 - power_valid (boolean): avg_power_w > 0 - both_metrics_computed (boolean): score_per_watt is not null and score_per_dollar is not null Compute score_per_watt as benchmark_score / avg_power_w. Compute score_per_dollar as benchmark_score / gpu_cost_usd. If avg_power_w is 0 or missing, set score_per_watt to null. If gpu_cost_usd is 0 or missing, set score_per_dollar to null. Return numeric values as numbers, not prose. Include both formulas in the calculations array with exact inputs. Use only the provided evidence unless explicitly allowed to assume; label every assumption; if a required input is missing, say so; do not fabricate facts or cite evidence that was not provided.",
+  "required_inputs": [
+    "benchmark_score",
+    "score_units",
+    "avg_power_w",
+    "gpu_cost_usd",
+    "benchmark_name",
+    "gpu_model"
+  ],
+  "expected_outputs": [
+    "assignment_id",
+    "benchmark_score",
+    "avg_power_w",
+    "gpu_cost_usd",
+    "score_per_watt",
+    "score_per_dollar",
+    "cost_valid",
+    "power_valid",
+    "both_metrics_computed",
+    "calculations",
+    "self_check"
+  ],
+  "audit_checks": [
+    {
+      "key": "sections_present",
+      "label": "Required sections present",
+      "category": "structure",
+      "kind": "auto",
+      "severity": "critical"
+    },
+    {
+      "key": "specs_present",
+      "label": "Specs quantified",
+      "category": "structure",
+      "kind": "auto",
+      "severity": "noncritical"
+    },
+    {
+      "key": "power_invalid",
+      "label": "Power invalid",
+      "category": "policy",
+      "kind": "checklist",
+      "severity": "critical"
+    },
+    {
+      "key": "cost_invalid",
+      "label": "Cost invalid",
+      "category": "policy",
+      "kind": "checklist",
+      "severity": "critical"
+    },
+    {
+      "key": "both_metrics_missing",
+      "label": "Both metrics missing",
+      "category": "structure",
+      "kind": "checklist",
+      "severity": "critical"
+    }
+  ],
+  "pass_threshold": 80,
+  "fail_threshold": 60
+}

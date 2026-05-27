@@ -1,0 +1,88 @@
+{
+  "slug": "repair_systematic_failure_detection_v1",
+  "name": "Systematic Failure Pattern Detection",
+  "version": "1.0",
+  "lane": "agent",
+  "summary": "Analyze multiple submitted agent outputs to detect systematic failure patterns (e.g., consistent hallucination, repeated schema violations, recurring reasoning ",
+  "purpose": "Analyze multiple submitted agent outputs to detect systematic failure patterns (e.g., consistent hallucination, repeated schema violations, recurring reasoning errors). Output a structured failure_patterns array with classification, frequency, affected assignments, and recommended remediation actions.",
+  "assignment_instructions": "You are a repair and fine-tune candidate evaluator. Your task is to analyze a batch of agent submissions to detect systematic failure patterns.\nYou will receive: - A set of agent submission JSON files - The assignment_id each submission corresponds to\nFor each submission, validate against the assignment's required_output_schema. Record every validation failure found.\nThen, aggregate failures across all submissions to identify systematic patterns. A pattern is \"systematic\" if it appears in 2 or more submissions across the same assignment or across multiple assignments.\nFor each systematic pattern detected, output: - pattern_id (string: e.g., \"P001\") - pattern_type (string: one of \"schema_violation\", \"hallucination\",\n  \"reasoning_error\", \"calculation_error\", \"missing_required_field\",\n  \"incorrect_data_type\", \"self_check_failure\", \"other\")\n- description (string: detailed description of the pattern) - frequency (integer: number of submissions affected) - total_submissions_analyzed (integer) - affected_assignments (array of strings: assignment_ids where this pattern appeared) - example_evidence (array of objects, each with:\n    - submission_id (string)\n    - assignment_id (string)\n    - excerpt (string: the actual failing content or path)\n    - failure_detail (string: what was wrong))\n- recommended_action (string: specific remediation step, e.g.,\n  \"Add explicit few-shot example for X in prompt\",\n  \"Strengthen schema enforcement with required field list\",\n  \"Add calculation verification step in agent prompt\",\n  \"Consider fine-tuning on examples with correct Y output\")\n\nAlso compute summary statistics: - total_submissions (integer) - total_unique_assignments (integer) - total_unique_patterns (integer) - submissions_with_any_failure (integer) - pass_rate (float: (total_submissions - submissions_with_any_failure) / total_submissions, or 0.0 if total_submissions == 0)\nReturn a single JSON object with this exact structure: {\n  \"assignment_id\": \"repair_systematic_failure_detection_v1\",\n  \"agent_summary\": \"<one-sentence summary>\",\n  \"inputs_used\": [\"<list inputs>\"],\n  \"missing_inputs\": [\"<list missing inputs>\"],\n  \"claims\": [\n    {\n      \"claim\": \"<specific claim>\",\n      \"evidence_reference\": \"<submission_id or pattern_id>\",\n      \"confidence\": \"provided | inferred | missing\"\n    }\n  ],\n  \"calculations\": [\n    {\n      \"name\": \"pass_rate\",\n      \"formula\": \"(total_submissions - submissions_with_any_failure) / total_submissions\",\n      \"inputs\": {},\n      \"result\": 0.0,\n      \"units\": \"ratio (0.0 to 1.0)\",\n      \"assumptions\": [\"a submission passes if it has zero validation failures\"]\n    }\n  ],\n  \"failure_patterns\": [\n    {\n      \"pattern_id\": \"P001\",\n      \"pattern_type\": \"\",\n      \"description\": \"\",\n      \"frequency\": 0,\n      \"total_submissions_analyzed\": 0,\n      \"affected_assignments\": [],\n      \"example_evidence\": [\n        {\n          \"submission_id\": \"\",\n          \"assignment_id\": \"\",\n          \"excerpt\": \"\",\n          \"failure_detail\": \"\"\n        }\n      ],\n      \"recommended_action\": \"\"\n    }\n  ],\n  \"summary_statistics\": {\n    \"total_submissions\": 0,\n    \"total_unique_assignments\": 0,\n    \"total_unique_patterns\": 0,\n    \"submissions_with_any_failure\": 0,\n    \"pass_rate\": 0.0\n  },\n  \"risks\": [\n    {\n      \"risk\": \"<risk description>\",\n      \"severity\": \"low | medium | high\",\n      \"evidence_reference\": \"\"\n    }\n  ],\n  \"assumptions\": [\"<assumptions>\"],\n  \"open_questions\": [\"<open questions>\"],\n  \"final_output\": \"<PASS, CONDITIONAL_PASS, or FAIL>\",\n  \"self_check\": {\n    \"all_required_sections_completed\": true,\n    \"all_numbers_have_sources\": true,\n    \"assumptions_labeled\": true,\n    \"missing_inputs_disclosed\": true\n  }\n}\nRules for final_output (evaluating the repair analysis itself): - \"PASS\": At least 5 submissions analyzed, all failure patterns have\n  pattern_type from the allowed enum, frequency >= 2 for all patterns,\n  and every pattern has at least one example_evidence entry.\n- \"CONDITIONAL_PASS\": At least 5 submissions analyzed but some patterns\n  have frequency < 2 OR some patterns lack example_evidence.\n- \"FAIL\": Fewer than 5 submissions analyzed, OR no failure_patterns\n  array, OR patterns have invalid pattern_type values. Use only the provided evidence unless explicitly allowed to assume; label every assumption; if a required input is missing, say so; do not fabricate facts or cite evidence that was not provided.",
+  "required_inputs": [
+    "submission_batch",
+    "assignment_metadata"
+  ],
+  "expected_outputs": [
+    "assignment_id",
+    "agent_summary",
+    "inputs_used",
+    "missing_inputs",
+    "claims",
+    "calculations",
+    "failure_patterns",
+    "summary_statistics",
+    "risks",
+    "assumptions",
+    "open_questions",
+    "final_output",
+    "self_check"
+  ],
+  "audit_checks": [
+    {
+      "key": "sections_present",
+      "label": "Required sections present",
+      "category": "structure",
+      "kind": "auto",
+      "severity": "critical"
+    },
+    {
+      "key": "citations_present",
+      "label": "Evidence is referenced",
+      "category": "evidence",
+      "kind": "auto",
+      "severity": "noncritical"
+    },
+    {
+      "key": "insufficient_submissions",
+      "label": "Fewer than 5 submissions analyzed - cannot reliably detect systematic patterns",
+      "category": "policy",
+      "kind": "checklist",
+      "severity": "critical"
+    },
+    {
+      "key": "no_failure_patterns_detected",
+      "label": "Submissions had failures but no systematic patterns were extracted",
+      "category": "policy",
+      "kind": "checklist",
+      "severity": "critical"
+    },
+    {
+      "key": "pattern_without_evidence",
+      "label": "A failure pattern was reported without supporting example evidence",
+      "category": "evidence",
+      "kind": "checklist",
+      "severity": "noncritical"
+    },
+    {
+      "key": "low_frequency_pattern",
+      "label": "A reported pattern appears in fewer than 2 submissions - may not be systematic",
+      "category": "policy",
+      "kind": "checklist",
+      "severity": "noncritical"
+    },
+    {
+      "key": "invalid_pattern_type",
+      "label": "Pattern type is not from the allowed enum list",
+      "category": "policy",
+      "kind": "checklist",
+      "severity": "noncritical"
+    },
+    {
+      "key": "incomplete_self_check",
+      "label": "Agent did not complete all required self-check sections",
+      "category": "structure",
+      "kind": "checklist",
+      "severity": "critical"
+    }
+  ],
+  "pass_threshold": 80,
+  "fail_threshold": 60
+}

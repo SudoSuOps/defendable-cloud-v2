@@ -1,0 +1,65 @@
+{
+  "slug": "dataset_train_test_integrity_v1",
+  "name": "Train/Test Split Integrity",
+  "version": "1.0",
+  "lane": "dataset",
+  "summary": "Verify there is no data leakage between train and test sets",
+  "purpose": "Verify there is no data leakage between train and test sets. Confirm actual split ratios are within 5% of declared ratios.",
+  "assignment_instructions": "You are verifying train/test split integrity. REQUIRED OUTPUT: Return a JSON object with these exact fields: - assignment_id (string): use \"dataset_train_test_integrity_v1\" - agent_summary (string) - inputs_used (list of strings) - missing_inputs (list of strings) - claims (list of objects): claim, evidence_reference, confidence (\"provided\"|\"inferred\"|\"missing\") - calculations (list of objects): name, formula, inputs, result, units, assumptions - risks (list of objects): risk, severity (\"low\"|\"medium\"|\"high\"), evidence_reference - assumptions (list of strings) - open_questions (list of strings) - final_output (string) - self_check (object): all_required_sections_completed (boolean), all_numbers_have_sources (boolean), assumptions_labeled (boolean), missing_inputs_disclosed (boolean) Also include: - train_rows (integer) - test_rows (integer) - total_rows (integer) - actual_train_ratio (number): train_rows / total_rows - declared_train_ratio (number or null) - ratio_difference (number or null): abs(actual_train_ratio - declared_train_ratio) - ratio_within_tolerance (boolean): ratio_difference <= 0.05, or true if declared_train_ratio is null - overlap_detected (boolean): whether any rows appear in both train and test - overlap_count (integer or null): number of overlapping rows, 0 if none - overlap_percentage (number or null): overlap_count / total_rows - leakage_flag (boolean): true if overlap_detected or not ratio_within_tolerance Compute actual_train_ratio as train_rows / total_rows. Compute ratio_difference as abs(actual_train_ratio - declared_train_ratio) if declared_train_ratio is provided. Flag leakage_flag as true if overlap_detected == true OR ratio_within_tolerance == false. Return numeric values as numbers, not prose. Use only the provided evidence unless explicitly allowed to assume; label every assumption; if a required input is missing, say so; do not fabricate facts or cite evidence that was not provided.",
+  "required_inputs": [
+    "train_dataset_or_identifiers",
+    "test_dataset_or_identifiers",
+    "declared_train_ratio_optional"
+  ],
+  "expected_outputs": [
+    "assignment_id",
+    "train_rows",
+    "test_rows",
+    "total_rows",
+    "actual_train_ratio",
+    "overlap_detected",
+    "overlap_count",
+    "leakage_flag",
+    "calculations",
+    "self_check"
+  ],
+  "audit_checks": [
+    {
+      "key": "sections_present",
+      "label": "Required sections present",
+      "category": "structure",
+      "kind": "auto",
+      "severity": "critical"
+    },
+    {
+      "key": "output_nonempty",
+      "label": "Output is substantive",
+      "category": "structure",
+      "kind": "auto",
+      "severity": "noncritical"
+    },
+    {
+      "key": "data_leakage_detected",
+      "label": "Data leakage detected",
+      "category": "policy",
+      "kind": "checklist",
+      "severity": "critical"
+    },
+    {
+      "key": "split_ratio_mismatch",
+      "label": "Split ratio mismatch",
+      "category": "math",
+      "kind": "checklist",
+      "severity": "noncritical"
+    },
+    {
+      "key": "clean_split",
+      "label": "Clean split",
+      "category": "policy",
+      "kind": "checklist",
+      "severity": "noncritical"
+    }
+  ],
+  "pass_threshold": 80,
+  "fail_threshold": 60
+}

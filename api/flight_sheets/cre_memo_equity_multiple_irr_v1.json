@@ -1,0 +1,91 @@
+{
+  "slug": "cre_memo_equity_multiple_irr_v1",
+  "name": "Equity Multiple and IRR Review",
+  "version": "1.0",
+  "lane": "agent",
+  "summary": "Calculate Equity Multiple and Internal Rate of Return (IRR) from a 5-year cash flow projection",
+  "purpose": "Calculate Equity Multiple and Internal Rate of Return (IRR) from a 5-year cash flow projection. These are the primary return metrics investors use to compare opportunities. This eval tests multi-period cash flow handling and financial function accuracy.",
+  "assignment_instructions": "Property Memo: --- PROPERTY: Summit Ridge, 999 Summit Dr, Atlanta, GA Initial Equity Investment (Year 0): $3,500,000\n5-Year Cash Flow Projection (after debt service, before taxes):\n  Year 1: $285,000\n  Year 2: $298,000\n  Year 3: $312,000\n  Year 4: $327,000\n  Year 5: $342,000\n\nYear 5 Exit (Sale Proceeds to Equity): $4,200,000 ---\nCalculate and return ONLY a JSON object:\n1. Total Cash Distributed = sum of years 1-5 cash flows + year_5_exit 2. Equity Multiple = total_cash_distributed / initial_equity_investment 3. IRR: Calculate the internal rate of return from the cash flow stream:\n   Year 0: -3,500,000\n   Year 1: 285,000\n   Year 2: 298,000\n   Year 3: 312,000\n   Year 4: 327,000\n   Year 5: 342,000 + 4,200,000 = 4,542,000\n   Use the IRR formula (financial root-finding method).\n\nJSON structure: {\n  \"assignment_id\": \"cre_memo_equity_multiple_irr_v1\",\n  \"agent_summary\": \"<string>\",\n  \"inputs_used\": [\"<string>\"],\n  \"missing_inputs\": [\"<string>\"],\n  \"claims\": [\n    {\n      \"claim\": \"<string>\",\n      \"evidence_reference\": \"<string>\",\n      \"confidence\": \"<provided | inferred | missing>\"\n    }\n  ],\n  \"calculations\": [\n    {\n      \"name\": \"<string>\",\n      \"formula\": \"<string>\",\n      \"inputs\": {\"<key>\": <number>},\n      \"result\": <number>,\n      \"units\": \"<string>\",\n      \"assumptions\": [\"<string>\"]\n    }\n  ],\n  \"risks\": [\n    {\n      \"risk\": \"<string>\",\n      \"severity\": \"<low | medium | high>\",\n      \"evidence_reference\": \"<string>\"\n    }\n  ],\n  \"assumptions\": [\"<string>\"],\n  \"open_questions\": [\"<string>\"],\n  \"final_output\": \"<string>\",\n  \"self_check\": {\n    \"all_required_sections_completed\": true,\n    \"all_numbers_have_sources\": true,\n    \"assumptions_labeled\": true,\n    \"missing_inputs_disclosed\": true\n  }\n}\nCRITICAL RULES: - Year 5 cash flow for IRR must include both the operating cash flow\n  ($342,000) AND the exit proceeds ($4,200,000) for a total of $4,542,000.\n- Year 0 is negative initial equity (-3,500,000). - Equity multiple must use total_cash_distributed / initial_equity_investment. - IRR calculation must use all 6 cash flow periods (year 0 through year 5). - The IRR formula field should state \"IRR(cash_flows) via numerical method\"\n  or equivalent.\n- Show the year-by-year cash flows in the IRR calculation inputs. - Do not output any text outside the JSON object. Use only the provided evidence unless explicitly allowed to assume; label every assumption; if a required input is missing, say so; do not fabricate facts or cite evidence that was not provided.",
+  "required_inputs": [
+    "initial_equity_investment",
+    "year1_cf",
+    "year2_cf",
+    "year3_cf",
+    "year4_cf",
+    "year5_cf",
+    "year5_exit"
+  ],
+  "expected_outputs": [
+    "assignment_id",
+    "agent_summary",
+    "inputs_used",
+    "missing_inputs",
+    "claims",
+    "calculations",
+    "risks",
+    "assumptions",
+    "open_questions",
+    "final_output",
+    "self_check"
+  ],
+  "audit_checks": [
+    {
+      "key": "sections_present",
+      "label": "Required sections present",
+      "category": "structure",
+      "kind": "auto",
+      "severity": "critical"
+    },
+    {
+      "key": "citations_present",
+      "label": "Evidence is referenced",
+      "category": "evidence",
+      "kind": "auto",
+      "severity": "noncritical"
+    },
+    {
+      "key": "missing_equity_multiple",
+      "label": "Missing equity multiple",
+      "category": "structure",
+      "kind": "checklist",
+      "severity": "critical"
+    },
+    {
+      "key": "missing_irr",
+      "label": "Missing irr",
+      "category": "structure",
+      "kind": "checklist",
+      "severity": "critical"
+    },
+    {
+      "key": "year5_exit_excluded",
+      "label": "Year5 exit excluded",
+      "category": "policy",
+      "kind": "checklist",
+      "severity": "critical"
+    },
+    {
+      "key": "year0_not_negative",
+      "label": "Year0 not negative",
+      "category": "policy",
+      "kind": "checklist",
+      "severity": "critical"
+    },
+    {
+      "key": "irr_wrong_periods",
+      "label": "Irr wrong periods",
+      "category": "policy",
+      "kind": "checklist",
+      "severity": "noncritical"
+    },
+    {
+      "key": "math_result_incorrect",
+      "label": "Math result incorrect",
+      "category": "math",
+      "kind": "checklist",
+      "severity": "critical"
+    }
+  ],
+  "pass_threshold": 80,
+  "fail_threshold": 60
+}

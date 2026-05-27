@@ -1,0 +1,63 @@
+{
+  "slug": "dataset_class_balance_v1",
+  "name": "Class Balance Assessment",
+  "version": "1.0",
+  "lane": "dataset",
+  "summary": "Check label distribution in classification datasets",
+  "purpose": "Check label distribution in classification datasets. Calculate class balance ratio and flag severe class imbalance.",
+  "assignment_instructions": "You are assessing class balance in a classification dataset. REQUIRED OUTPUT: Return a JSON object with these exact fields: - assignment_id (string): use \"dataset_class_balance_v1\" - agent_summary (string) - inputs_used (list of strings) - missing_inputs (list of strings) - claims (list of objects): claim, evidence_reference, confidence (\"provided\"|\"inferred\"|\"missing\") - calculations (list of objects): name, formula, inputs, result, units, assumptions - risks (list of objects): risk, severity (\"low\"|\"medium\"|\"high\"), evidence_reference - assumptions (list of strings) - open_questions (list of strings) - final_output (string) - self_check (object): all_required_sections_completed (boolean), all_numbers_have_sources (boolean), assumptions_labeled (boolean), missing_inputs_disclosed (boolean) Also include: - class_distribution (list of objects): class_label (string), count (integer), proportion (number) - class_balance_ratio (number): size_of_smallest_class / size_of_largest_class - total_samples (integer) - number_of_classes (integer) - minority_classes (list of strings): classes with proportion < 0.1 Compute class_balance_ratio exactly as min_class_count / max_class_count. Return numeric values as numbers, not prose. Include formula in calculations array. If the dataset is not a classification dataset, report missing_inputs and explain. Use only the provided evidence unless explicitly allowed to assume; label every assumption; if a required input is missing, say so; do not fabricate facts or cite evidence that was not provided.",
+  "required_inputs": [
+    "dataset_or_label_distribution",
+    "label_column_name",
+    "total_sample_count"
+  ],
+  "expected_outputs": [
+    "assignment_id",
+    "class_distribution",
+    "class_balance_ratio",
+    "total_samples",
+    "number_of_classes",
+    "minority_classes",
+    "calculations",
+    "self_check"
+  ],
+  "audit_checks": [
+    {
+      "key": "sections_present",
+      "label": "Required sections present",
+      "category": "structure",
+      "kind": "auto",
+      "severity": "critical"
+    },
+    {
+      "key": "output_nonempty",
+      "label": "Output is substantive",
+      "category": "structure",
+      "kind": "auto",
+      "severity": "noncritical"
+    },
+    {
+      "key": "severe_class_imbalance",
+      "label": "Severe class imbalance",
+      "category": "policy",
+      "kind": "checklist",
+      "severity": "critical"
+    },
+    {
+      "key": "moderate_class_imbalance",
+      "label": "Moderate class imbalance",
+      "category": "policy",
+      "kind": "checklist",
+      "severity": "noncritical"
+    },
+    {
+      "key": "balanced_classes",
+      "label": "Balanced classes",
+      "category": "policy",
+      "kind": "checklist",
+      "severity": "noncritical"
+    }
+  ],
+  "pass_threshold": 80,
+  "fail_threshold": 60
+}

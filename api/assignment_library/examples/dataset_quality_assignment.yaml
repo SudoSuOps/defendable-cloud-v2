@@ -1,0 +1,116 @@
+# DefendableCloud Example Assignment
+# assignment_id: dataset_schema_validation_v1
+# lane: dataset_quality_eval
+# This is a single extracted example from the full assignment library.
+# See assignments.yaml for all 50 assignments.
+
+assignment_id: dataset_schema_validation_v1
+name: Dataset Schema Validation
+lane: dataset_quality_eval
+version: '1.0'
+purpose: Validate that a dataset's actual schema matches its declared specification
+  including field names, types, and required fields.
+operator_instructions: Provide the dataset path or sample and the declared schema
+  specification. Agent must compare each column/field against specification and report
+  compliance.
+agent_prompt: 'You are evaluating a dataset''s schema compliance. REQUIRED OUTPUT:
+  Return a JSON object with these exact fields: - assignment_id (string): use "dataset_schema_validation_v1"
+  - agent_summary (string): summary of findings - inputs_used (list of strings): inputs
+  you used - missing_inputs (list of strings): any missing inputs - claims (list of
+  objects): each with claim (string), evidence_reference (string), confidence (one
+  of: "provided", "inferred", "missing") - calculations (list of objects): each with
+  name, formula, inputs (object), result (number or null), units (string), assumptions
+  (list of strings) - risks (list of objects): each with risk (string), severity ("low"|"medium"|"high"),
+  evidence_reference (string) - assumptions (list of strings) - open_questions (list
+  of strings) - final_output (string): your conclusion - self_check (object): all_required_sections_completed
+  (boolean), all_numbers_have_sources (boolean), assumptions_labeled (boolean), missing_inputs_disclosed
+  (boolean) Also include these schema-specific fields: - schema_compliance_rate (number
+  between 0 and 1) - field_checks (list of objects): each with field_name (string),
+  declared_type (string), actual_type (string), compliant (boolean) - missing_required_fields
+  (list of strings) - extra_fields_detected (list of strings) Compute schema_compliance_rate
+  as: compliant_field_count / total_required_fields. Return as a number. If data is
+  missing, set missing_inputs and flag the issue.
+
+  '
+required_inputs:
+- dataset_sample_or_path
+- declared_schema_specification
+expected_outputs:
+- schema_compliance_rate
+- field_checks
+- missing_required_fields
+- extra_fields_detected
+- compliance_summary
+required_output_schema:
+  type: object
+  required:
+  - assignment_id
+  - schema_compliance_rate
+  - field_checks
+  - missing_required_fields
+  - extra_fields_detected
+  - claims
+  - self_check
+deterministic_checks:
+- check_id: schema_rate_between_0_and_1
+  description: schema_compliance_rate must be a float between 0.0 and 1.0 inclusive
+  assertion: result.schema_compliance_rate >= 0.0 and result.schema_compliance_rate
+    <= 1.0
+- check_id: all_required_fields_accounted
+  description: Every field in declared_schema must appear in field_checks
+  assertion: len(result.field_checks) >= len(required_fields_from_input)
+- check_id: missing_fields_listed
+  description: Any non-compliant required field must be in missing_required_fields
+  assertion: all(not f.compliant for f in result.field_checks if f.field_name in required_fields)
+    implies f.field_name in result.missing_required_fields
+math_checks:
+- formula_id: schema_compliance_rate
+  formula: compliant_field_count / total_required_fields
+  description: Fraction of required fields that match declared type
+  output_field: schema_compliance_rate
+evidence_checks:
+- evidence_field: field_checks
+  description: Each field check must reference a specific field from the declared
+    schema
+  required: true
+- evidence_field: actual_type
+  description: Must report actual detected type, not just boolean
+  required: true
+flag_rules:
+- flag_id: schema_compliance_below_100
+  condition: schema_compliance_rate < 1.0
+  severity: medium
+  description: Schema is not fully compliant
+- flag_id: missing_required_field
+  condition: len(missing_required_fields) > 0
+  severity: high
+  description: One or more required fields are missing or non-compliant
+- flag_id: extra_fields_present
+  condition: len(extra_fields_detected) > 0
+  severity: low
+  description: Undeclared fields detected in dataset
+severity_mapping:
+  honey: Schema fully compliant (100%) with no extra fields
+  jelly: Schema partially compliant (>=80% but <100%) or has extra fields only
+  propolis: Schema compliance below 80% or any required field missing
+receipt_type: eval_receipt
+recommended_human_review: true
+sample_submission_shape:
+  assignment_id: dataset_schema_validation_v1
+  schema_compliance_rate: 0.95
+  field_checks:
+  - field_name: user_id
+    declared_type: int
+    actual_type: int
+    compliant: true
+  - field_name: signup_date
+    declared_type: date
+    actual_type: string
+    compliant: false
+  missing_required_fields:
+  - signup_date
+  extra_fields_detected:
+  - unnamed_col_12
+  claims: []
+  self_check:
+    all_required_sections_completed: true

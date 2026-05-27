@@ -1,0 +1,111 @@
+{
+  "slug": "cre_memo_risk_assessment_v1",
+  "name": "Deal Risk Assessment Summary",
+  "version": "1.0",
+  "lane": "agent",
+  "summary": "Identify, classify, and document all material risks in a CRE deal memo with severity ratings (low, medium, high) and specific evidence references",
+  "purpose": "Identify, classify, and document all material risks in a CRE deal memo with severity ratings (low, medium, high) and specific evidence references. This eval tests the agent's ability to synthesize risk factors from multiple data sources in the memo.",
+  "assignment_instructions": "Property Memo: --- PROPERTY: Riverside Plaza, 444 Riverfront Blvd, Portland, OR\nDEAL ECONOMICS: Purchase Price: $22,000,000 Loan Amount: $16,500,000 Equity: $5,500,000 NOI: $1,430,000 Cap Rate: 6.5%\nDEBT TERMS: Interest Rate: 7.0% Amortization: 25 years Annual Debt Service: $1,300,000\nOCCUPANCY: Current Occupancy: 88% Market Occupancy: 94% Submarket Vacancy: 6%\nLEASE PROFILE: Total Units: 150 WA Rent: $1,350/month Market Rent: $1,420/month Lease Roll (next 12 months): 45 units (30%) Average Lease Term Remaining: 8 months\nPHYSICAL: Year Built: 1998 Last Renovation: 2015 Capital Needs Assessment: $800,000 (roofing, HVAC)\nMARKET: Submarket Rent Growth (trailing 12mo): 2.1% National Average Rent Growth: 3.5% New Supply (under construction within 3 miles): 420 units ---\nTask: Identify and classify all material risks in this deal.\nReturn ONLY a JSON object with this structure: {\n  \"assignment_id\": \"cre_memo_risk_assessment_v1\",\n  \"agent_summary\": \"<string>\",\n  \"inputs_used\": [\"<string: each memo section used>\"],\n  \"missing_inputs\": [\"<string>\"],\n  \"claims\": [\n    {\n      \"claim\": \"<string>\",\n      \"evidence_reference\": \"<string>\",\n      \"confidence\": \"<provided | inferred | missing>\"\n    }\n  ],\n  \"calculations\": [\n    {\n      \"name\": \"<string>\",\n      \"formula\": \"<string>\",\n      \"inputs\": {\"<key>\": <number>},\n      \"result\": <number>,\n      \"units\": \"<string>\",\n      \"assumptions\": [\"<string>\"]\n    }\n  ],\n  \"risks\": [\n    {\n      \"risk\": \"<string: specific risk description>\",\n      \"severity\": \"<low | medium | high>\",\n      \"evidence_reference\": \"<string: specific memo section>\"\n    }\n  ],\n  \"assumptions\": [\"<string>\"],\n  \"open_questions\": [\"<string>\"],\n  \"final_output\": \"<string>\",\n  \"self_check\": {\n    \"all_required_sections_completed\": true,\n    \"all_numbers_have_sources\": true,\n    \"assumptions_labeled\": true,\n    \"missing_inputs_disclosed\": true\n  }\n}\nCRITICAL RULES: - risks[] array must contain at least 5 risk entries. - Each risk must have a specific, descriptive risk statement (not generic). - Each risk must cite the specific memo section in evidence_reference\n  (e.g., \"OCCUPANCY\", \"LEASE PROFILE\", \"DEBT TERMS\").\n- Severity must be accurately rated:\n  * \"high\" for DSCR near/below 1.20, occupancy 6+ points below market,\n    capex over 10% of equity, lease roll >25% in 12 months\n  * \"medium\" for below-market rents, new supply risk, rent growth below national\n  * \"low\" for factors that are manageable or within normal range\n- Include at least one risk from each category: financial (debt/DSCR),\n  operational (occupancy/vacancy), market (rent growth, new supply),\n  and lease rollover.\n- Include calculations for DSCR and at least one other quantitative risk metric. - Do not output any text outside the JSON object. Use only the provided evidence unless explicitly allowed to assume; label every assumption; if a required input is missing, say so; do not fabricate facts or cite evidence that was not provided.",
+  "required_inputs": [
+    "purchase_price",
+    "loan_amount",
+    "equity",
+    "noi",
+    "cap_rate",
+    "interest_rate",
+    "annual_debt_service",
+    "current_occupancy",
+    "market_occupancy",
+    "submarket_vacancy",
+    "total_units",
+    "wa_rent",
+    "market_rent",
+    "lease_roll_12mo",
+    "avg_lease_term",
+    "year_built",
+    "capex_needs",
+    "rent_growth_submarket",
+    "rent_growth_national",
+    "new_supply"
+  ],
+  "expected_outputs": [
+    "assignment_id",
+    "agent_summary",
+    "inputs_used",
+    "missing_inputs",
+    "claims",
+    "calculations",
+    "risks",
+    "assumptions",
+    "open_questions",
+    "final_output",
+    "self_check"
+  ],
+  "audit_checks": [
+    {
+      "key": "sections_present",
+      "label": "Required sections present",
+      "category": "structure",
+      "kind": "auto",
+      "severity": "critical"
+    },
+    {
+      "key": "citations_present",
+      "label": "Evidence is referenced",
+      "category": "evidence",
+      "kind": "auto",
+      "severity": "noncritical"
+    },
+    {
+      "key": "fewer_than_5_risks",
+      "label": "Fewer than 5 risks",
+      "category": "policy",
+      "kind": "checklist",
+      "severity": "critical"
+    },
+    {
+      "key": "missing_severity",
+      "label": "Missing severity",
+      "category": "structure",
+      "kind": "checklist",
+      "severity": "noncritical"
+    },
+    {
+      "key": "missing_evidence_reference",
+      "label": "Missing evidence reference",
+      "category": "evidence",
+      "kind": "checklist",
+      "severity": "noncritical"
+    },
+    {
+      "key": "no_high_severity_risk",
+      "label": "No high severity risk",
+      "category": "policy",
+      "kind": "checklist",
+      "severity": "noncritical"
+    },
+    {
+      "key": "missing_dscr_calc",
+      "label": "Missing dscr calc",
+      "category": "math",
+      "kind": "checklist",
+      "severity": "critical"
+    },
+    {
+      "key": "dscr_not_flagged_high",
+      "label": "Dscr not flagged high",
+      "category": "policy",
+      "kind": "checklist",
+      "severity": "noncritical"
+    },
+    {
+      "key": "math_result_incorrect",
+      "label": "Math result incorrect",
+      "category": "math",
+      "kind": "checklist",
+      "severity": "noncritical"
+    }
+  ],
+  "pass_threshold": 80,
+  "fail_threshold": 60
+}

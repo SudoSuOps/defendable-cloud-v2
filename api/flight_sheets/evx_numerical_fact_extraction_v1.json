@@ -1,0 +1,93 @@
+{
+  "slug": "evx_numerical_fact_extraction_v1",
+  "name": "Numerical Fact Extraction",
+  "version": "1.0",
+  "lane": "agent",
+  "summary": "Evaluate the agent's ability to extract all numerical facts from source documents, preserving units, surrounding context, source reference, and extraction confi",
+  "purpose": "Evaluate the agent's ability to extract all numerical facts from source documents, preserving units, surrounding context, source reference, and extraction confidence. Numerical facts must be machine-checkable and traceable to origin text.",
+  "assignment_instructions": "Extract every numerical fact from the provided source documents.\nFor each numerical fact, return an object with exactly these fields: - \"value\": the numeric value as a number (extract the primary number; for ranges, use the midpoint or list both in context) - \"units\": the unit of measurement as a string (e.g., \"USD\", \"percent\", \"years\", \"employees\", \"x\", \"ratio\", \"square_feet\") - \"context\": the surrounding sentence or phrase providing meaning to the number (max 200 chars) - \"source_document\": identifier of the document (\"doc_1\", \"doc_2\", etc.) - \"confidence\": one of [\"explicit\", \"inferred\", \"ambiguous\"] where:\n    - \"explicit\" = number appears directly as a stated fact\n    - \"inferred\" = number derived from nearby text (e.g., \"$5M\" implies 5000000 USD)\n    - \"ambiguous\" = number's meaning is unclear from context\n\nReturn ONLY a JSON object with this exact shape: {\n  \"assignment_id\": \"evx_numerical_fact_extraction_v1\",\n  \"agent_summary\": \"<brief description of numerical facts extracted>\",\n  \"inputs_used\": [\"<document identifiers>\"],\n  \"missing_inputs\": [],\n  \"facts\": [\n    {\"value\": 5000000, \"units\": \"USD\", \"context\": \"Company revenue was $5M in FY2024\", \"source_document\": \"doc_1\", \"confidence\": \"inferred\"}\n  ],\n  \"claims\": [],\n  \"calculations\": [],\n  \"risks\": [],\n  \"assumptions\": [],\n  \"open_questions\": [],\n  \"final_output\": \"<summary>\",\n  \"self_check\": {\n    \"all_required_sections_completed\": true,\n    \"all_numbers_have_sources\": true,\n    \"assumptions_labeled\": true,\n    \"missing_inputs_disclosed\": true\n  }\n}\nRules: - Do NOT skip any number appearing in the text. - value must be a JSON number (integer or float), not a string. - units must be normalized (use \"USD\" not \"$\", \"percent\" not \"%\"). - context must contain the original surrounding text, not paraphrased. - If a number has multiple interpretations, list it once with confidence \"ambiguous\" and explain in assumptions. Use only the provided evidence unless explicitly allowed to assume; label every assumption; if a required input is missing, say so; do not fabricate facts or cite evidence that was not provided.",
+  "required_inputs": [
+    "source_documents"
+  ],
+  "expected_outputs": [
+    "assignment_id",
+    "facts",
+    "inputs_used",
+    "missing_inputs",
+    "self_check"
+  ],
+  "audit_checks": [
+    {
+      "key": "sections_present",
+      "label": "Required sections present",
+      "category": "structure",
+      "kind": "auto",
+      "severity": "critical"
+    },
+    {
+      "key": "citations_present",
+      "label": "Evidence is referenced",
+      "category": "evidence",
+      "kind": "auto",
+      "severity": "noncritical"
+    },
+    {
+      "key": "value_is_string",
+      "label": "Value is string",
+      "category": "policy",
+      "kind": "checklist",
+      "severity": "noncritical"
+    },
+    {
+      "key": "missing_units",
+      "label": "Missing units",
+      "category": "structure",
+      "kind": "checklist",
+      "severity": "noncritical"
+    },
+    {
+      "key": "invalid_confidence",
+      "label": "Invalid confidence",
+      "category": "policy",
+      "kind": "checklist",
+      "severity": "noncritical"
+    },
+    {
+      "key": "hallucinated_fact",
+      "label": "Hallucinated fact",
+      "category": "policy",
+      "kind": "checklist",
+      "severity": "noncritical"
+    },
+    {
+      "key": "unreferenced_source",
+      "label": "Unreferenced source",
+      "category": "evidence",
+      "kind": "checklist",
+      "severity": "noncritical"
+    },
+    {
+      "key": "empty_facts_array_with_numbers",
+      "label": "Empty facts array with numbers",
+      "category": "math",
+      "kind": "checklist",
+      "severity": "critical"
+    },
+    {
+      "key": "missing_inputs_not_disclosed",
+      "label": "Missing inputs not disclosed",
+      "category": "structure",
+      "kind": "checklist",
+      "severity": "critical"
+    },
+    {
+      "key": "self_check_false",
+      "label": "Self check false",
+      "category": "policy",
+      "kind": "checklist",
+      "severity": "noncritical"
+    }
+  ],
+  "pass_threshold": 80,
+  "fail_threshold": 60
+}

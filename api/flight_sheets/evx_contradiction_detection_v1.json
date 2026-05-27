@@ -1,0 +1,93 @@
+{
+  "slug": "evx_contradiction_detection_v1",
+  "name": "Contradiction Detection",
+  "version": "1.0",
+  "lane": "agent",
+  "summary": "Evaluate the agent's ability to find contradictory statements across multiple source documents, report confidence in each detected contradiction, and propose a ",
+  "purpose": "Evaluate the agent's ability to find contradictory statements across multiple source documents, report confidence in each detected contradiction, and propose a resolution or explanation for the discrepancy.",
+  "assignment_instructions": "You are given multiple source documents. Your task is to find ALL contradictory statements between any two documents (or within the same document).\nFor each contradiction found, return an object with exactly these fields: - \"statement_a\": the exact text of the first contradictory statement - \"source_a\": identifier of the document containing statement_a - \"statement_b\": the exact text of the second contradictory statement - \"source_b\": identifier of the document containing statement_b - \"contradiction_type\": one of [\"direct\", \"temporal\", \"quantitative\", \"qualitative\"] where:\n    - \"direct\" = statements cannot both be true under any interpretation\n    - \"temporal\" = statements differ due to different time periods\n    - \"quantitative\" = numeric values conflict\n    - \"qualitative\" = descriptive claims conflict\n- \"confidence\": one of [\"high\", \"medium\", \"low\"] indicating how certain the contradiction is - \"resolution\": a brief explanation of why the contradiction exists or how it could be resolved (max 200 chars)\nReturn ONLY a JSON object with this exact shape: {\n  \"assignment_id\": \"evx_contradiction_detection_v1\",\n  \"agent_summary\": \"<summary of contradictions found>\",\n  \"inputs_used\": [\"<document identifiers>\"],\n  \"missing_inputs\": [],\n  \"contradictions\": [\n    {\"statement_a\": \"Revenue was $10M\", \"source_a\": \"doc_1\", \"statement_b\": \"Revenue was $12M\", \"source_b\": \"doc_2\", \"contradiction_type\": \"quantitative\", \"confidence\": \"high\", \"resolution\": \"Different fiscal years; doc_1 refers to FY2023, doc_2 to FY2024\"}\n  ],\n  \"claims\": [],\n  \"calculations\": [],\n  \"risks\": [],\n  \"assumptions\": [],\n  \"open_questions\": [],\n  \"final_output\": \"<summary>\",\n  \"self_check\": {\n    \"all_required_sections_completed\": true,\n    \"all_numbers_have_sources\": true,\n    \"assumptions_labeled\": true,\n    \"missing_inputs_disclosed\": true\n  }\n}\nRules: - Report EVERY genuine contradiction you find. Do not omit. - Do NOT report paraphrases or non-contradictory restatements as contradictions. - statement_a and statement_b must be exact or near-exact quotes from the documents. - If source_a == source_b, the contradiction is within the same document. - If no contradictions exist, return contradictions as empty array and state in final_output. - resolution must attempt to explain the cause of the contradiction (e.g., different dates, errors, interpretations). - confidence must reflect actual certainty, not default to \"high\". Use only the provided evidence unless explicitly allowed to assume; label every assumption; if a required input is missing, say so; do not fabricate facts or cite evidence that was not provided.",
+  "required_inputs": [
+    "source_documents"
+  ],
+  "expected_outputs": [
+    "assignment_id",
+    "contradictions",
+    "inputs_used",
+    "missing_inputs",
+    "self_check"
+  ],
+  "audit_checks": [
+    {
+      "key": "sections_present",
+      "label": "Required sections present",
+      "category": "structure",
+      "kind": "auto",
+      "severity": "critical"
+    },
+    {
+      "key": "citations_present",
+      "label": "Evidence is referenced",
+      "category": "evidence",
+      "kind": "auto",
+      "severity": "noncritical"
+    },
+    {
+      "key": "false_positive_contradiction",
+      "label": "False positive contradiction",
+      "category": "policy",
+      "kind": "checklist",
+      "severity": "noncritical"
+    },
+    {
+      "key": "invalid_contradiction_type",
+      "label": "Invalid contradiction type",
+      "category": "policy",
+      "kind": "checklist",
+      "severity": "noncritical"
+    },
+    {
+      "key": "invalid_confidence",
+      "label": "Invalid confidence",
+      "category": "policy",
+      "kind": "checklist",
+      "severity": "noncritical"
+    },
+    {
+      "key": "fabricated_statement",
+      "label": "Fabricated statement",
+      "category": "policy",
+      "kind": "checklist",
+      "severity": "noncritical"
+    },
+    {
+      "key": "missing_resolution",
+      "label": "Missing resolution",
+      "category": "structure",
+      "kind": "checklist",
+      "severity": "noncritical"
+    },
+    {
+      "key": "duplicate_contradiction",
+      "label": "Duplicate contradiction",
+      "category": "policy",
+      "kind": "checklist",
+      "severity": "noncritical"
+    },
+    {
+      "key": "unreferenced_source",
+      "label": "Unreferenced source",
+      "category": "evidence",
+      "kind": "checklist",
+      "severity": "noncritical"
+    },
+    {
+      "key": "self_check_false",
+      "label": "Self check false",
+      "category": "policy",
+      "kind": "checklist",
+      "severity": "noncritical"
+    }
+  ],
+  "pass_threshold": 80,
+  "fail_threshold": 60
+}

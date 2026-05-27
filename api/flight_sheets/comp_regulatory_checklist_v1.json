@@ -1,0 +1,94 @@
+{
+  "slug": "comp_regulatory_checklist_v1",
+  "name": "Regulatory Compliance Checklist",
+  "version": "1.0",
+  "lane": "other",
+  "summary": "Evaluate the agent's ability to assess compliance status against a provided set of regulatory requirements, cite specific regulation sections, and provide evide",
+  "purpose": "Evaluate the agent's ability to assess compliance status against a provided set of regulatory requirements, cite specific regulation sections, and provide evidence from source documents for each compliance determination.",
+  "assignment_instructions": "You are given a regulatory checklist and source documents describing an organization's compliance posture. Evaluate EACH requirement and determine its compliance status.\nFor each checklist item, return an object with exactly these fields: - \"requirement\": the exact regulatory requirement text - \"regulation_citation\": the specific regulation reference (e.g., \"SOX 404\", \"FINRA 3110(b)\") - \"status\": one of [\"compliant\", \"non_compliant\", \"partially_compliant\", \"not_assessable\"] where:\n    - \"compliant\" = evidence clearly shows full compliance\n    - \"non_compliant\" = evidence clearly shows violation or absence of required control\n    - \"partially_compliant\" = some aspects met, others not\n    - \"not_assessable\" = insufficient evidence to determine compliance\n- \"evidence\": the specific text from source documents supporting the status determination (null if not_assessable) - \"source_document\": identifier of the document containing the evidence (null if not_assessable) - \"finding_details\": a brief explanation of why this status was assigned (max 200 chars)\nReturn ONLY a JSON object with this exact shape: {\n  \"assignment_id\": \"comp_regulatory_checklist_v1\",\n  \"agent_summary\": \"<summary of compliance evaluation>\",\n  \"inputs_used\": [\"regulatory_checklist\", \"<document identifiers>\"],\n  \"missing_inputs\": [],\n  \"checklist_items\": [\n    {\"requirement\": \"Maintain internal controls over financial reporting\", \"regulation_citation\": \"SOX 404\", \"status\": \"compliant\", \"evidence\": \"The company maintains a documented ICFR framework reviewed quarterly\", \"source_document\": \"doc_1\", \"finding_details\": \"Quarterly ICFR reviews documented; no material weaknesses noted\"}\n  ],\n  \"claims\": [],\n  \"calculations\": [],\n  \"risks\": [],\n  \"assumptions\": [],\n  \"open_questions\": [],\n  \"final_output\": \"<summary>\",\n  \"self_check\": {\n    \"all_required_sections_completed\": true,\n    \"all_numbers_have_sources\": true,\n    \"assumptions_labeled\": true,\n    \"missing_inputs_disclosed\": true\n  }\n}\nRules: - Every requirement in the input regulatory checklist must appear in checklist_items. - Do NOT change or paraphrase the requirement text. - evidence must be a direct quote or close paraphrase from source documents. - If status is \"not_assessable\", explain in finding_details why evidence is insufficient. - Do not assign \"compliant\" unless there is clear supporting evidence. - Default to \"not_assessable\" when in doubt rather than inferring compliance. Use only the provided evidence unless explicitly allowed to assume; label every assumption; if a required input is missing, say so; do not fabricate facts or cite evidence that was not provided.",
+  "required_inputs": [
+    "regulatory_checklist",
+    "source_documents"
+  ],
+  "expected_outputs": [
+    "assignment_id",
+    "checklist_items",
+    "inputs_used",
+    "missing_inputs",
+    "self_check"
+  ],
+  "audit_checks": [
+    {
+      "key": "sections_present",
+      "label": "Required sections present",
+      "category": "structure",
+      "kind": "auto",
+      "severity": "critical"
+    },
+    {
+      "key": "output_nonempty",
+      "label": "Output is substantive",
+      "category": "structure",
+      "kind": "auto",
+      "severity": "noncritical"
+    },
+    {
+      "key": "missing_requirement",
+      "label": "Missing requirement",
+      "category": "structure",
+      "kind": "checklist",
+      "severity": "critical"
+    },
+    {
+      "key": "fabricated_evidence",
+      "label": "Fabricated evidence",
+      "category": "evidence",
+      "kind": "checklist",
+      "severity": "noncritical"
+    },
+    {
+      "key": "invalid_status",
+      "label": "Invalid status",
+      "category": "policy",
+      "kind": "checklist",
+      "severity": "noncritical"
+    },
+    {
+      "key": "compliant_without_evidence",
+      "label": "Compliant without evidence",
+      "category": "evidence",
+      "kind": "checklist",
+      "severity": "noncritical"
+    },
+    {
+      "key": "not_assessable_with_evidence",
+      "label": "Not assessable with evidence",
+      "category": "evidence",
+      "kind": "checklist",
+      "severity": "noncritical"
+    },
+    {
+      "key": "missing_finding_details",
+      "label": "Missing finding details",
+      "category": "structure",
+      "kind": "checklist",
+      "severity": "noncritical"
+    },
+    {
+      "key": "checklist_count_mismatch",
+      "label": "Checklist count mismatch",
+      "category": "policy",
+      "kind": "checklist",
+      "severity": "critical"
+    },
+    {
+      "key": "self_check_false",
+      "label": "Self check false",
+      "category": "policy",
+      "kind": "checklist",
+      "severity": "noncritical"
+    }
+  ],
+  "pass_threshold": 80,
+  "fail_threshold": 60
+}

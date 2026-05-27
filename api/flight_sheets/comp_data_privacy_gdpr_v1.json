@@ -1,0 +1,101 @@
+{
+  "slug": "comp_data_privacy_gdpr_v1",
+  "name": "Data Privacy and GDPR Compliance",
+  "version": "1.0",
+  "lane": "other",
+  "summary": "Evaluate the agent's ability to assess data handling practices against GDPR and privacy requirements, categorize the types of data involved, and provide evidenc",
+  "purpose": "Evaluate the agent's ability to assess data handling practices against GDPR and privacy requirements, categorize the types of data involved, and provide evidence for each privacy compliance determination.",
+  "assignment_instructions": "You are given a data privacy/GDPR requirement checklist and source documents describing an organization's data handling practices. Evaluate EACH requirement.\nFor each privacy check, return an object with exactly these fields: - \"requirement\": the exact privacy requirement text - \"data_category\": one of [\"personal_data\", \"sensitive_personal_data\", \"special_category_data\", \"childrens_data\", \"financial_data\", \"biometric_data\", \"not_specified\"] indicating the primary data category this requirement applies to - \"status\": one of [\"compliant\", \"non_compliant\", \"partially_compliant\", \"not_assessable\"] where:\n    - \"compliant\" = evidence clearly shows the requirement is met\n    - \"non_compliant\" = evidence clearly shows the requirement is not met\n    - \"partially_compliant\" = some aspects met, others not\n    - \"not_assessable\" = insufficient evidence to determine compliance\n- \"evidence\": the specific text from source documents supporting the status (null if not_assessable) - \"source_document\": identifier of the document containing the evidence (null if not_assessable) - \"finding_details\": a brief explanation of the compliance determination (max 200 chars) - \"article_reference\": the specific GDPR article or regulation reference (e.g., \"GDPR Art. 6\", \"Art. 32\", \"Art. 33\") if applicable; null if not specified in the requirement\nReturn ONLY a JSON object with this exact shape: {\n  \"assignment_id\": \"comp_data_privacy_gdpr_v1\",\n  \"agent_summary\": \"<summary of GDPR/privacy compliance evaluation>\",\n  \"inputs_used\": [\"privacy_requirement_checklist\", \"<document identifiers>\"],\n  \"missing_inputs\": [],\n  \"privacy_checks\": [\n    {\"requirement\": \"Process personal data only with lawful basis\", \"data_category\": \"personal_data\", \"status\": \"compliant\", \"evidence\": \"Privacy policy lists six lawful bases and requires documented legal basis for each processing activity\", \"source_document\": \"doc_1\", \"finding_details\": \"Lawful basis documented for all processing activities reviewed\", \"article_reference\": \"GDPR Art. 6\"}\n  ],\n  \"claims\": [],\n  \"calculations\": [],\n  \"risks\": [],\n  \"assumptions\": [],\n  \"open_questions\": [],\n  \"final_output\": \"<summary>\",\n  \"self_check\": {\n    \"all_required_sections_completed\": true,\n    \"all_numbers_have_sources\": true,\n    \"assumptions_labeled\": true,\n    \"missing_inputs_disclosed\": true\n  }\n}\nRules: - Every requirement in the input privacy_requirement_checklist must appear in privacy_checks. - Do NOT change the requirement text. - data_category must be from the allowed enum; choose the most specific applicable category. - evidence must be a direct quote or close paraphrase from source documents. - article_reference should be extracted from the requirement if present; otherwise set to null. - Default to \"not_assessable\" when evidence is insufficient rather than inferring compliance. - finding_details must explain the reasoning behind the status assignment. Use only the provided evidence unless explicitly allowed to assume; label every assumption; if a required input is missing, say so; do not fabricate facts or cite evidence that was not provided.",
+  "required_inputs": [
+    "privacy_requirement_checklist",
+    "source_documents"
+  ],
+  "expected_outputs": [
+    "assignment_id",
+    "privacy_checks",
+    "inputs_used",
+    "missing_inputs",
+    "self_check"
+  ],
+  "audit_checks": [
+    {
+      "key": "sections_present",
+      "label": "Required sections present",
+      "category": "structure",
+      "kind": "auto",
+      "severity": "critical"
+    },
+    {
+      "key": "output_nonempty",
+      "label": "Output is substantive",
+      "category": "structure",
+      "kind": "auto",
+      "severity": "noncritical"
+    },
+    {
+      "key": "missing_requirement",
+      "label": "Missing requirement",
+      "category": "structure",
+      "kind": "checklist",
+      "severity": "critical"
+    },
+    {
+      "key": "fabricated_evidence",
+      "label": "Fabricated evidence",
+      "category": "evidence",
+      "kind": "checklist",
+      "severity": "noncritical"
+    },
+    {
+      "key": "invalid_status",
+      "label": "Invalid status",
+      "category": "policy",
+      "kind": "checklist",
+      "severity": "noncritical"
+    },
+    {
+      "key": "invalid_data_category",
+      "label": "Invalid data category",
+      "category": "policy",
+      "kind": "checklist",
+      "severity": "noncritical"
+    },
+    {
+      "key": "compliant_without_evidence",
+      "label": "Compliant without evidence",
+      "category": "evidence",
+      "kind": "checklist",
+      "severity": "noncritical"
+    },
+    {
+      "key": "not_assessable_with_evidence",
+      "label": "Not assessable with evidence",
+      "category": "evidence",
+      "kind": "checklist",
+      "severity": "noncritical"
+    },
+    {
+      "key": "missing_finding_details",
+      "label": "Missing finding details",
+      "category": "structure",
+      "kind": "checklist",
+      "severity": "noncritical"
+    },
+    {
+      "key": "privacy_check_count_mismatch",
+      "label": "Privacy check count mismatch",
+      "category": "policy",
+      "kind": "checklist",
+      "severity": "critical"
+    },
+    {
+      "key": "self_check_false",
+      "label": "Self check false",
+      "category": "policy",
+      "kind": "checklist",
+      "severity": "noncritical"
+    }
+  ],
+  "pass_threshold": 80,
+  "fail_threshold": 60
+}

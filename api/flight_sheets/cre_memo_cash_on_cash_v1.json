@@ -1,0 +1,83 @@
+{
+  "slug": "cre_memo_cash_on_cash_v1",
+  "name": "Cash-on-Cash Return Analysis",
+  "version": "1.0",
+  "lane": "agent",
+  "summary": "Calculate cash-on-cash return from before-tax cash flow and total equity invested, compare against the typical investor threshold (>= 8%), and flag deals that f",
+  "purpose": "Calculate cash-on-cash return from before-tax cash flow and total equity invested, compare against the typical investor threshold (>= 8%), and flag deals that fall below.",
+  "assignment_instructions": "Property Memo: --- PROPERTY: Willow Creek Villas, 888 Creek Ln, Nashville, TN Purchase Price: $9,800,000 Loan Amount: $7,350,000 Equity Invested: $2,450,000 Closing Costs (paid from equity): $145,000 Stabilized NOI: $812,000 Annual Debt Service: $602,400 ---\nCalculate and return ONLY a JSON object:\n1. Total Cash Invested = equity_invested + closing_costs 2. Before-Tax Cash Flow = noi - annual_debt_service 3. Cash-on-Cash Return = before_tax_cash_flow / total_cash_invested\nJSON structure: {\n  \"assignment_id\": \"cre_memo_cash_on_cash_v1\",\n  \"agent_summary\": \"<string>\",\n  \"inputs_used\": [\"<string>\"],\n  \"missing_inputs\": [\"<string>\"],\n  \"claims\": [\n    {\n      \"claim\": \"<string>\",\n      \"evidence_reference\": \"<string>\",\n      \"confidence\": \"<provided | inferred | missing>\"\n    }\n  ],\n  \"calculations\": [\n    {\n      \"name\": \"<string>\",\n      \"formula\": \"<string>\",\n      \"inputs\": {\"<key>\": <number>},\n      \"result\": <number>,\n      \"units\": \"<string>\",\n      \"assumptions\": [\"<string>\"]\n    }\n  ],\n  \"risks\": [\n    {\n      \"risk\": \"<string>\",\n      \"severity\": \"<low | medium | high>\",\n      \"evidence_reference\": \"<string>\"\n    }\n  ],\n  \"assumptions\": [\"<string>\"],\n  \"open_questions\": [\"<string>\"],\n  \"final_output\": \"<string>\",\n  \"self_check\": {\n    \"all_required_sections_completed\": true,\n    \"all_numbers_have_sources\": true,\n    \"assumptions_labeled\": true,\n    \"missing_inputs_disclosed\": true\n  }\n}\nCRITICAL RULES: - Total cash invested MUST include closing costs ($145,000). - Do NOT use purchase_price - loan_amount as cash invested.\n  Use the explicit equity_invested + closing_costs.\n- The typical cash-on-cash threshold is 8% (0.08). - If cash_on_cash_return < 0.08, add a risk with severity \"high\"\n  stating the return is below the threshold.\n- If cash_on_cash_return >= 0.08, add a risk with severity \"low\"\n  stating the return meets or exceeds the threshold.\n- Show all three calculations separately. - Do not output any text outside the JSON object. Use only the provided evidence unless explicitly allowed to assume; label every assumption; if a required input is missing, say so; do not fabricate facts or cite evidence that was not provided.",
+  "required_inputs": [
+    "purchase_price",
+    "loan_amount",
+    "equity_invested",
+    "closing_costs",
+    "noi",
+    "annual_debt_service"
+  ],
+  "expected_outputs": [
+    "assignment_id",
+    "agent_summary",
+    "inputs_used",
+    "missing_inputs",
+    "claims",
+    "calculations",
+    "risks",
+    "assumptions",
+    "open_questions",
+    "final_output",
+    "self_check"
+  ],
+  "audit_checks": [
+    {
+      "key": "sections_present",
+      "label": "Required sections present",
+      "category": "structure",
+      "kind": "auto",
+      "severity": "critical"
+    },
+    {
+      "key": "citations_present",
+      "label": "Evidence is referenced",
+      "category": "evidence",
+      "kind": "auto",
+      "severity": "noncritical"
+    },
+    {
+      "key": "missing_cash_on_cash_calc",
+      "label": "Missing cash on cash calc",
+      "category": "math",
+      "kind": "checklist",
+      "severity": "critical"
+    },
+    {
+      "key": "closing_costs_excluded",
+      "label": "Closing costs excluded",
+      "category": "policy",
+      "kind": "checklist",
+      "severity": "critical"
+    },
+    {
+      "key": "threshold_not_assessed",
+      "label": "Threshold not assessed",
+      "category": "policy",
+      "kind": "checklist",
+      "severity": "noncritical"
+    },
+    {
+      "key": "wrong_equity_calculation",
+      "label": "Wrong equity calculation",
+      "category": "math",
+      "kind": "checklist",
+      "severity": "critical"
+    },
+    {
+      "key": "math_result_incorrect",
+      "label": "Math result incorrect",
+      "category": "math",
+      "kind": "checklist",
+      "severity": "critical"
+    }
+  ],
+  "pass_threshold": 80,
+  "fail_threshold": 60
+}

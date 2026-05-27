@@ -1,0 +1,75 @@
+{
+  "slug": "genai_schema_compliance_v1",
+  "name": "Schema Compliance Test",
+  "version": "1.0",
+  "lane": "agent",
+  "summary": "Test whether the agent can follow a strict JSON schema and return all required top-level fields without omission, misspelling, or type deviation",
+  "purpose": "Test whether the agent can follow a strict JSON schema and return all required top-level fields without omission, misspelling, or type deviation. This is a foundational gate: agents that cannot emit the required shape fail all downstream evals.",
+  "assignment_instructions": "You must return a single JSON object with exactly the following structure. Do not wrap it in markdown code fences. Do not add extra keys. Do not omit any key.\nRequired JSON object: {\n  \"assignment_id\": \"genai_schema_compliance_v1\",\n  \"agent_summary\": \"<string: one-sentence summary of what you did>\",\n  \"inputs_used\": [\"<list of strings: every input you consumed>\"],\n  \"missing_inputs\": [\"<list of strings: any expected inputs you did not receive>\"],\n  \"claims\": [\n    {\n      \"claim\": \"<string: factual assertion>\",\n      \"evidence_reference\": \"<string: source identifier or 'none'>\",\n      \"confidence\": \"<one of: provided | inferred | missing>\"\n    }\n  ],\n  \"calculations\": [\n    {\n      \"name\": \"<string: name of calculation>\",\n      \"formula\": \"<string: formula used>\",\n      \"inputs\": {},\n      \"result\": null,\n      \"units\": \"<string: unit of measure>\",\n      \"assumptions\": [\"<string>\"]\n    }\n  ],\n  \"risks\": [\n    {\n      \"risk\": \"<string: description>\",\n      \"severity\": \"<one of: low | medium | high>\",\n      \"evidence_reference\": \"<string>\"\n    }\n  ],\n  \"assumptions\": [\"<string: every assumption you made>\"],\n  \"open_questions\": [\"<string: anything unresolved>\"],\n  \"final_output\": \"<string: concise final result>\"\n}\nInstructions: - assignment_id must be exactly \"genai_schema_compliance_v1\". - agent_summary must be a non-empty string. - inputs_used must be an array (empty [] if none). - missing_inputs must be an array (empty [] if none). - claims must be an array with at least one object; each object must have\n  keys \"claim\", \"evidence_reference\", and \"confidence\" with confidence\n  exactly matching one of the allowed enum values.\n- calculations must be an array (empty [] if no calculations performed). - risks must be an array with at least one object; each object must have\n  keys \"risk\", \"severity\", and \"evidence_reference\" with severity exactly\n  matching one of the allowed enum values.\n- assumptions must be an array (empty [] if none). - open_questions must be an array (empty [] if none). - final_output must be a non-empty string. - Do not output any text before or after the JSON object. Use only the provided evidence unless explicitly allowed to assume; label every assumption; if a required input is missing, say so; do not fabricate facts or cite evidence that was not provided.",
+  "required_inputs": [],
+  "expected_outputs": [
+    "assignment_id",
+    "agent_summary",
+    "inputs_used",
+    "missing_inputs",
+    "claims",
+    "calculations",
+    "risks",
+    "assumptions",
+    "open_questions",
+    "final_output"
+  ],
+  "audit_checks": [
+    {
+      "key": "sections_present",
+      "label": "Required sections present",
+      "category": "structure",
+      "kind": "auto",
+      "severity": "critical"
+    },
+    {
+      "key": "citations_present",
+      "label": "Evidence is referenced",
+      "category": "evidence",
+      "kind": "auto",
+      "severity": "noncritical"
+    },
+    {
+      "key": "missing_top_level_key",
+      "label": "Missing top level key",
+      "category": "structure",
+      "kind": "checklist",
+      "severity": "critical"
+    },
+    {
+      "key": "extra_top_level_key",
+      "label": "Extra top level key",
+      "category": "policy",
+      "kind": "checklist",
+      "severity": "noncritical"
+    },
+    {
+      "key": "wrong_type_for_key",
+      "label": "Wrong type for key",
+      "category": "policy",
+      "kind": "checklist",
+      "severity": "noncritical"
+    },
+    {
+      "key": "empty_claims_or_risks",
+      "label": "Empty claims or risks",
+      "category": "policy",
+      "kind": "checklist",
+      "severity": "noncritical"
+    },
+    {
+      "key": "enum_violation",
+      "label": "Enum violation",
+      "category": "policy",
+      "kind": "checklist",
+      "severity": "critical"
+    }
+  ],
+  "pass_threshold": 80,
+  "fail_threshold": 60
+}
