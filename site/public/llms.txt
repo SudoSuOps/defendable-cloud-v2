@@ -1,0 +1,51 @@
+# DefendableCloud
+
+> Cloud receipts for agentic work. DefendableCloud is hosted Proof of Execution: upload the work, run the checks, issue the proof, store the artifact. DefendableOS is the engine; DefendableCloud is the hosted proof vault.
+
+DefendableCloud is operated by Swarm and Bee LLC (DBA Swarm & Bee AI), Florida, D-U-N-S 138652395.
+
+## The core primitive — the Defendable Run
+
+Everything is a Run (an AI agent task, dataset review, compute benchmark, valuation, document check, or business workflow). Every Run has the same shape:
+
+Inputs → Evidence → Execution → Checks → Verdict → Approval → Receipt
+
+A named human approves the final result. The checks inform the decision; a person signs off.
+
+## How it works
+
+1. Create a run — pick the kind of work.
+2. Attach evidence — files, notes, URLs, observations, tool outputs, model outputs, benchmark logs.
+3. Run verification — schema checks, math checks, evidence checks, policy checks, and human approval gates apply the verdict logic.
+4. Issue a receipt — an execution trail, verification receipt, verdict package, and evidence bundle, hashed and timestamped.
+5. Store & share — keep it in a private vault, send a client link, or export the proof package as PDF and JSON.
+
+## Three lanes at launch
+
+- Agent Work Receipts — for businesses running AI agents: show what the AI did, what tools it used, what evidence it relied on, and whether the result passed review.
+- Dataset Receipts — for dataset owners and buyers: show where a dataset came from, how it was checked, what passed, what failed, and why it is training-grade.
+- Compute Receipts — for GPU / server validation and resale: show the machine, the benchmark, the GPU identity, the power state, the performance score, and rental or sale readiness.
+
+## What a run produces
+
+Execution Trail · Verification Receipt · Verdict Package · Evidence Bundle · Hash + Timestamp · Exportable PDF + JSON.
+
+## Who it is for
+
+Teams running AI agents · dataset owners and buyers · compute sellers and MicroScalers — anyone accountable for AI work, data, or compute.
+
+## Status
+
+DefendableCloud is rolling out to early teams. Request access at https://defendablecloud.com/contact.
+
+## Ecosystem
+
+- DefendableOS: https://defendableos.com (the engine — Proof of Execution)
+- DefendableRouter: https://defendablerouter.com
+- DefendableDocs: https://defendabledocs.com
+- OpenDefendable: https://opendefendable.com
+- MrDefendable: https://mrdefendable.com
+
+## Contact
+
+Email: build@defendableos.com

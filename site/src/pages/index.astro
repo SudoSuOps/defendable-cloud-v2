@@ -1,0 +1,280 @@
+---
+import Layout from "../layouts/Layout.astro";
+import Nav from "../components/Nav.astro";
+import Footer from "../components/Footer.astro";
+import Section from "../components/Section.astro";
+import ValueCard from "../components/ValueCard.astro";
+
+// The Defendable Run — the one primitive. Everything is a Run.
+const runParts = [
+  { name: "Inputs", hint: "the task that was requested" },
+  { name: "Evidence", hint: "files, notes, URLs, outputs, logs" },
+  { name: "Execution", hint: "what actually ran" },
+  { name: "Checks", hint: "schema · math · evidence · policy" },
+  { name: "Verdict", hint: "pass · fail · risk · repair" },
+  { name: "Approval", hint: "a human signs off" },
+  { name: "Receipt", hint: "hashed, timestamped proof" },
+];
+
+// What teams do — the five verbs.
+const steps = [
+  {
+    step: "01",
+    title: "Create a run",
+    body: "An agent task, dataset review, compute benchmark, valuation, or document check. Everything is a Run, and every Run has the same shape.",
+  },
+  {
+    step: "02",
+    title: "Attach evidence",
+    body: "Files, notes, URLs, observations, tool outputs, model outputs, benchmark logs — whatever the work relied on.",
+  },
+  {
+    step: "03",
+    title: "Run verification",
+    body: "Schema checks, math checks, evidence checks, policy checks, and human approval gates apply the verdict logic.",
+  },
+  {
+    step: "04",
+    title: "Issue a receipt",
+    body: "An execution trail, a verification receipt, a verdict package, and an evidence bundle — hashed and timestamped.",
+  },
+  {
+    step: "05",
+    title: "Store & share",
+    body: "Keep it in a private vault, send a client link, or export the proof package as PDF and JSON.",
+  },
+];
+
+// Three lanes at launch. These three carry the brand.
+const lanes = [
+  {
+    tag: "Lane 01",
+    title: "Agent Work Receipts",
+    who: "For businesses running AI agents.",
+    quote:
+      "Show me what the AI did, what tools it used, what evidence it relied on, and whether the result passed review.",
+  },
+  {
+    tag: "Lane 02",
+    title: "Dataset Receipts",
+    who: "For dataset owners and buyers.",
+    quote:
+      "Show me where this dataset came from, how it was checked, what passed, what failed, and why it is training-grade.",
+  },
+  {
+    tag: "Lane 03",
+    title: "Compute Receipts",
+    who: "For GPU / server validation and resale.",
+    quote:
+      "Show me the machine, the benchmark, the GPU identity, the power state, the performance score, and rental or sale readiness.",
+  },
+];
+
+const outputs = [
+  { title: "Execution Trail", body: "The original request, the inputs, what ran, and the final outcome — in order." },
+  { title: "Verification Receipt", body: "What passed, what failed, what was flagged, and what was approved." },
+  { title: "Verdict Package", body: "A human-readable judgment: retained, rejected, escalated, repaired, or approved." },
+  { title: "Evidence Bundle", body: "The source files, observations, outputs, and supporting context behind the run." },
+  { title: "Hash + Timestamp", body: "A SHA-256 fingerprint and a time of record — so the proof can't be quietly rewritten." },
+  { title: "Exportable PDF + JSON", body: "A client-facing document and a machine-readable record. Download it, or share a link." },
+];
+
+const audiences = [
+  {
+    title: "Teams running AI agents",
+    body: "You've put agents to work. You need to show what they did and whether the result holds up.",
+  },
+  {
+    title: "Dataset owners & buyers",
+    body: "Prove where a dataset came from, how it was checked, and why it's training-grade.",
+  },
+  {
+    title: "Compute sellers & MicroScalers",
+    body: "Validate a machine, a benchmark, and a power state — and hand the buyer a receipt.",
+  },
+];
+---
+
+<Layout path="/">
+  <Nav />
+
+  <main>
+    <!-- Hero -->
+    <section class="relative overflow-hidden border-b border-white/5">
+      <div class="absolute inset-0 brand-grid" aria-hidden="true"></div>
+      <div class="absolute inset-0 brand-glow" aria-hidden="true"></div>
+      <div class="reveal relative mx-auto max-w-3xl px-6 py-24 text-center md:py-28">
+        <p class="text-sm font-medium uppercase tracking-widest text-honey-300">
+          Hosted Proof of Execution
+        </p>
+        <h1
+          class="mt-5 text-4xl font-semibold leading-[1.1] tracking-tight text-paper md:text-6xl"
+        >
+          Cloud receipts for <span class="font-serif italic text-honey-200">agentic work</span>.
+        </h1>
+        <p class="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-paper/70">
+          Create, verify, approve, and share Proof of Execution for AI runs, datasets, compute, and
+          business workflows. Upload the work. Run the checks. Issue the proof. Store the artifact.
+        </p>
+        <p class="mt-4 text-base font-medium text-paper/85">
+          DefendableOS is the engine. DefendableCloud is the hosted proof vault.
+        </p>
+        <div class="mt-9 flex flex-wrap items-center justify-center gap-4">
+          <a
+            href="/contact"
+            class="rounded-md bg-honey-300 px-6 py-3 text-sm font-semibold text-ink transition-colors hover:bg-honey-200"
+          >
+            Request access
+          </a>
+          <a
+            href="#run"
+            class="rounded-md border border-white/10 px-6 py-3 text-sm font-medium text-paper/80 transition-colors hover:border-white/25 hover:text-paper"
+          >
+            See how it works
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- The Defendable Run -->
+    <Section
+      id="run"
+      eyebrow="The Defendable Run"
+      title="One primitive. Everything is a Run."
+      intro="An agent task, a dataset review, a compute benchmark, a valuation, a document check — each one is a Run, and every Run has the same shape."
+      class="border-b border-white/5"
+    >
+      <ol
+        class="reveal mx-auto mt-12 flex max-w-4xl flex-wrap items-stretch justify-center gap-3"
+      >
+        {
+          runParts.map((part, i) => (
+            <li class="flex items-stretch gap-3">
+              <div class="flex w-36 flex-col rounded-lg border border-white/8 bg-white/[0.02] px-4 py-3 text-left">
+                <span class="font-mono text-xs text-honey-300/80">{String(i + 1).padStart(2, "0")}</span>
+                <span class="mt-1 text-sm font-semibold text-paper">{part.name}</span>
+                <span class="mt-1 text-xs leading-snug text-paper/55">{part.hint}</span>
+              </div>
+              {i < runParts.length - 1 && (
+                <span class="hidden self-center text-honey-300/50 sm:inline" aria-hidden="true">
+                  →
+                </span>
+              )}
+            </li>
+          ))
+        }
+      </ol>
+    </Section>
+
+    <!-- How it works -->
+    <Section
+      id="how"
+      eyebrow="How it works"
+      title="Five steps. One clean place to do them."
+      intro="Create a run, attach evidence, run verification, issue a receipt, store and share. That's it."
+      class="border-b border-white/5"
+    >
+      <ol
+        class="reveal mx-auto mt-10 max-w-3xl divide-y divide-white/8 overflow-hidden rounded-xl border border-white/8 bg-white/[0.02]"
+      >
+        {
+          steps.map((s) => (
+            <li class="flex gap-5 p-6 text-left transition-colors hover:bg-white/[0.03] md:gap-6 md:p-7">
+              <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-honey-400/40 bg-honey-300/10 font-mono text-sm font-semibold text-honey-200">
+                {s.step}
+              </span>
+              <div>
+                <h3 class="text-base font-semibold text-paper md:text-lg">{s.title}</h3>
+                <p class="mt-1.5 text-sm leading-relaxed text-paper/65">{s.body}</p>
+              </div>
+            </li>
+          ))
+        }
+      </ol>
+    </Section>
+
+    <!-- Three lanes -->
+    <Section
+      id="lanes"
+      eyebrow="Three lanes"
+      title="Three lanes at launch. Each one carries the brand."
+      intro="Same primitive, three jobs. Start with the lane that fits your work."
+      class="border-b border-white/5"
+    >
+      <div class="mx-auto mt-12 grid max-w-5xl gap-5 md:grid-cols-3">
+        {
+          lanes.map((lane) => (
+            <div class="reveal flex h-full flex-col rounded-xl border border-white/8 bg-white/[0.02] p-6 transition-all duration-300 hover:-translate-y-0.5 hover:border-honey-400/30 hover:bg-white/[0.04]">
+              <span class="font-mono text-xs uppercase tracking-widest text-honey-300/70">
+                {lane.tag}
+              </span>
+              <h3 class="mt-2 text-lg font-semibold text-paper">{lane.title}</h3>
+              <p class="mt-1 text-sm text-paper/55">{lane.who}</p>
+              <p class="mt-4 border-l-2 border-honey-400/40 pl-3 text-sm italic leading-relaxed text-paper/75">
+                “{lane.quote}”
+              </p>
+            </div>
+          ))
+        }
+      </div>
+    </Section>
+
+    <!-- Receipt outputs -->
+    <Section
+      id="outputs"
+      eyebrow="What a run produces"
+      title="A proof package you can put in front of anyone."
+      intro="Every run can produce a complete, portable proof set — private by default, shareable when you choose."
+      class="border-b border-white/5"
+    >
+      <div class="mx-auto mt-10 grid max-w-5xl gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        {outputs.map((o) => <ValueCard title={o.title} body={o.body} />)}
+      </div>
+    </Section>
+
+    <!-- Who it's for -->
+    <Section
+      id="who"
+      eyebrow="Who it's for"
+      title="For anyone accountable for AI work, data, or compute."
+      class="border-b border-white/5"
+    >
+      <div class="mx-auto mt-10 grid max-w-5xl gap-5 md:grid-cols-3">
+        {audiences.map((a) => <ValueCard title={a.title} body={a.body} />)}
+      </div>
+    </Section>
+
+    <!-- Closing CTA -->
+    <section class="relative overflow-hidden">
+      <div class="absolute inset-0 brand-glow" aria-hidden="true"></div>
+      <div class="reveal relative mx-auto max-w-2xl px-6 py-20 text-center md:py-24">
+        <h2 class="text-3xl font-semibold tracking-tight text-paper md:text-4xl">
+          Run the work. Generate the receipt.
+        </h2>
+        <p class="mx-auto mt-5 max-w-xl text-lg leading-relaxed text-paper/70">
+          DefendableCloud is rolling out to early teams. Tell us what you need to prove, and we'll
+          get you into the vault.
+        </p>
+        <div class="mt-9">
+          <a
+            href="/contact"
+            class="inline-block rounded-md bg-honey-300 px-7 py-3.5 text-sm font-semibold text-ink transition-colors hover:bg-honey-200"
+          >
+            Request access
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- Signature · to the shed -->
+    <div class="border-t border-white/5">
+      <p
+        class="mx-auto max-w-container px-6 py-8 text-center font-mono text-xs uppercase tracking-[0.35em] text-honey-300/55"
+      >
+        // to the shed
+      </p>
+    </div>
+  </main>
+
+  <Footer />
+</Layout>

@@ -1,0 +1,101 @@
+---
+import "../styles/global.css";
+
+export interface Props {
+  title?: string;
+  description?: string;
+  path?: string;
+}
+
+const {
+  title = "DefendableCloud · Cloud Receipts for Agentic Work",
+  description =
+    "DefendableCloud is hosted Proof of Execution for agentic work. Create a run, attach evidence, run verification checks, approve, and issue a receipt you can store and share — for AI runs, datasets, compute, and business workflows.",
+  path = "/",
+} = Astro.props;
+
+const site = "https://defendablecloud.com";
+const canonical = new URL(path, site).href;
+const ogImage = `${site}/og-image.png`;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <script is:inline>
+      // Flag JS so reveal styles only hide content when we can animate it back in.
+      document.documentElement.classList.add("js");
+    </script>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    <meta name="theme-color" content="#0a0a0a" />
+    <meta name="robots" content="index, follow" />
+    <meta
+      name="author"
+      content="Swarm and Bee LLC · DBA Swarm & Bee AI · Florida · D-U-N-S 138652395"
+    />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="DefendableCloud" />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:image" content={ogImage} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImage} />
+
+    <link rel="alternate" type="text/plain" href="/llms.txt" title="AI context manifest" />
+
+    <!-- Organization structured data for search + AI engines -->
+    <script
+      type="application/ld+json"
+      set:html={JSON.stringify({
+        "@context": "https://schema.org",
+        "@type": "Organization",
+        name: "DefendableCloud",
+        url: site,
+        description: description,
+        legalName: "Swarm and Bee LLC",
+        brand: "DefendableCloud",
+        slogan: "Cloud receipts for agentic work.",
+        areaServed: "US",
+      })}
+    />
+  </head>
+  <body class="min-h-screen font-sans antialiased">
+    <slot />
+    <script is:inline>
+      (() => {
+        const els = document.querySelectorAll(".reveal");
+        const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+        if (reduce || !("IntersectionObserver" in window)) {
+          els.forEach((el) => el.classList.add("is-visible"));
+          return;
+        }
+        const io = new IntersectionObserver(
+          (entries) => {
+            entries.forEach((entry) => {
+              if (entry.isIntersecting) {
+                entry.target.classList.add("is-visible");
+                io.unobserve(entry.target);
+              }
+            });
+          },
+          { rootMargin: "0px 0px -10% 0px", threshold: 0.12 },
+        );
+        els.forEach((el) => io.observe(el));
+      })();
+    </script>
+  </body>
+</html>

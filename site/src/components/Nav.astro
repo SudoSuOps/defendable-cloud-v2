@@ -1,0 +1,54 @@
+---
+const links = [
+  { label: "The Run", href: "/#run" },
+  { label: "How it works", href: "/#how" },
+  { label: "Lanes", href: "/#lanes" },
+  { label: "Receipts", href: "/#outputs" },
+];
+---
+
+<header
+  class="sticky top-0 z-50 border-b border-white/5 bg-ink/80 backdrop-blur supports-[backdrop-filter]:bg-ink/60"
+>
+  <nav
+    class="mx-auto flex max-w-container items-center justify-between px-6 py-4"
+    aria-label="Primary"
+  >
+    <a href="/" class="flex items-center gap-2.5" aria-label="DefendableCloud home">
+      <svg viewBox="0 0 32 32" class="h-7 w-7" aria-hidden="true">
+        <rect width="32" height="32" rx="6" fill="#0a0a0a" stroke="#e6ab2a" stroke-width="1" />
+        <g
+          fill="none"
+          stroke="#f6c64b"
+          stroke-width="1.6"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <path d="M8 6h12l4 4v16H8z" />
+          <path d="M12 12h8M12 16h10M12 20h6" stroke-width="1.2" opacity="0.7" />
+        </g>
+      </svg>
+      <span class="text-base font-semibold tracking-tight text-paper">DefendableCloud</span>
+    </a>
+
+    <div class="flex items-center gap-6">
+      <ul class="hidden items-center gap-6 text-sm text-paper/70 md:flex">
+        {
+          links.map((link) => (
+            <li>
+              <a class="transition-colors hover:text-paper" href={link.href}>
+                {link.label}
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+      <a
+        href="/contact"
+        class="rounded-md border border-honey-400/40 bg-honey-300/10 px-4 py-2 text-sm font-medium text-honey-200 transition-colors hover:bg-honey-300/20"
+      >
+        Request access
+      </a>
+    </div>
+  </nav>
+</header>

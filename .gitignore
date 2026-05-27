@@ -1,0 +1,27 @@
+# build output
+**/dist/
+**/.output/
+
+# dependencies
+**/node_modules/
+
+# astro
+**/.astro/
+
+# python (api/, phase 2)
+**/__pycache__/
+**/.venv/
+*.pyc
+
+# secrets
+.env
+.env.local
+.env.*.local
+**/.env
+
+# logs / OS / editor
+*.log
+.DS_Store
+.vscode/
+.idea/
+*.swp

@@ -1,0 +1,157 @@
+---
+import Layout from "../layouts/Layout.astro";
+import Nav from "../components/Nav.astro";
+import Footer from "../components/Footer.astro";
+
+const email = "build@defendableos.com";
+
+const lanes = [
+  { value: "agent", label: "Agent Work Receipts" },
+  { value: "dataset", label: "Dataset Receipts" },
+  { value: "compute", label: "Compute Receipts" },
+  { value: "partner", label: "Partner / contributor" },
+  { value: "other", label: "Other" },
+];
+
+const field =
+  "w-full rounded-md border border-white/10 bg-white/[0.03] px-3.5 py-2.5 text-sm text-paper placeholder:text-paper/35 transition-colors focus:border-honey-400/50 focus:outline-none focus:ring-1 focus:ring-honey-400/40";
+const label = "block text-xs font-medium uppercase tracking-widest text-paper/50";
+---
+
+<Layout
+  path="/contact"
+  title="Request access · DefendableCloud"
+  description="Tell us what you need to prove — agent work, datasets, or compute — and we'll get you into the DefendableCloud vault. Reach us at build@defendableos.com."
+>
+  <Nav />
+
+  <main>
+    <section class="relative overflow-hidden border-b border-white/5">
+      <div class="absolute inset-0 brand-grid" aria-hidden="true"></div>
+      <div class="reveal relative mx-auto max-w-2xl px-6 py-20 text-center md:py-24">
+        <p class="text-sm font-medium uppercase tracking-widest text-honey-300">Request access</p>
+        <h1 class="mt-5 text-4xl font-semibold tracking-tight text-paper md:text-5xl">
+          Get into the vault.
+        </h1>
+        <p class="mx-auto mt-6 max-w-xl text-lg leading-relaxed text-paper/70">
+          DefendableCloud is rolling out to early teams. Tell us what you need to prove — agent
+          work, a dataset, or a machine — and we'll set you up. We read every note ourselves.
+        </p>
+      </div>
+    </section>
+
+    <section class="mx-auto max-w-2xl px-6 py-16 md:py-20">
+      <form id="contact-form" class="reveal space-y-5 text-left" novalidate>
+        <!-- Honeypot · hidden from humans, catches naive bots. -->
+        <div class="absolute -left-[9999px]" aria-hidden="true">
+          <label>Company URL <input type="text" name="company_url" tabindex="-1" autocomplete="off" /></label>
+        </div>
+
+        <div class="grid gap-5 sm:grid-cols-2">
+          <div>
+            <label class={label} for="name">Name</label>
+            <input class={`mt-2 ${field}`} id="name" name="name" type="text" required autocomplete="name" />
+          </div>
+          <div>
+            <label class={label} for="email">Email</label>
+            <input class={`mt-2 ${field}`} id="email" name="email" type="email" required autocomplete="email" />
+          </div>
+        </div>
+
+        <div class="grid gap-5 sm:grid-cols-2">
+          <div>
+            <label class={label} for="company">Company <span class="text-paper/30">(optional)</span></label>
+            <input class={`mt-2 ${field}`} id="company" name="company" type="text" autocomplete="organization" />
+          </div>
+          <div>
+            <label class={label} for="lane">What brings you in</label>
+            <select class={`mt-2 ${field}`} id="lane" name="lane">
+              {lanes.map((l) => <option value={l.value}>{l.label}</option>)}
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class={label} for="message">Message</label>
+          <textarea
+            class={`mt-2 ${field} resize-y`}
+            id="message"
+            name="message"
+            rows="5"
+            required
+            placeholder="What you need to prove (agent work, a dataset, a machine), and the best way to reach you."></textarea>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-4 pt-1">
+          <button
+            id="contact-submit"
+            type="submit"
+            class="rounded-md bg-honey-300 px-7 py-3 text-sm font-semibold text-ink transition-colors hover:bg-honey-200 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            Send it
+          </button>
+          <p class="text-sm text-paper/45">
+            Prefer email? <a class="text-honey-200 hover:text-honey-100" href={`mailto:${email}`}>{email}</a>
+          </p>
+        </div>
+
+        <p id="contact-status" class="text-sm" role="status" aria-live="polite"></p>
+      </form>
+
+      <p class="mt-10 border-t border-white/5 pt-6 text-center text-xs text-paper/40">
+        Swarm and Bee LLC · DBA Swarm &amp; Bee AI · Florida · D-U-N-S 138652395
+      </p>
+    </section>
+  </main>
+
+  <Footer />
+</Layout>
+
+<script>
+  const form = document.getElementById("contact-form") as HTMLFormElement | null;
+  const btn = document.getElementById("contact-submit") as HTMLButtonElement | null;
+  const status = document.getElementById("contact-status");
+
+  if (form && btn && status) {
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      status.textContent = "";
+      status.className = "text-sm";
+
+      const data = Object.fromEntries(new FormData(form).entries());
+
+      if (!data.name || !data.email || !data.message) {
+        status.textContent = "Name, email, and message are required.";
+        status.className = "text-sm text-red-400";
+        return;
+      }
+
+      btn.disabled = true;
+      const original = btn.textContent;
+      btn.textContent = "Sending…";
+
+      try {
+        const res = await fetch("/api/contact", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data),
+        });
+        const out = await res.json().catch(() => ({}));
+        if (res.ok && out.ok) {
+          form.reset();
+          status.textContent = "Got it. We'll be in touch — to the shed.";
+          status.className = "text-sm text-honey-200";
+        } else {
+          status.textContent = out.error || "Something went wrong. Email us directly.";
+          status.className = "text-sm text-red-400";
+        }
+      } catch {
+        status.textContent = "Network hiccup. Email us directly at build@defendableos.com.";
+        status.className = "text-sm text-red-400";
+      } finally {
+        btn.disabled = false;
+        btn.textContent = original;
+      }
+    });
+  }
+</script>

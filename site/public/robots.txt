@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+
+# AI context manifest
+# /llms.txt
+
+Sitemap: https://defendablecloud.com/sitemap-index.xml
