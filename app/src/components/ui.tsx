@@ -103,3 +103,29 @@ export function Spinner({ label }: { label?: string }) {
 export function ErrorNote({ children }: { children: ReactNode }) {
   return <p className="text-sm text-red-400">{children}</p>;
 }
+
+export function Callout({ title, children }: { title?: string; children: ReactNode }) {
+  return (
+    <div className="rounded-lg border border-honey-400/20 bg-honey-300/[0.04] px-4 py-3 text-sm leading-relaxed text-paper/70">
+      {title && (
+        <div className="mb-1 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-widest text-honey-300/80">
+          <span aria-hidden="true">›</span> {title}
+        </div>
+      )}
+      {children}
+    </div>
+  );
+}
+
+export function ExampleList({ items }: { items: string[] }) {
+  return (
+    <ul className="mt-2 space-y-1">
+      {items.map((it, i) => (
+        <li key={i} className="flex gap-2 text-sm text-paper/60">
+          <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-honey-300/60" aria-hidden="true" />
+          <span>{it}</span>
+        </li>
+      ))}
+    </ul>
+  );
+}

@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { api, apiBase } from "../lib/api";
-import { Badge, Button, Card, ErrorNote, Field, inputClass, Spinner } from "../components/ui";
+import { Badge, Button, Callout, Card, ErrorNote, ExampleList, Field, inputClass, Spinner } from "../components/ui";
+import { EVIDENCE_KIND_HELP, VERIFICATION_HELP, laneGuide } from "../lib/guidance";
 
 interface Evidence {
   id: string;
@@ -140,7 +141,7 @@ export function RunDetail() {
         }
       >
         {!hasVerdict ? (
-          <p className="text-sm text-paper/50">No verdict yet. Run verification to grade this work.</p>
+          <p className="text-sm text-paper/50">{VERIFICATION_HELP}</p>
         ) : (
           <div>
             <div className="flex items-center gap-3">
@@ -223,8 +224,19 @@ function EvidenceSection({ run, busy, act }: { run: Run; busy: string | null; ac
     });
   }
 
+  const guide = laneGuide(run.lane);
+
   return (
     <Card title="Evidence" subtitle={`${run.evidence.length} item(s)`}>
+      {!locked && (
+        <div className="mb-5">
+          <Callout title="What to attach">
+            {guide.evidenceHint}
+            <span className="mt-2 block text-xs text-paper/40">Good evidence for this run:</span>
+            <ExampleList items={guide.evidenceExamples} />
+          </Callout>
+        </div>
+      )}
       {run.evidence.length > 0 && (
         <ul className="mb-5 space-y-2">
           {run.evidence.map((e) => (
@@ -246,6 +258,7 @@ function EvidenceSection({ run, busy, act }: { run: Run; busy: string | null; ac
             </select>
             <input className={inputClass} placeholder="Label" value={label} onChange={(e) => setLabel(e.target.value)} />
           </div>
+          <p className="-mt-1 text-xs text-paper/40">{EVIDENCE_KIND_HELP[kind]}</p>
           <textarea className={inputClass} rows={2} placeholder="Content (note text, a URL, an output…)" value={content} onChange={(e) => setContent(e.target.value)} />
           <div className="flex flex-wrap items-center gap-3">
             <Button variant="ghost" disabled={busy === "ev"} onClick={addNote}>{busy === "ev" ? "Adding…" : "Add evidence"}</Button>

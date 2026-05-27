@@ -1,33 +1,13 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../lib/api";
-import { Button, Card, ErrorNote, Field, inputClass, Spinner } from "../components/ui";
+import { Button, Callout, Card, ErrorNote, ExampleList, Field, inputClass, Spinner } from "../components/ui";
+import { LANES, laneGuide } from "../lib/guidance";
 
 interface Project {
   id: string;
   name: string;
 }
-
-const LANES = [
-  { value: "agent", label: "Agent work" },
-  { value: "dataset", label: "Dataset" },
-  { value: "compute", label: "Compute" },
-  { value: "other", label: "Other" },
-];
-
-// Lane-specific input fields. Keys must match the API check engine.
-const LANE_FIELDS: Record<string, { key: string; label: string; placeholder: string }[]> = {
-  agent: [{ key: "task", label: "Task", placeholder: "What the agent was asked to do" }],
-  dataset: [
-    { key: "source", label: "Source", placeholder: "Where the dataset came from" },
-    { key: "row_count", label: "Row count", placeholder: "e.g. 42000" },
-  ],
-  compute: [
-    { key: "machine", label: "Machine", placeholder: "e.g. RTX 5090 rig-whale" },
-    { key: "benchmark_score", label: "Benchmark score", placeholder: "e.g. 9412" },
-  ],
-  other: [],
-};
 
 export function NewRun() {
   const nav = useNavigate();
@@ -111,11 +91,17 @@ export function NewRun() {
             </select>
           </Field>
 
+          <Callout title={`${laneGuide(lane).label} run`}>
+            {laneGuide(lane).what}
+            <span className="mt-2 block text-xs text-paper/40">For example:</span>
+            <ExampleList items={laneGuide(lane).examples} />
+          </Callout>
+
           <Field label="Title">
             <input className={inputClass} required value={title} onChange={(e) => setTitle(e.target.value)} placeholder="What this run is" />
           </Field>
 
-          {LANE_FIELDS[lane].map((f) => (
+          {laneGuide(lane).inputs.map((f) => (
             <Field key={f.key} label={f.label}>
               <input
                 className={inputClass}

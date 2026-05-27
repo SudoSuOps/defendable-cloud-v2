@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { api } from "../lib/api";
 import { useAuth } from "../lib/auth";
 import { Badge, Button, Card, ErrorNote, Spinner } from "../components/ui";
+import { LANES } from "../lib/guidance";
 
 interface RunRow {
   id: string;
@@ -52,10 +53,20 @@ export function Dashboard() {
         {!runs && !err && <Spinner />}
         {runs && runs.length === 0 && (
           <Card>
-            <p className="text-sm text-paper/60">
-              No runs yet. Every run is one primitive: inputs → evidence → checks → verdict → approval → receipt.
+            <p className="text-sm leading-relaxed text-paper/65">
+              No runs yet. Every run is one primitive — <span className="text-paper/80">inputs → evidence → checks → verdict → approval → receipt</span>.
+              Pick the kind of work you need to prove:
             </p>
-            <div className="mt-4">
+            <div className="mt-5 grid gap-3 sm:grid-cols-3">
+              {LANES.filter((l) => l.value !== "other").map((l) => (
+                <div key={l.value} className="rounded-lg border border-white/8 bg-white/[0.02] p-4">
+                  <div className="font-mono text-xs uppercase tracking-widest text-honey-300/70">{l.label}</div>
+                  <p className="mt-1.5 text-xs leading-relaxed text-paper/55">{l.what}</p>
+                  <p className="mt-2 text-xs italic text-paper/40">e.g. {l.examples[0]}</p>
+                </div>
+              ))}
+            </div>
+            <div className="mt-6">
               <Button onClick={() => nav("/runs/new")}>Create your first run</Button>
             </div>
           </Card>
