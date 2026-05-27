@@ -139,6 +139,26 @@ export function ShareView() {
               );
             })()}
 
+            {r.payload?.agent_profile && (() => {
+              const ap = r.payload.agent_profile;
+              const rows: [string, string | null][] = [
+                ["Harness — the body", ap.harness ? `${ap.harness}${ap.harness_version ? ` v${ap.harness_version}` : ""}` : null],
+                ["Model — the brain", ap.model ? `${ap.model}${ap.model_provider ? ` · ${ap.model_provider}` : ""}${ap.served_by ? ` · ${ap.served_by}` : ""}` : null],
+                ["Runtime — the ground", [ap.runtime_host, ap.runtime_hardware, ap.runtime_os].filter(Boolean).join(" · ") || null],
+                ["Tools — the hands", ap.tools?.length ? ap.tools.join(", ") : null],
+              ];
+              return (
+                <Card className="mt-6" title="Agent profile" actions={ap.capability_tier && <span className="rounded-md border border-white/15 px-2.5 py-1 text-xs font-semibold uppercase text-paper/70">{ap.capability_tier} tier</span>}>
+                  <div className="mb-3 text-base font-semibold text-paper">{ap.name}</div>
+                  <dl className="grid gap-x-8 gap-y-2 text-sm sm:grid-cols-2">
+                    {rows.filter(([, v]) => v).map(([k, v]) => (
+                      <div key={k} className="flex justify-between gap-3 border-b border-white/5 py-1"><dt className="text-paper/45">{k}</dt><dd className="text-right font-mono text-xs text-paper/80">{v}</dd></div>
+                    ))}
+                  </dl>
+                </Card>
+              );
+            })()}
+
             {(r.payload?.evidence || []).length > 0 && (
               <Card className="mt-6" title="Evidence">
                 <ul className="space-y-1.5 text-sm">
