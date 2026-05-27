@@ -146,6 +146,39 @@ def _r(key, label, category, status, severity, detail):
             "source": "auto", "status": status, "severity": severity, "detail": detail}
 
 
+_MONEY_UNITS = {"usd", "$", "dollar", "dollars", "us dollars"}
+_MONEY_WORDS = ("amount", "payment", "check", "cost", "price", "fee", "dollar", "$",
+                "invoice", "payout", "refund", "wire", "balance", "debt service")
+
+
+def _is_monetary(name: str | None, units: str | None) -> bool:
+    if (units or "").strip().lower() in _MONEY_UNITS:
+        return True
+    n = (name or "").lower()
+    return any(w in n for w in _MONEY_WORDS)
+
+
+def _penalty(stated: float, truth: float, monetary: bool, bands: dict) -> tuple[str, str | None, str]:
+    """Variable penalty — the spot of the foul. Severity scales with the size of
+    the miss (relative %, escalated by material absolute $)."""
+    tol_rel = float(bands.get("tol_rel", 0.01))
+    crit_rel = float(bands.get("critical_rel", 0.10))
+    crit_abs = float(bands.get("critical_abs", 1000.0))
+    abs_floor_rel = float(bands.get("abs_floor_rel", 0.02))
+    abs_d = abs(stated - truth)
+    base = max(abs(truth), 1e-9)
+    rel = abs_d / base
+    if rel <= tol_rel:
+        return "pass", None, f"matches (within {tol_rel:.0%})"
+    big_dollar = monetary and abs_d >= crit_abs and rel >= abs_floor_rel
+    critical = rel >= crit_rel or big_dollar
+    amt = f"${abs_d:,.2f}" if monetary else f"{abs_d:,.4g}"
+    note = " · high-dollar impact" if big_dollar else ""
+    sev = "critical" if critical else "noncritical"
+    tag = "" if critical else " · minor variance"
+    return "flag", sev, f"off by {amt} ({rel:.1%}){note}{tag}"
+
+
 def run_structured_audit(eval_spec: dict, submission_text: str) -> tuple[list[dict], dict | None]:
     # 0 · valid JSON
     try:
@@ -244,10 +277,10 @@ def run_structured_audit(eval_spec: dict, submission_text: str) -> tuple[list[di
             except Exception:
                 results.append(_r(f"math_{name}", f"Math: {name}", "math", "skip", "noncritical", "Formula not pure-arithmetic; not verifiable in v1."))
                 continue
-            tol = max(1e-6, abs(result) * 0.01)
-            ok = abs(got - result) <= tol
-            results.append(_r(f"math_{name}", f"Math: {name}", "math", "pass" if ok else "flag", "critical",
-                              f"{name}: stated {result}, recomputed {round(got, 6)}" + ("" if ok else " — MISMATCH")))
+            monetary = _is_monetary(name, c.get("units"))
+            status, sev, detail = _penalty(result, got, monetary, eval_spec.get("penalty") or {})
+            results.append(_r(f"math_{name}", f"Math: {name}", "math", status, sev,
+                              f"{name}: stated {result}, recomputed {round(got, 6)} — {detail}"))
 
     # 5 · structured rule DSL — machine-precise yes/no expressions (thresholds,
     # cross-field, conditionals). No English parsing: the rulebook declares the
@@ -259,7 +292,21 @@ def run_structured_audit(eval_spec: dict, submission_text: str) -> tuple[list[di
         label = str(rule.get("label") or key)[:300]
         sev = "critical" if str(rule.get("severity", "")).lower() in ("critical", "high", "propolis") else "noncritical"
         cat = rule.get("category", "policy")
-        res = eval_expr(rule.get("expr"), sub)
+        expr = rule.get("expr") or {}
+
+        # Variable-penalty comparison: severity scales with the size of the miss.
+        if isinstance(expr, dict) and expr.get("op") == "approx":
+            left, right = _operand(expr.get("left"), sub), _operand(expr.get("right"), sub)
+            ln, rn = _num(left), _num(right)
+            if ln is None or rn is None:
+                results.append(_r(key, label, cat, "skip", sev, "Operand missing/non-numeric; not evaluable."))
+            else:
+                monetary = bool(expr.get("monetary"))
+                status, esev, detail = _penalty(ln, rn, monetary, expr)
+                results.append(_r(key, label, cat, status, esev if esev else sev, f"{label}: {detail}"))
+            continue
+
+        res = eval_expr(expr, sub)
         if res is None:
             results.append(_r(key, label, cat, "skip", sev, "Operand missing in submission; not evaluable."))
         else:
