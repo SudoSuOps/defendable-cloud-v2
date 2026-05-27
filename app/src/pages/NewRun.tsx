@@ -19,13 +19,20 @@ interface FlightSheet {
 
 const LANE_LABEL: Record<string, string> = { agent: "Agent Work", dataset: "Dataset", compute: "Compute", other: "Document" };
 
+interface AgentProfile { id: string; name: string; capability_tier: string | null; harness: string | null; model: string | null; }
+const TIERS = ["edge", "small", "mid", "frontier"];
+const emptyProfile = { name: "", harness: "", harness_version: "", model: "", model_provider: "", served_by: "", runtime_host: "", runtime_os: "", runtime_hardware: "", capability_tier: "" };
+
 export function NewRun() {
   const nav = useNavigate();
   const [projects, setProjects] = useState<Project[] | null>(null);
   const [sheets, setSheets] = useState<FlightSheet[]>([]);
+  const [profiles, setProfiles] = useState<AgentProfile[]>([]);
   const [projectId, setProjectId] = useState("");
   const [newProject, setNewProject] = useState("");
   const [sheetId, setSheetId] = useState("");
+  const [profileId, setProfileId] = useState("");
+  const [np, setNp] = useState({ ...emptyProfile });
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
@@ -33,14 +40,18 @@ export function NewRun() {
     Promise.all([
       api<{ projects: Project[] }>("/projects"),
       api<{ flight_sheets: FlightSheet[] }>("/flight-sheets"),
+      api<{ agent_profiles: AgentProfile[] }>("/agent-profiles"),
     ])
-      .then(([p, f]) => {
+      .then(([p, f, ap]) => {
         setProjects(p.projects);
         setProjectId(p.projects[0]?.id ?? "__new__");
         setSheets(f.flight_sheets);
+        setProfiles(ap.agent_profiles);
       })
       .catch((e) => setErr(e.message));
   }, []);
+
+  const setNpField = (k: keyof typeof emptyProfile, v: string) => setNp((s) => ({ ...s, [k]: v }));
 
   async function create() {
     setErr(null);
@@ -51,7 +62,14 @@ export function NewRun() {
         if (!newProject.trim()) throw new Error("name the project");
         pid = (await api<Project>("/projects", { method: "POST", body: { name: newProject.trim() } })).id;
       }
-      const run = await api<{ id: string }>("/runs", { method: "POST", body: { project_id: pid, flight_sheet_id: sheetId } });
+      let apid: string | undefined = profileId && profileId !== "__new__" ? profileId : undefined;
+      if (profileId === "__new__") {
+        if (!np.name.trim()) throw new Error("name the agent profile");
+        const body: Record<string, unknown> = { name: np.name.trim() };
+        (Object.keys(emptyProfile) as (keyof typeof emptyProfile)[]).forEach((k) => { if (k !== "name" && np[k]) body[k] = np[k]; });
+        apid = (await api<AgentProfile>("/agent-profiles", { method: "POST", body })).id;
+      }
+      const run = await api<{ id: string }>("/runs", { method: "POST", body: { project_id: pid, flight_sheet_id: sheetId, agent_profile_id: apid } });
       nav(`/runs/${run.id}`);
     } catch (e: any) {
       setErr(e.message);
@@ -84,6 +102,32 @@ export function NewRun() {
             </Field>
           </div>
         )}
+      </Card>
+
+      <Card className="mt-6">
+        <Field label="Agent profile (the stack — optional)">
+          <select className={inputClass} value={profileId} onChange={(e) => setProfileId(e.target.value)}>
+            <option value="">— none / decide at submission —</option>
+            {profiles.map((p) => <option key={p.id} value={p.id}>{p.name}{p.capability_tier ? ` · ${p.capability_tier}` : ""}</option>)}
+            <option value="__new__">+ New profile…</option>
+          </select>
+        </Field>
+        {profileId === "__new__" && (
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            <input className={`${inputClass} sm:col-span-2`} value={np.name} onChange={(e) => setNpField("name", e.target.value)} placeholder="Profile name (e.g. Kimi-Claw-Jetson-3B)" />
+            <input className={inputClass} value={np.harness} onChange={(e) => setNpField("harness", e.target.value)} placeholder="Harness / body (claw, claude-code…)" />
+            <input className={inputClass} value={np.model} onChange={(e) => setNpField("model", e.target.value)} placeholder="Model / brain (qwen2.5:9b, kimi-k2…)" />
+            <input className={inputClass} value={np.model_provider} onChange={(e) => setNpField("model_provider", e.target.value)} placeholder="Model provider (ollama, anthropic…)" />
+            <input className={inputClass} value={np.served_by} onChange={(e) => setNpField("served_by", e.target.value)} placeholder="Served by (ollama, api, vllm)" />
+            <input className={inputClass} value={np.runtime_host} onChange={(e) => setNpField("runtime_host", e.target.value)} placeholder="Runtime host (sigedge, mac-studio…)" />
+            <input className={inputClass} value={np.runtime_hardware} onChange={(e) => setNpField("runtime_hardware", e.target.value)} placeholder="Hardware (Jetson Orin · 8GB shared)" />
+            <select className={`${inputClass} sm:col-span-2`} value={np.capability_tier} onChange={(e) => setNpField("capability_tier", e.target.value)}>
+              <option value="">Capability tier (declared — proven by receipts)…</option>
+              {TIERS.map((t) => <option key={t} value={t}>{t}</option>)}
+            </select>
+          </div>
+        )}
+        <p className="mt-3 text-xs text-paper/40">The harness is the body, the model the brain, the runtime the ground. Same harness + bigger runtime = a bigger brain — so capability is <em>proven by receipts</em>, not the name.</p>
       </Card>
 
       <h2 className="mt-8 mb-3 text-xs font-medium uppercase tracking-widest text-paper/40">Choose a flight sheet</h2>

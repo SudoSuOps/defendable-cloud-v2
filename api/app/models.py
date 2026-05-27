@@ -7,6 +7,7 @@ from sqlalchemy import (
     DateTime,
     Float,
     ForeignKey,
+    Integer,
     String,
     Text,
     UniqueConstraint,
@@ -105,6 +106,7 @@ class Run(Base):
     org_id: Mapped[str] = mapped_column(String(36), ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False, index=True)
     project_id: Mapped[str] = mapped_column(String(36), ForeignKey("projects.id", ondelete="CASCADE"), nullable=False, index=True)
     flight_sheet_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("flight_sheets.id", ondelete="SET NULL"), nullable=True)
+    agent_profile_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("agent_profiles.id", ondelete="SET NULL"), nullable=True)
     lane: Mapped[str] = mapped_column(String(16), nullable=False, index=True)  # agent | dataset | compute | other
     title: Mapped[str] = mapped_column(String(300), nullable=False)
     # draft | assignment_issued | submitted | audited | findings_ready | approved | rejected | receipted
@@ -280,4 +282,34 @@ class Artifact(Base):
     sha256: Mapped[str] = mapped_column(String(64), nullable=False)
     byte_size: Mapped[int] = mapped_column(BigInteger, default=0, nullable=False)
     content_type: Mapped[str] = mapped_column(String(128), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utc_now, nullable=False)
+
+
+class AgentProfile(Base):
+    """Books-and-records for an agent STACK — not a thing, a pairing of layers.
+
+    The harness is the body, the model is the brain, the runtime is the ground.
+    The same harness ("Kimi Claw") is a different agent on a Jetson vs a 192GB
+    Studio, so capability_tier is declared, then PROVEN by the receipts a profile
+    accumulates. Lets the referee attribute a flag to a LAYER, not just "the agent".
+    """
+
+    __tablename__ = "agent_profiles"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    org_id: Mapped[str] = mapped_column(String(36), ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False, index=True)
+    name: Mapped[str] = mapped_column(String(120), nullable=False)
+    harness: Mapped[str | None] = mapped_column(String(80), nullable=True)          # claw | claude-code | openhands | custom
+    harness_version: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    model: Mapped[str | None] = mapped_column(String(120), nullable=True)            # qwen2.5:9b | kimi-k2 | claude-opus-4.7
+    model_provider: Mapped[str | None] = mapped_column(String(80), nullable=True)    # ollama | moonshot | anthropic
+    served_by: Mapped[str | None] = mapped_column(String(40), nullable=True)         # ollama | api | vllm
+    runtime_host: Mapped[str | None] = mapped_column(String(120), nullable=True)     # sigedge | fly | mac-studio
+    runtime_os: Mapped[str | None] = mapped_column(String(80), nullable=True)        # JetPack 6 | Ubuntu 24.04 | macOS
+    runtime_hardware: Mapped[str | None] = mapped_column(String(160), nullable=True) # Jetson Orin Nano · 8GB shared
+    tools: Mapped[list] = mapped_column(JSONB, default=list, nullable=False)         # ["shell","file","web"]
+    context_window: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    capability_tier: Mapped[str | None] = mapped_column(String(16), nullable=True)   # edge | small | mid | frontier
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    active: Mapped[bool] = mapped_column(default=True, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utc_now, nullable=False)

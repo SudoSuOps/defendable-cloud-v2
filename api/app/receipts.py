@@ -149,6 +149,7 @@ def build_eval_payload(
     verdict: dict,
     approval: dict,
     share_url: str,
+    agent_profile: dict | None = None,
 ) -> dict:
     """The Client Results Package — flight sheet, submission, findings, verdict, ownership."""
     return {
@@ -186,6 +187,7 @@ def build_eval_payload(
             "final_authority": approval.get("approver_email"),
             "approval": approval.get("decision"),
         },
+        "agent_profile": agent_profile,
         "share_url": share_url,
     }
 
@@ -438,6 +440,17 @@ def _render_eval(payload: dict, receipt_sha256: str) -> bytes:
     row("Flight sheet", f'{payload["flight_sheet"]["name"]} v{payload["flight_sheet"]["version"]}')
     row("Agent / model", f'{sub.get("agent_name") or "—"} · {sub.get("model_name") or "—"} ({sub.get("provider") or "—"})')
     pdf.ln(1)
+
+    ap = payload.get("agent_profile")
+    if ap:
+        section("Agent profile (the stack)")
+        row("Profile", f'{ap.get("name") or "—"}  ·  tier {(ap.get("capability_tier") or "—").upper()}')
+        hv = f' v{ap["harness_version"]}' if ap.get("harness_version") else ""
+        row("Harness (body)", f'{ap.get("harness") or "—"}{hv}')
+        row("Model (brain)", f'{ap.get("model") or "—"}  ({ap.get("model_provider") or "—"} · {ap.get("served_by") or "—"})')
+        rt = "  ·  ".join(x for x in [ap.get("runtime_host"), ap.get("runtime_hardware"), ap.get("runtime_os")] if x)
+        row("Runtime (ground)", rt or "—")
+        pdf.ln(1)
 
     section("Referee findings")
     pdf.set_font("Courier", "", 9)

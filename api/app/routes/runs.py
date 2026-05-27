@@ -165,12 +165,21 @@ async def create_run(body: RunIn, current: Principal = Depends(get_current_user)
         if not title:
             raise HTTPException(status_code=400, detail="title required")
 
+        ap_id = agent_name = model_name = provider = None
+        if body.agent_profile_id:
+            from app.models import AgentProfile
+            ap = await db.get(AgentProfile, body.agent_profile_id)
+            if ap is None or ap.org_id != current.org_id:
+                raise HTTPException(status_code=404, detail="agent profile not found")
+            ap_id, agent_name, model_name, provider = ap.id, ap.name, ap.model, ap.model_provider
+
         rid = new_id()
         run = Run(
             id=rid, org_id=current.org_id, project_id=body.project_id,
-            flight_sheet_id=fs_id, lane=lane, title=title,
+            flight_sheet_id=fs_id, agent_profile_id=ap_id, lane=lane, title=title,
             status="assignment_issued" if assignment_text else "draft",
             inputs=body.inputs or {}, assignment_text=assignment_text, created_by=current.id,
+            agent_name=agent_name, model_name=model_name, provider=provider,
         )
         db.add(run)
         await db.flush()
@@ -221,6 +230,9 @@ async def get_run(run_id: str, current: Principal = Depends(get_current_user)):
         sub = (
             await db.execute(select(AgentSubmission).where(AgentSubmission.run_id == run_id).order_by(AgentSubmission.submitted_at.desc()).limit(1))
         ).scalar_one_or_none()
+        from app.models import AgentProfile
+        from app.routes.agents import profile_out
+        ap = await db.get(AgentProfile, run.agent_profile_id) if run.agent_profile_id else None
 
         approved = a.decision == "approved" if a else False
         return {
@@ -241,6 +253,7 @@ async def get_run(run_id: str, current: Principal = Depends(get_current_user)):
                 "summary": fs.summary, "expected_outputs": fs.expected_outputs,
                 "pass_threshold": fs.pass_threshold, "fail_threshold": fs.fail_threshold,
             } if fs else None,
+            "agent_profile": profile_out(ap) if ap else None,
             "submission": {
                 "agent_name": sub.agent_name, "model_name": sub.model_name, "provider": sub.provider,
                 "output_text": sub.output_text, "tool_logs": sub.tool_logs, "notes": sub.notes,
@@ -401,6 +414,10 @@ async def generate_receipt(run_id: str, current: Principal = Depends(get_current
         sub = (
             await db.execute(select(AgentSubmission).where(AgentSubmission.run_id == run_id).order_by(AgentSubmission.submitted_at.desc()).limit(1))
         ).scalar_one_or_none()
+        from app.models import AgentProfile
+        from app.routes.agents import profile_out
+        ap = await db.get(AgentProfile, run.agent_profile_id) if run.agent_profile_id else None
+        ap_payload = profile_out(ap) if ap else None
 
         def build(receipt_id, org_seq, parent_hash, created_at, share_url):
             if fs is not None:
@@ -409,6 +426,7 @@ async def generate_receipt(run_id: str, current: Principal = Depends(get_current
                     org={"id": org.id, "name": org.name},
                     run={"id": run.id, "lane": run.lane, "title": run.title},
                     flight_sheet={"name": fs.name, "version": fs.version},
+                    agent_profile=ap_payload,
                     assignment_sha256=sha256_hex((run.assignment_text or "").encode("utf-8")),
                     submission={
                         "agent_name": sub.agent_name, "model_name": sub.model_name,

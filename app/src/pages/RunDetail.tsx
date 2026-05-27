@@ -11,10 +11,11 @@ interface Approval { decision: string; approver_email: string | null; note: stri
 interface Receipt { receipt_id: string; receipt_sha256: string; parent_hash: string; org_seq: number; share_token: string; pdf_url: string; }
 interface Submission { agent_name: string | null; model_name: string | null; provider: string | null; output_text: string; sha256: string; }
 interface FlightSheet { id: string; name: string; version: string; lane: string; expected_outputs: string[]; pass_threshold: number; fail_threshold: number; }
+interface AgentProfileT { id: string; name: string; harness: string | null; harness_version: string | null; model: string | null; model_provider: string | null; served_by: string | null; runtime_host: string | null; runtime_os: string | null; runtime_hardware: string | null; tools: string[]; context_window: number | null; capability_tier: string | null; notes: string | null; }
 interface Ownership { agent_created: string | null; audited_by: string; referee_logic: string; final_authority: string | null; approval_status: string; receipt_status: string; }
 interface Run {
   id: string; lane: string; title: string; status: string;
-  assignment_text: string | null; flight_sheet: FlightSheet | null; submission: Submission | null;
+  assignment_text: string | null; flight_sheet: FlightSheet | null; agent_profile: AgentProfileT | null; submission: Submission | null;
   evidence: Evidence[]; checks: Check[]; verdict: Verdict | null; approval: Approval | null;
   receipt: Receipt | null; ownership: Ownership;
 }
@@ -62,6 +63,9 @@ export function RunDetail() {
       {/* 1 · Assignment */}
       {run.assignment_text && <AssignmentCard text={run.assignment_text} />}
 
+      {/* 1.5 · Agent profile — the stack that did the work */}
+      {run.agent_profile && <AgentProfilePanel p={run.agent_profile} />}
+
       {/* 2 · Evidence */}
       <div className="mt-6"><EvidenceSection run={run} busy={busy} act={act} /></div>
 
@@ -108,6 +112,38 @@ export function RunDetail() {
 }
 
 type Act = (k: string, fn: () => Promise<unknown>) => Promise<void>;
+
+const CAP_TONE: Record<string, string> = {
+  edge: "border-red-400/40 bg-red-400/10 text-red-300",
+  small: "border-amber-400/40 bg-amber-400/10 text-amber-300",
+  mid: "border-sky-400/30 bg-sky-400/10 text-sky-300",
+  frontier: "border-emerald-400/30 bg-emerald-400/10 text-emerald-300",
+};
+
+function AgentProfilePanel({ p }: { p: AgentProfileT }) {
+  const rows: [string, string | null][] = [
+    ["Harness — the body", p.harness ? `${p.harness}${p.harness_version ? ` v${p.harness_version}` : ""}` : null],
+    ["Model — the brain", p.model ? `${p.model}${p.model_provider ? ` · ${p.model_provider}` : ""}${p.served_by ? ` · ${p.served_by}` : ""}` : null],
+    ["Runtime — the ground", [p.runtime_host, p.runtime_hardware, p.runtime_os].filter(Boolean).join(" · ") || null],
+    ["Tools — the hands", p.tools?.length ? p.tools.join(", ") : null],
+    ["Context window", p.context_window ? `${p.context_window.toLocaleString()} tokens` : null],
+  ];
+  return (
+    <Card className="mt-6" title="Agent profile" subtitle="The stack that did the work — so a flag attributes to a layer, not just 'the agent'"
+      actions={p.capability_tier && <span className={`rounded-md border px-2.5 py-1 text-xs font-semibold uppercase ${CAP_TONE[p.capability_tier] || "border-white/15 text-paper/60"}`}>{p.capability_tier} tier</span>}>
+      <div className="mb-3 text-base font-semibold text-paper">{p.name}</div>
+      <dl className="grid gap-x-8 gap-y-2 text-sm sm:grid-cols-2">
+        {rows.filter(([, v]) => v).map(([k, v]) => (
+          <div key={k} className="flex justify-between gap-3 border-b border-white/5 py-1">
+            <dt className="text-paper/45">{k}</dt>
+            <dd className="text-right font-mono text-xs text-paper/80">{v}</dd>
+          </div>
+        ))}
+      </dl>
+      {p.notes && <p className="mt-3 text-sm text-paper/55">{p.notes}</p>}
+    </Card>
+  );
+}
 
 function AssignmentCard({ text }: { text: string }) {
   const [copied, setCopied] = useState(false);
@@ -226,6 +262,19 @@ function RepairPlan({ run, setResub }: { run: Run; setResub: (v: boolean) => voi
       ? "Not a rework. These are true findings about the deal — the work is correct, the rule returns no."
       : `Partly fixable. Correct ${defects.length} work-defect${defects.length > 1 ? "s" : ""}; ${findings.length} finding${findings.length > 1 ? "s are" : " is a"} real result about the deal, not an error to redo.`;
 
+  // Attribute the defects to a LAYER of the stack (sharper when a profile is set).
+  const p = run.agent_profile;
+  const tier = p?.capability_tier;
+  const cats = new Set(defects.map((c) => c.category));
+  const attrib: string[] = [];
+  if (cats.has("math")) {
+    attrib.push(tier === "edge" || tier === "small"
+      ? `the model (brain) — math misses on a ${tier}-tier profile${p ? ` like ${p.name}` : ""} are likely a capability ceiling, not a slip; a bigger model on more memory may be needed, not a resubmit`
+      : "the work — re-derive and correct the number, then resubmit");
+  }
+  if (cats.has("schema") || cats.has("structure")) attrib.push("the harness/prompt — the output contract wasn't held; tighten the schema or system prompt, then resubmit");
+  if (cats.has("evidence")) attrib.push("the prompt/tools — the agent didn't cite or lacked retrieval; sharpen the briefing or grant the tool");
+
   const Group = ({ title, note, items }: { title: string; note: string; items: Check[] }) => (
     <div className="mt-4">
       <p className="text-xs font-semibold uppercase tracking-widest text-paper/45">{title}</p>
@@ -245,6 +294,12 @@ function RepairPlan({ run, setResub }: { run: Run; setResub: (v: boolean) => voi
   return (
     <Card className="mt-6" title="It failed — now what?" subtitle="We don't judge. Every flag is a located defect; fix it and the referee re-verifies.">
       <p className="text-sm font-medium text-paper/85">{headline}</p>
+      {attrib.length > 0 && (
+        <div className="mt-3 rounded-md border border-white/8 bg-white/[0.02] p-3 text-sm text-paper/70">
+          <span className="uppercase tracking-widest text-paper/35 text-xs">Likely layer</span> · {attrib.join(" · ")}
+          {!p && <span className="ml-1 text-paper/40">— attach an agent profile for a sharper read.</span>}
+        </div>
+      )}
       {defects.length > 0 && <Group title="Fix the work" note="Correct these in the agent's output, then resubmit." items={defects} />}
       {findings.length > 0 && <Group title="Findings about the deal / output" note="The work is correct — the rule says no. Not fixed by redoing the work." items={findings} />}
       {defects.length > 0 && !run.receipt && (

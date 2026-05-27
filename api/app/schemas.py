@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field
 
 Lane = Literal["agent", "dataset", "compute", "other"]
 EvidenceKind = Literal["file", "note", "url", "observation", "tool_output", "model_output", "log"]
+CapabilityTier = Literal["edge", "small", "mid", "frontier"]
 
 
 class HealthOut(BaseModel):
@@ -33,9 +34,26 @@ class ProjectIn(BaseModel):
 class RunIn(BaseModel):
     project_id: str
     flight_sheet_id: Optional[str] = None
+    agent_profile_id: Optional[str] = None
     lane: Optional[Lane] = None
     title: Optional[str] = Field(default=None, max_length=300)
     inputs: Dict[str, Any] = Field(default_factory=dict)
+
+
+class AgentProfileIn(BaseModel):
+    name: str = Field(min_length=1, max_length=120)
+    harness: Optional[str] = Field(default=None, max_length=80)
+    harness_version: Optional[str] = Field(default=None, max_length=40)
+    model: Optional[str] = Field(default=None, max_length=120)
+    model_provider: Optional[str] = Field(default=None, max_length=80)
+    served_by: Optional[str] = Field(default=None, max_length=40)
+    runtime_host: Optional[str] = Field(default=None, max_length=120)
+    runtime_os: Optional[str] = Field(default=None, max_length=80)
+    runtime_hardware: Optional[str] = Field(default=None, max_length=160)
+    tools: list[str] = Field(default_factory=list)
+    context_window: Optional[int] = None
+    capability_tier: Optional[CapabilityTier] = None
+    notes: Optional[str] = Field(default=None, max_length=2000)
 
 
 class EvidenceIn(BaseModel):
