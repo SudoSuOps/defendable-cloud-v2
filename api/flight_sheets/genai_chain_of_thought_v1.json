@@ -84,5 +84,119 @@
     }
   ],
   "pass_threshold": 80,
-  "fail_threshold": 60
+  "fail_threshold": 60,
+  "eval_spec": {
+    "required_output_schema": {
+      "type": "object",
+      "required": [
+        "assignment_id",
+        "agent_summary",
+        "inputs_used",
+        "missing_inputs",
+        "claims",
+        "calculations",
+        "risks",
+        "assumptions",
+        "open_questions",
+        "final_output",
+        "self_check"
+      ]
+    },
+    "deterministic_checks": [
+      {
+        "name": "assignment_id_exact",
+        "description": "assignment_id equals \"genai_chain_of_thought_v1\""
+      },
+      {
+        "name": "calculations_is_non_empty_array",
+        "description": "calculations is an array with length >= 1"
+      },
+      {
+        "name": "each_calculation_has_required_keys",
+        "description": "Every calc has name, formula, inputs, result, units, assumptions"
+      },
+      {
+        "name": "calculation_result_is_number",
+        "description": "Every calculations[].result is a number type (int or float)"
+      },
+      {
+        "name": "assumptions_is_non_empty_array",
+        "description": "assumptions is an array with length >= 2"
+      },
+      {
+        "name": "each_calc_assumptions_non_empty",
+        "description": "Every calculations[].assumptions array has length >= 1"
+      },
+      {
+        "name": "self_check_has_all_keys",
+        "description": "self_check object has all 4 required boolean keys"
+      },
+      {
+        "name": "self_check_all_true",
+        "description": "All values in self_check are boolean true"
+      }
+    ],
+    "math_checks": [
+      {
+        "formula_id": "effective_gross_income",
+        "formula": "gross_potential_rent * (1 - vacancy_rate)",
+        "expected_result": 460000.0,
+        "tolerance": 0.01
+      },
+      {
+        "formula_id": "noi",
+        "formula": "effective_gross_income - operating_expenses",
+        "expected_result": 285000.0,
+        "tolerance": 0.01
+      },
+      {
+        "formula_id": "cap_rate",
+        "formula": "noi / purchase_price",
+        "expected_result": 0.0890625,
+        "tolerance": 0.0001
+      }
+    ],
+    "evidence_checks": [
+      {
+        "name": "inputs_used_non_empty",
+        "description": "inputs_used array has length >= 1"
+      },
+      {
+        "name": "claims_reference_evidence",
+        "description": "Every claim has a non-empty evidence_reference"
+      }
+    ],
+    "flag_rules": [
+      {
+        "flag_id": "empty_calculations",
+        "severity": "propolis",
+        "condition": "calculations array is missing or has length 0"
+      },
+      {
+        "flag_id": "missing_assumptions",
+        "severity": "propolis",
+        "condition": "assumptions array is missing, empty, or has fewer than 2 items"
+      },
+      {
+        "flag_id": "calc_without_assumptions",
+        "severity": "jelly",
+        "condition": "Any calculation has an empty assumptions array"
+      },
+      {
+        "flag_id": "result_not_number",
+        "severity": "jelly",
+        "condition": "Any calculations[].result is not a numeric type"
+      },
+      {
+        "flag_id": "math_incorrect",
+        "severity": "propolis",
+        "condition": "Any math check result deviates beyond tolerance"
+      },
+      {
+        "flag_id": "self_check_false",
+        "severity": "jelly",
+        "condition": "Any value in self_check is not true"
+      }
+    ]
+  }
 }

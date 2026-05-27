@@ -59,5 +59,88 @@
     }
   ],
   "pass_threshold": 80,
-  "fail_threshold": 60
+  "fail_threshold": 60,
+  "eval_spec": {
+    "required_output_schema": {
+      "type": "object",
+      "required": [
+        "assignment_id",
+        "class_distribution",
+        "class_balance_ratio",
+        "total_samples",
+        "number_of_classes",
+        "minority_classes",
+        "calculations",
+        "self_check"
+      ]
+    },
+    "deterministic_checks": [
+      {
+        "check_id": "balance_ratio_between_0_and_1",
+        "description": "class_balance_ratio must be between 0.0 and 1.0 inclusive",
+        "assertion": "0.0 <= result.class_balance_ratio <= 1.0"
+      },
+      {
+        "check_id": "counts_sum_to_total",
+        "description": "Sum of class counts must equal total_samples",
+        "assertion": "sum(c.count for c in result.class_distribution) == result.total_samples"
+      },
+      {
+        "check_id": "proportions_sum_to_1",
+        "description": "Sum of class proportions must equal 1.0 (within tolerance)",
+        "assertion": "abs(sum(c.proportion for c in result.class_distribution) - 1.0) < 1e-6"
+      },
+      {
+        "check_id": "ratio_formula",
+        "description": "class_balance_ratio must equal min_count / max_count",
+        "assertion": "result.class_balance_ratio == min(c.count for c in result.class_distribution) / max(c.count for c in result.class_distribution)"
+      }
+    ],
+    "math_checks": [
+      {
+        "formula_id": "class_balance_ratio",
+        "formula": "size_of_smallest_class / size_of_largest_class",
+        "description": "Ratio measuring how balanced the class distribution is",
+        "output_field": "class_balance_ratio"
+      },
+      {
+        "formula_id": "class_proportion",
+        "formula": "class_count / total_samples",
+        "description": "Proportion of samples in each class",
+        "output_field": "class_distribution[].proportion"
+      }
+    ],
+    "evidence_checks": [
+      {
+        "evidence_field": "class_distribution",
+        "description": "Must list every class with its exact count and computed proportion",
+        "required": true
+      },
+      {
+        "evidence_field": "total_samples",
+        "description": "Must be a positive integer matching input",
+        "required": true
+      }
+    ],
+    "flag_rules": [
+      {
+        "flag_id": "severe_class_imbalance",
+        "condition": "class_balance_ratio < 0.3",
+        "severity": "high",
+        "description": "Severe class imbalance detected (ratio < 0.3)"
+      },
+      {
+        "flag_id": "moderate_class_imbalance",
+        "condition": "class_balance_ratio >= 0.3 and class_balance_ratio < 0.5",
+        "severity": "medium",
+        "description": "Moderate class imbalance (ratio between 0.3 and 0.5)"
+      },
+      {
+        "flag_id": "balanced_classes",
+        "condition": "class_balance_ratio >= 0.5",
+        "severity": "low",
+        "description": "Reasonably balanced class distribution"
+      }
+    ]
+  }
 }

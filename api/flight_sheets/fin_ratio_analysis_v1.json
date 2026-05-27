@@ -99,5 +99,337 @@
     }
   ],
   "pass_threshold": 80,
-  "fail_threshold": 60
+  "fail_threshold": 60,
+  "eval_spec": {
+    "required_output_schema": {
+      "type": "object",
+      "required": [
+        "assignment_id",
+        "agent_summary",
+        "inputs_used",
+        "missing_inputs",
+        "claims",
+        "calculations",
+        "risks",
+        "assumptions",
+        "open_questions",
+        "final_output",
+        "self_check"
+      ],
+      "properties": {
+        "assignment_id": {
+          "type": "string",
+          "const": "fin_ratio_analysis_v1"
+        },
+        "agent_summary": {
+          "type": "string",
+          "minLength": 1
+        },
+        "inputs_used": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "missing_inputs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "claims": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "claim",
+              "evidence_reference",
+              "confidence"
+            ],
+            "properties": {
+              "claim": {
+                "type": "string"
+              },
+              "evidence_reference": {
+                "type": "string"
+              },
+              "confidence": {
+                "enum": [
+                  "provided",
+                  "inferred",
+                  "missing"
+                ]
+              }
+            }
+          }
+        },
+        "calculations": {
+          "type": "array",
+          "minItems": 3,
+          "items": {
+            "type": "object",
+            "required": [
+              "name",
+              "formula",
+              "inputs",
+              "result",
+              "units",
+              "assumptions"
+            ],
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "formula": {
+                "type": "string"
+              },
+              "inputs": {
+                "type": "object"
+              },
+              "result": {
+                "type": "number"
+              },
+              "units": {
+                "type": "string"
+              },
+              "assumptions": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "risks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "risk",
+              "severity",
+              "evidence_reference"
+            ],
+            "properties": {
+              "risk": {
+                "type": "string"
+              },
+              "severity": {
+                "enum": [
+                  "low",
+                  "medium",
+                  "high"
+                ]
+              },
+              "evidence_reference": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "assumptions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "open_questions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "final_output": {
+          "type": "string",
+          "enum": [
+            "PASS",
+            "FAIL"
+          ]
+        },
+        "self_check": {
+          "type": "object",
+          "required": [
+            "all_required_sections_completed",
+            "all_numbers_have_sources",
+            "assumptions_labeled",
+            "missing_inputs_disclosed"
+          ],
+          "properties": {
+            "all_required_sections_completed": {
+              "type": "boolean",
+              "const": true
+            },
+            "all_numbers_have_sources": {
+              "type": "boolean",
+              "const": true
+            },
+            "assumptions_labeled": {
+              "type": "boolean",
+              "const": true
+            },
+            "missing_inputs_disclosed": {
+              "type": "boolean",
+              "const": true
+            }
+          }
+        }
+      }
+    },
+    "deterministic_checks": [
+      {
+        "description": "Must have exactly 3 calculations (current_ratio, quick_ratio, debt_to_equity_ratio)",
+        "condition": "calculations.length == 3",
+        "pass_on_true": true
+      },
+      {
+        "description": "All calculation results must be numeric",
+        "condition": "all calc in calculations have typeof calc.result == \"number\"",
+        "pass_on_true": true
+      },
+      {
+        "description": "Current liabilities must not be zero",
+        "condition": "current_liabilities != 0",
+        "pass_on_true": true
+      },
+      {
+        "description": "Shareholders equity must not be zero",
+        "condition": "shareholders_equity != 0",
+        "pass_on_true": true
+      },
+      {
+        "description": "Current ratio must equal current_assets / current_liabilities",
+        "condition": "abs(current_ratio_result - (current_assets / current_liabilities)) < 0.001",
+        "pass_on_true": true
+      },
+      {
+        "description": "Quick ratio must equal (current_assets - inventory) / current_liabilities",
+        "condition": "abs(quick_ratio_result - ((current_assets - inventory) / current_liabilities)) < 0.001",
+        "pass_on_true": true
+      },
+      {
+        "description": "Debt-to-equity must equal total_debt / shareholders_equity",
+        "condition": "abs(debt_to_equity_result - (total_debt / shareholders_equity)) < 0.001",
+        "pass_on_true": true
+      }
+    ],
+    "math_checks": [
+      {
+        "formula_id": "current_ratio_formula",
+        "description": "Current Ratio = Current Assets / Current Liabilities",
+        "formula": "current_ratio = current_assets / current_liabilities",
+        "expected_precision": 0.001,
+        "variables": [
+          {
+            "name": "current_assets",
+            "type": "number"
+          },
+          {
+            "name": "current_liabilities",
+            "type": "number"
+          }
+        ],
+        "result_field": "calculations[?name=='current_ratio'].result"
+      },
+      {
+        "formula_id": "quick_ratio_formula",
+        "description": "Quick Ratio = (Current Assets - Inventory) / Current Liabilities",
+        "formula": "quick_ratio = (current_assets - inventory) / current_liabilities",
+        "expected_precision": 0.001,
+        "variables": [
+          {
+            "name": "current_assets",
+            "type": "number"
+          },
+          {
+            "name": "inventory",
+            "type": "number"
+          },
+          {
+            "name": "current_liabilities",
+            "type": "number"
+          }
+        ],
+        "result_field": "calculations[?name=='quick_ratio'].result"
+      },
+      {
+        "formula_id": "debt_to_equity_formula",
+        "description": "Debt-to-Equity = Total Debt / Shareholders' Equity",
+        "formula": "debt_to_equity_ratio = total_debt / shareholders_equity",
+        "expected_precision": 0.001,
+        "variables": [
+          {
+            "name": "total_debt",
+            "type": "number"
+          },
+          {
+            "name": "shareholders_equity",
+            "type": "number"
+          }
+        ],
+        "result_field": "calculations[?name=='debt_to_equity_ratio'].result"
+      }
+    ],
+    "evidence_checks": [
+      {
+        "check_id": "input_values_in_calculations",
+        "description": "All five input values must appear in the inputs sub-objects of the three calculations",
+        "evidence_must_match_claim": true
+      },
+      {
+        "check_id": "formulas_exact_match",
+        "description": "Formulas must match the exact specified formula strings",
+        "required": true
+      }
+    ],
+    "flag_rules": [
+      {
+        "flag_id": "missing_calculation",
+        "condition": "calculations.length < 3",
+        "severity": "propolis",
+        "message": "Not all three required ratio calculations are present"
+      },
+      {
+        "flag_id": "non_numeric_result",
+        "condition": "any calculation has non-numeric result",
+        "severity": "propolis",
+        "message": "One or more calculation results are not numeric"
+      },
+      {
+        "flag_id": "zero_current_liabilities",
+        "condition": "current_liabilities == 0",
+        "severity": "honey",
+        "message": "Current liabilities is zero \u2014 current and quick ratios undefined"
+      },
+      {
+        "flag_id": "zero_equity",
+        "condition": "shareholders_equity == 0",
+        "severity": "honey",
+        "message": "Shareholders equity is zero \u2014 debt-to-equity ratio undefined"
+      },
+      {
+        "flag_id": "current_ratio_mismatch",
+        "condition": "abs(current_ratio_calc - (current_assets / current_liabilities)) >= 0.001",
+        "severity": "propolis",
+        "message": "Current ratio calculation does not match formula"
+      },
+      {
+        "flag_id": "quick_ratio_mismatch",
+        "condition": "abs(quick_ratio_calc - ((current_assets - inventory) / current_liabilities)) >= 0.001",
+        "severity": "propolis",
+        "message": "Quick ratio calculation does not match formula"
+      },
+      {
+        "flag_id": "debt_equity_mismatch",
+        "condition": "abs(debt_to_equity_calc - (total_debt / shareholders_equity)) >= 0.001",
+        "severity": "propolis",
+        "message": "Debt-to-equity ratio calculation does not match formula"
+      },
+      {
+        "flag_id": "pass_with_zero_divisor",
+        "condition": "final_output == \"PASS\" AND (current_liabilities == 0 OR shareholders_equity == 0)",
+        "severity": "propolis",
+        "message": "final_output is PASS but a divisor is zero"
+      }
+    ]
+  }
 }

@@ -65,5 +65,96 @@
     }
   ],
   "pass_threshold": 80,
-  "fail_threshold": 60
+  "fail_threshold": 60,
+  "eval_spec": {
+    "required_output_schema": {
+      "type": "object",
+      "required": [
+        "assignment_id",
+        "benchmark_score",
+        "avg_power_w",
+        "gpu_cost_usd",
+        "score_per_watt",
+        "score_per_dollar",
+        "cost_valid",
+        "power_valid",
+        "both_metrics_computed",
+        "calculations",
+        "self_check"
+      ]
+    },
+    "deterministic_checks": [
+      {
+        "check_id": "score_per_watt_formula",
+        "description": "score_per_watt must equal benchmark_score / avg_power_w",
+        "assertion": "abs(result.score_per_watt - (result.benchmark_score / result.avg_power_w)) < 1e-6 if result.avg_power_w != 0 else result.score_per_watt is None"
+      },
+      {
+        "check_id": "score_per_dollar_formula",
+        "description": "score_per_dollar must equal benchmark_score / gpu_cost_usd",
+        "assertion": "abs(result.score_per_dollar - (result.benchmark_score / result.gpu_cost_usd)) < 1e-6 if result.gpu_cost_usd != 0 else result.score_per_dollar is None"
+      },
+      {
+        "check_id": "validity_flags",
+        "description": "cost_valid must be true when cost > 0, power_valid when power > 0",
+        "assertion": "result.cost_valid == (result.gpu_cost_usd > 0) and result.power_valid == (result.avg_power_w > 0)"
+      },
+      {
+        "check_id": "both_metrics_flag",
+        "description": "both_metrics_computed must be true when both metrics are non-null",
+        "assertion": "result.both_metrics_computed == (result.score_per_watt is not None and result.score_per_dollar is not None)"
+      }
+    ],
+    "math_checks": [
+      {
+        "formula_id": "score_per_watt",
+        "formula": "benchmark_score / avg_power_w",
+        "description": "Benchmark score normalized by power consumption",
+        "output_field": "score_per_watt"
+      },
+      {
+        "formula_id": "score_per_dollar",
+        "formula": "benchmark_score / gpu_cost_usd",
+        "description": "Benchmark score normalized by acquisition cost",
+        "output_field": "score_per_dollar"
+      }
+    ],
+    "evidence_checks": [
+      {
+        "evidence_field": "benchmark_score",
+        "description": "Must match the actual benchmark result",
+        "required": true
+      },
+      {
+        "evidence_field": "avg_power_w",
+        "description": "Must be from actual power telemetry during benchmark",
+        "required": true
+      },
+      {
+        "evidence_field": "gpu_cost_usd",
+        "description": "Must be actual acquisition cost with currency",
+        "required": true
+      }
+    ],
+    "flag_rules": [
+      {
+        "flag_id": "power_invalid",
+        "condition": "power_valid == false",
+        "severity": "high",
+        "description": "Average power is zero or missing; score_per_watt cannot be computed"
+      },
+      {
+        "flag_id": "cost_invalid",
+        "condition": "cost_valid == false",
+        "severity": "high",
+        "description": "GPU cost is zero or missing; score_per_dollar cannot be computed"
+      },
+      {
+        "flag_id": "both_metrics_missing",
+        "condition": "both_metrics_computed == false",
+        "severity": "high",
+        "description": "One or both efficiency metrics could not be computed"
+      }
+    ]
+  }
 }

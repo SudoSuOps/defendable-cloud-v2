@@ -71,5 +71,126 @@
     }
   ],
   "pass_threshold": 80,
-  "fail_threshold": 60
+  "fail_threshold": 60,
+  "eval_spec": {
+    "required_output_schema": {
+      "type": "object",
+      "required": [
+        "assignment_id",
+        "agent_summary",
+        "inputs_used",
+        "missing_inputs",
+        "claims",
+        "calculations",
+        "risks",
+        "assumptions",
+        "open_questions",
+        "final_output"
+      ]
+    },
+    "deterministic_checks": [
+      {
+        "name": "top_level_key_count",
+        "description": "JSON object has exactly 10 top-level keys"
+      },
+      {
+        "name": "assignment_id_exact_match",
+        "description": "assignment_id equals \"genai_schema_compliance_v1\""
+      },
+      {
+        "name": "agent_summary_non_empty_string",
+        "description": "agent_summary is a string with length > 0"
+      },
+      {
+        "name": "inputs_used_is_array",
+        "description": "inputs_used is an array type"
+      },
+      {
+        "name": "missing_inputs_is_array",
+        "description": "missing_inputs is an array type"
+      },
+      {
+        "name": "claims_is_non_empty_array",
+        "description": "claims is an array with length >= 1"
+      },
+      {
+        "name": "each_claim_has_required_keys",
+        "description": "Every element in claims has keys claim, evidence_reference, confidence"
+      },
+      {
+        "name": "confidence_enum_valid",
+        "description": "Every claims[].confidence is one of provided, inferred, missing"
+      },
+      {
+        "name": "calculations_is_array",
+        "description": "calculations is an array type"
+      },
+      {
+        "name": "risks_is_non_empty_array",
+        "description": "risks is an array with length >= 1"
+      },
+      {
+        "name": "each_risk_has_required_keys",
+        "description": "Every element in risks has keys risk, severity, evidence_reference"
+      },
+      {
+        "name": "severity_enum_valid",
+        "description": "Every risks[].severity is one of low, medium, high"
+      },
+      {
+        "name": "assumptions_is_array",
+        "description": "assumptions is an array type"
+      },
+      {
+        "name": "open_questions_is_array",
+        "description": "open_questions is an array type"
+      },
+      {
+        "name": "final_output_non_empty_string",
+        "description": "final_output is a string with length > 0"
+      },
+      {
+        "name": "no_extra_top_level_keys",
+        "description": "No keys exist beyond the 10 required top-level keys"
+      }
+    ],
+    "math_checks": [],
+    "evidence_checks": [
+      {
+        "name": "claims_have_evidence_reference",
+        "description": "Every claim object contains a non-null evidence_reference field"
+      },
+      {
+        "name": "risks_have_evidence_reference",
+        "description": "Every risk object contains a non-null evidence_reference field"
+      }
+    ],
+    "flag_rules": [
+      {
+        "flag_id": "missing_top_level_key",
+        "severity": "propolis",
+        "condition": "Any required top-level key is absent from the JSON object"
+      },
+      {
+        "flag_id": "extra_top_level_key",
+        "severity": "honey",
+        "condition": "Any key not in the required list is present"
+      },
+      {
+        "flag_id": "wrong_type_for_key",
+        "severity": "jelly",
+        "condition": "Any required key has a value of the wrong JSON type"
+      },
+      {
+        "flag_id": "empty_claims_or_risks",
+        "severity": "jelly",
+        "condition": "claims or risks array has length 0"
+      },
+      {
+        "flag_id": "enum_violation",
+        "severity": "propolis",
+        "condition": "confidence or severity value does not match allowed enum"
+      }
+    ]
+  }
 }

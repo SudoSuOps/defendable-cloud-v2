@@ -79,5 +79,126 @@
     }
   ],
   "pass_threshold": 80,
-  "fail_threshold": 60
+  "fail_threshold": 60,
+  "eval_spec": {
+    "required_output_schema": {
+      "type": "object",
+      "required": [
+        "assignment_id",
+        "agent_summary",
+        "inputs_used",
+        "missing_inputs",
+        "claims",
+        "calculations",
+        "risks",
+        "assumptions",
+        "open_questions",
+        "final_output",
+        "self_check"
+      ]
+    },
+    "deterministic_checks": [
+      {
+        "name": "assignment_id_exact",
+        "description": "assignment_id equals \"cre_memo_cash_on_cash_v1\""
+      },
+      {
+        "name": "calculations_has_total_cash_invested",
+        "description": "calculations contains total cash invested entry"
+      },
+      {
+        "name": "calculations_has_before_tax_cash_flow",
+        "description": "calculations contains before-tax cash flow entry"
+      },
+      {
+        "name": "calculations_has_cash_on_cash_return",
+        "description": "calculations contains cash-on-cash return entry"
+      },
+      {
+        "name": "closing_costs_included",
+        "description": "Total cash invested calculation includes closing_costs"
+      },
+      {
+        "name": "threshold_assessed_in_risks",
+        "description": "risks array contains threshold comparison entry"
+      }
+    ],
+    "math_checks": [
+      {
+        "formula_id": "total_cash_invested",
+        "formula": "equity_invested + closing_costs",
+        "inputs": {
+          "equity_invested": 2450000,
+          "closing_costs": 145000
+        },
+        "expected_result": 2595000.0,
+        "tolerance": 0
+      },
+      {
+        "formula_id": "before_tax_cash_flow",
+        "formula": "noi - annual_debt_service",
+        "inputs": {
+          "noi": 812000,
+          "annual_debt_service": 602400
+        },
+        "expected_result": 209600.0,
+        "tolerance": 0
+      },
+      {
+        "formula_id": "cash_on_cash_return",
+        "formula": "before_tax_cash_flow / total_cash_invested",
+        "inputs": {
+          "before_tax_cash_flow": 209600,
+          "total_cash_invested": 2595000
+        },
+        "expected_result": 0.08077,
+        "tolerance": 0.0001
+      }
+    ],
+    "evidence_checks": [
+      {
+        "name": "equity_invested_cited",
+        "description": "equity_invested is cited in inputs_used"
+      },
+      {
+        "name": "closing_costs_cited",
+        "description": "closing_costs is cited in inputs_used"
+      },
+      {
+        "name": "noi_cited",
+        "description": "NOI is cited in inputs_used"
+      },
+      {
+        "name": "debt_service_cited",
+        "description": "annual_debt_service is cited in inputs_used"
+      }
+    ],
+    "flag_rules": [
+      {
+        "flag_id": "missing_cash_on_cash_calc",
+        "severity": "propolis",
+        "condition": "calculations array is missing cash-on-cash return entry"
+      },
+      {
+        "flag_id": "closing_costs_excluded",
+        "severity": "propolis",
+        "condition": "total_cash_invested does not include closing_costs"
+      },
+      {
+        "flag_id": "threshold_not_assessed",
+        "severity": "jelly",
+        "condition": "risks array does not contain threshold comparison"
+      },
+      {
+        "flag_id": "wrong_equity_calculation",
+        "severity": "propolis",
+        "condition": "total_cash_invested uses purchase_price - loan_amount instead of equity_invested + closing_costs"
+      },
+      {
+        "flag_id": "math_result_incorrect",
+        "severity": "propolis",
+        "condition": "Any math check result deviates beyond tolerance"
+      }
+    ]
+  }
 }

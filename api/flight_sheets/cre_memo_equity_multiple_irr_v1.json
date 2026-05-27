@@ -87,5 +87,123 @@
     }
   ],
   "pass_threshold": 80,
-  "fail_threshold": 60
+  "fail_threshold": 60,
+  "eval_spec": {
+    "required_output_schema": {
+      "type": "object",
+      "required": [
+        "assignment_id",
+        "agent_summary",
+        "inputs_used",
+        "missing_inputs",
+        "claims",
+        "calculations",
+        "risks",
+        "assumptions",
+        "open_questions",
+        "final_output",
+        "self_check"
+      ]
+    },
+    "deterministic_checks": [
+      {
+        "name": "assignment_id_exact",
+        "description": "assignment_id equals \"cre_memo_equity_multiple_irr_v1\""
+      },
+      {
+        "name": "calculations_has_total_cash_distributed",
+        "description": "calculations contains total cash distributed entry"
+      },
+      {
+        "name": "calculations_has_equity_multiple",
+        "description": "calculations contains equity multiple entry"
+      },
+      {
+        "name": "calculations_has_irr",
+        "description": "calculations contains IRR entry"
+      },
+      {
+        "name": "irr_uses_all_6_periods",
+        "description": "IRR calculation inputs include year 0 through year 5"
+      },
+      {
+        "name": "year5_includes_exit",
+        "description": "Year 5 cash flow in IRR calc includes exit proceeds"
+      },
+      {
+        "name": "year0_is_negative",
+        "description": "Year 0 cash flow is negative initial equity"
+      }
+    ],
+    "math_checks": [
+      {
+        "formula_id": "total_cash_distributed",
+        "formula": "285000 + 298000 + 312000 + 327000 + 342000 + 4200000",
+        "expected_result": 6004000.0,
+        "tolerance": 0
+      },
+      {
+        "formula_id": "equity_multiple",
+        "formula": "total_cash_distributed / initial_equity_investment",
+        "inputs": {
+          "total_cash_distributed": 6004000,
+          "initial_equity_investment": 3500000
+        },
+        "expected_result": 1.7154,
+        "tolerance": 0.001
+      },
+      {
+        "formula_id": "irr",
+        "formula": "IRR([-3500000, 285000, 298000, 312000, 327000, 4542000])",
+        "expected_result": 0.1648,
+        "tolerance": 0.002
+      }
+    ],
+    "evidence_checks": [
+      {
+        "name": "equity_investment_cited",
+        "description": "Initial equity investment is cited in inputs_used"
+      },
+      {
+        "name": "cash_flows_cited",
+        "description": "All 5 year cash flows are cited in inputs_used"
+      },
+      {
+        "name": "exit_proceeds_cited",
+        "description": "Year 5 exit proceeds are cited in inputs_used"
+      }
+    ],
+    "flag_rules": [
+      {
+        "flag_id": "missing_equity_multiple",
+        "severity": "propolis",
+        "condition": "calculations array is missing equity multiple entry"
+      },
+      {
+        "flag_id": "missing_irr",
+        "severity": "propolis",
+        "condition": "calculations array is missing IRR entry"
+      },
+      {
+        "flag_id": "year5_exit_excluded",
+        "severity": "propolis",
+        "condition": "Year 5 cash flow does not include exit proceeds"
+      },
+      {
+        "flag_id": "year0_not_negative",
+        "severity": "propolis",
+        "condition": "Year 0 cash flow is not negative initial equity"
+      },
+      {
+        "flag_id": "irr_wrong_periods",
+        "severity": "jelly",
+        "condition": "IRR calculation uses fewer than 6 periods"
+      },
+      {
+        "flag_id": "math_result_incorrect",
+        "severity": "propolis",
+        "condition": "Any math check result deviates beyond tolerance"
+      }
+    ]
+  }
 }

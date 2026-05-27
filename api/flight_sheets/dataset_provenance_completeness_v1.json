@@ -74,5 +74,95 @@
     }
   ],
   "pass_threshold": 80,
-  "fail_threshold": 60
+  "fail_threshold": 60,
+  "eval_spec": {
+    "required_output_schema": {
+      "type": "object",
+      "required": [
+        "assignment_id",
+        "provenance_completeness_rate",
+        "source_present",
+        "license_present",
+        "hash_manifest_present",
+        "creation_date_present",
+        "missing_provenance_fields",
+        "claims",
+        "self_check"
+      ]
+    },
+    "deterministic_checks": [
+      {
+        "check_id": "completeness_rate_range",
+        "description": "provenance_completeness_rate must be between 0.0 and 1.0",
+        "assertion": "0.0 <= result.provenance_completeness_rate <= 1.0"
+      },
+      {
+        "check_id": "missing_fields_consistent",
+        "description": "Any field with _present == false must appear in missing_provenance_fields",
+        "assertion": "all(f in result.missing_provenance_fields for f in ['source','license','hash_manifest','creation_date','data_quality_statement'] if not result.get(f+'_present', True))"
+      },
+      {
+        "check_id": "completeness_rate_formula",
+        "description": "Rate must equal present fields divided by 5",
+        "assertion": "result.provenance_completeness_rate == (5 - len(result.missing_provenance_fields)) / 5.0"
+      }
+    ],
+    "math_checks": [
+      {
+        "formula_id": "provenance_completeness_rate",
+        "formula": "present_required_fields / 5",
+        "description": "Fraction of provenance fields present out of 5 required",
+        "output_field": "provenance_completeness_rate"
+      }
+    ],
+    "evidence_checks": [
+      {
+        "evidence_field": "source_value",
+        "description": "Must quote actual source string found in metadata",
+        "required": true
+      },
+      {
+        "evidence_field": "license_value",
+        "description": "Must quote actual license string found in metadata",
+        "required": true
+      },
+      {
+        "evidence_field": "hash_manifest_match",
+        "description": "If computed_hash provided, must verify match",
+        "required": false
+      }
+    ],
+    "flag_rules": [
+      {
+        "flag_id": "missing_source",
+        "condition": "source_present == false",
+        "severity": "high",
+        "description": "Dataset source is missing"
+      },
+      {
+        "flag_id": "missing_license",
+        "condition": "license_present == false",
+        "severity": "high",
+        "description": "Dataset license is missing"
+      },
+      {
+        "flag_id": "hash_manifest_missing",
+        "condition": "hash_manifest_present == false",
+        "severity": "medium",
+        "description": "Hash manifest is missing"
+      },
+      {
+        "flag_id": "hash_mismatch",
+        "condition": "hash_manifest_match == false",
+        "severity": "high",
+        "description": "Computed hash does not match declared hash"
+      },
+      {
+        "flag_id": "missing_creation_date",
+        "condition": "creation_date_present == false",
+        "severity": "medium",
+        "description": "Creation date is missing"
+      }
+    ]
+  }
 }

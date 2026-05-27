@@ -85,5 +85,132 @@
     }
   ],
   "pass_threshold": 80,
-  "fail_threshold": 60
+  "fail_threshold": 60,
+  "eval_spec": {
+    "required_output_schema": {
+      "type": "object",
+      "required": [
+        "assignment_id",
+        "agent_summary",
+        "inputs_used",
+        "missing_inputs",
+        "claims",
+        "calculations",
+        "risks",
+        "assumptions",
+        "open_questions",
+        "final_output",
+        "self_check"
+      ]
+    },
+    "deterministic_checks": [
+      {
+        "name": "assignment_id_exact",
+        "description": "assignment_id equals \"cre_memo_dscr_ltv_v1\""
+      },
+      {
+        "name": "calculations_has_ltv",
+        "description": "calculations contains LTV entry"
+      },
+      {
+        "name": "calculations_has_annual_debt_service",
+        "description": "calculations contains annual debt service entry"
+      },
+      {
+        "name": "calculations_has_dscr",
+        "description": "calculations contains DSCR entry"
+      },
+      {
+        "name": "risks_has_threshold_assessment",
+        "description": "risks array contains at least one threshold-related risk entry"
+      },
+      {
+        "name": "ltv_threshold_check",
+        "description": "LTV value is compared against 0.80 threshold in risks or claims"
+      },
+      {
+        "name": "dscr_threshold_check",
+        "description": "DSCR value is compared against 1.20 threshold in risks or claims"
+      }
+    ],
+    "math_checks": [
+      {
+        "formula_id": "ltv",
+        "formula": "loan_amount / appraised_value",
+        "inputs": {
+          "loan_amount": 8625000,
+          "appraised_value": 11500000
+        },
+        "expected_result": 0.75,
+        "tolerance": 0.001
+      },
+      {
+        "formula_id": "annual_debt_service",
+        "formula": "12 * P * [r(1+r)^n / ((1+r)^n - 1)] where P=loan_amount, r=rate/12, n=360",
+        "inputs": {
+          "loan_amount": 8625000,
+          "annual_interest_rate": 0.0725,
+          "amortization_months": 360
+        },
+        "expected_result": 703452.0,
+        "tolerance": 500.0
+      },
+      {
+        "formula_id": "dscr",
+        "formula": "noi / annual_debt_service",
+        "inputs": {
+          "noi": 920000,
+          "annual_debt_service": 703452
+        },
+        "expected_result": 1.3078,
+        "tolerance": 0.01
+      }
+    ],
+    "evidence_checks": [
+      {
+        "name": "loan_terms_cited",
+        "description": "Loan amount, interest rate, and amortization are cited"
+      },
+      {
+        "name": "noi_cited",
+        "description": "NOI is cited with source"
+      },
+      {
+        "name": "appraised_value_cited",
+        "description": "Appraised value is cited with source"
+      }
+    ],
+    "flag_rules": [
+      {
+        "flag_id": "missing_ltv_calculation",
+        "severity": "propolis",
+        "condition": "calculations array is missing LTV entry"
+      },
+      {
+        "flag_id": "missing_dscr_calculation",
+        "severity": "propolis",
+        "condition": "calculations array is missing DSCR entry"
+      },
+      {
+        "flag_id": "ltv_exceeds_threshold",
+        "severity": "jelly",
+        "condition": "LTV > 0.80 and no high-severity risk is flagged"
+      },
+      {
+        "flag_id": "dscr_below_threshold",
+        "severity": "jelly",
+        "condition": "DSCR < 1.20 and no high-severity risk is flagged"
+      },
+      {
+        "flag_id": "incorrect_debt_service_formula",
+        "severity": "jelly",
+        "condition": "annual_debt_service formula is not amortization-based"
+      },
+      {
+        "flag_id": "math_result_incorrect",
+        "severity": "propolis",
+        "condition": "Any math check result deviates beyond tolerance"
+      }
+    ]
+  }
 }

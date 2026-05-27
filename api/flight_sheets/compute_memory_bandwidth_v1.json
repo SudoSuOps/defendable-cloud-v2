@@ -63,5 +63,101 @@
     }
   ],
   "pass_threshold": 80,
-  "fail_threshold": 60
+  "fail_threshold": 60,
+  "eval_spec": {
+    "required_output_schema": {
+      "type": "object",
+      "required": [
+        "assignment_id",
+        "gpu_model",
+        "benchmark_name",
+        "achieved_bandwidth_gbps",
+        "theoretical_max_bandwidth_gbps",
+        "memory_bandwidth_utilization",
+        "memory_bandwidth_utilization_percent",
+        "utilization_sufficient",
+        "bandwidth_deficit_gbps",
+        "calculations",
+        "self_check"
+      ]
+    },
+    "deterministic_checks": [
+      {
+        "check_id": "utilization_formula",
+        "description": "memory_bandwidth_utilization must equal achieved / theoretical_max",
+        "assertion": "abs(result.memory_bandwidth_utilization - (result.achieved_bandwidth_gbps / result.theoretical_max_bandwidth_gbps)) < 1e-9"
+      },
+      {
+        "check_id": "utilization_percent_conversion",
+        "description": "utilization_percent must equal utilization * 100",
+        "assertion": "abs(result.memory_bandwidth_utilization_percent - (result.memory_bandwidth_utilization * 100)) < 1e-6"
+      },
+      {
+        "check_id": "utilization_range",
+        "description": "memory_bandwidth_utilization must be between 0.0 and 1.0",
+        "assertion": "0.0 <= result.memory_bandwidth_utilization <= 1.0"
+      },
+      {
+        "check_id": "bandwidth_deficit_formula",
+        "description": "bandwidth_deficit must equal theoretical_max - achieved",
+        "assertion": "abs(result.bandwidth_deficit_gbps - (result.theoretical_max_bandwidth_gbps - result.achieved_bandwidth_gbps)) < 1e-6"
+      },
+      {
+        "check_id": "utilization_sufficient_logic",
+        "description": "utilization_sufficient must be true when utilization >= 50%",
+        "assertion": "result.utilization_sufficient == (result.memory_bandwidth_utilization >= 0.50)"
+      },
+      {
+        "check_id": "positive_bandwidth",
+        "description": "Both bandwidth values must be positive numbers",
+        "assertion": "result.achieved_bandwidth_gbps > 0 and result.theoretical_max_bandwidth_gbps > 0"
+      }
+    ],
+    "math_checks": [
+      {
+        "formula_id": "memory_bandwidth_utilization",
+        "formula": "achieved_bandwidth_gbps / theoretical_max_bandwidth_gbps",
+        "description": "Fraction of theoretical memory bandwidth achieved",
+        "output_field": "memory_bandwidth_utilization"
+      },
+      {
+        "formula_id": "bandwidth_deficit",
+        "formula": "theoretical_max_bandwidth_gbps - achieved_bandwidth_gbps",
+        "description": "Difference between theoretical and achieved bandwidth",
+        "output_field": "bandwidth_deficit_gbps"
+      }
+    ],
+    "evidence_checks": [
+      {
+        "evidence_field": "achieved_bandwidth_gbps",
+        "description": "Must be from actual benchmark measurement",
+        "required": true
+      },
+      {
+        "evidence_field": "theoretical_max_bandwidth_gbps",
+        "description": "Must be from official GPU specification sheet",
+        "required": true
+      }
+    ],
+    "flag_rules": [
+      {
+        "flag_id": "low_memory_utilization",
+        "condition": "memory_bandwidth_utilization < 0.50",
+        "severity": "high",
+        "description": "Memory bandwidth utilization is below 50%"
+      },
+      {
+        "flag_id": "moderate_memory_utilization",
+        "condition": "memory_bandwidth_utilization >= 0.50 and memory_bandwidth_utilization < 0.70",
+        "severity": "medium",
+        "description": "Memory bandwidth utilization is between 50% and 70%"
+      },
+      {
+        "flag_id": "good_memory_utilization",
+        "condition": "memory_bandwidth_utilization >= 0.70",
+        "severity": "low",
+        "description": "Memory bandwidth utilization is 70% or above"
+      }
+    ]
+  }
 }

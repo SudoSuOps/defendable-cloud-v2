@@ -84,5 +84,222 @@
     }
   ],
   "pass_threshold": 80,
-  "fail_threshold": 60
+  "fail_threshold": 60,
+  "eval_spec": {
+    "required_output_schema": {
+      "type": "object",
+      "required": [
+        "assignment_id",
+        "agent_summary",
+        "inputs_used",
+        "missing_inputs",
+        "claims",
+        "calculations",
+        "failure_patterns",
+        "summary_statistics",
+        "risks",
+        "assumptions",
+        "open_questions",
+        "final_output",
+        "self_check"
+      ],
+      "properties": {
+        "failure_patterns": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "pattern_id",
+              "pattern_type",
+              "description",
+              "frequency",
+              "total_submissions_analyzed",
+              "affected_assignments",
+              "example_evidence",
+              "recommended_action"
+            ]
+          }
+        },
+        "summary_statistics": {
+          "type": "object",
+          "required": [
+            "total_submissions",
+            "total_unique_assignments",
+            "total_unique_patterns",
+            "submissions_with_any_failure",
+            "pass_rate"
+          ]
+        },
+        "final_output": {
+          "type": "string",
+          "enum": [
+            "PASS",
+            "CONDITIONAL_PASS",
+            "FAIL"
+          ]
+        },
+        "self_check": {
+          "type": "object",
+          "required": [
+            "all_required_sections_completed",
+            "all_numbers_have_sources",
+            "assumptions_labeled",
+            "missing_inputs_disclosed"
+          ]
+        }
+      }
+    },
+    "deterministic_checks": [
+      {
+        "check": "final_output is one of PASS, CONDITIONAL_PASS, FAIL",
+        "match_field": "final_output",
+        "expected_values": [
+          "PASS",
+          "CONDITIONAL_PASS",
+          "FAIL"
+        ]
+      },
+      {
+        "check": "failure_patterns is an array",
+        "match_field": "failure_patterns",
+        "type": "array"
+      },
+      {
+        "check": "Every failure pattern has all required fields",
+        "match_field": "failure_patterns",
+        "required_keys": [
+          "pattern_id",
+          "pattern_type",
+          "description",
+          "frequency",
+          "total_submissions_analyzed",
+          "affected_assignments",
+          "example_evidence",
+          "recommended_action"
+        ]
+      },
+      {
+        "check": "pattern_type values are from allowed enum",
+        "match_field": "failure_patterns.pattern_type",
+        "allowed_values": [
+          "schema_violation",
+          "hallucination",
+          "reasoning_error",
+          "calculation_error",
+          "missing_required_field",
+          "incorrect_data_type",
+          "self_check_failure",
+          "other"
+        ]
+      },
+      {
+        "check": "summary_statistics has all required fields",
+        "match_field": "summary_statistics",
+        "required_keys": [
+          "total_submissions",
+          "total_unique_assignments",
+          "total_unique_patterns",
+          "submissions_with_any_failure",
+          "pass_rate"
+        ]
+      },
+      {
+        "check": "summary_statistics.total_submissions >= 5",
+        "match_field": "summary_statistics.total_submissions",
+        "minimum": 5
+      },
+      {
+        "check": "pass_rate in summary_statistics equals (total_submissions - submissions_with_any_failure) / total_submissions",
+        "match_field": "summary_statistics",
+        "condition": "pass_rate must equal (total_submissions - submissions_with_any_failure) / total_submissions, or 0.0 if total_submissions == 0"
+      },
+      {
+        "check": "self_check.all_required_sections_completed is true",
+        "match_field": "self_check.all_required_sections_completed",
+        "expected_value": true
+      }
+    ],
+    "math_checks": [
+      {
+        "check": "pass_rate is computed correctly with division-by-zero protection",
+        "match_field": "calculations",
+        "formula_check": "entry with name 'pass_rate' has result equal to (total_submissions - submissions_with_any_failure) / total_submissions, rounded to 2 decimal places; if total_submissions == 0, result is 0.0"
+      },
+      {
+        "check": "FAIL condition: fewer than 5 submissions",
+        "match_field": "final_output",
+        "condition": "if final_output == 'FAIL' AND summary_statistics.total_submissions < 5, this is a valid failure reason"
+      }
+    ],
+    "evidence_checks": [
+      {
+        "check": "Every claim has a non-empty evidence_reference pointing to a submission or pattern",
+        "match_field": "claims",
+        "condition": "all claims must have evidence_reference != '' and evidence_reference != null"
+      },
+      {
+        "check": "Every failure pattern has at least one example_evidence entry",
+        "match_field": "failure_patterns",
+        "condition": "all patterns must have len(example_evidence) >= 1"
+      },
+      {
+        "check": "Every example_evidence entry has all required sub-fields",
+        "match_field": "failure_patterns.example_evidence",
+        "required_keys": [
+          "submission_id",
+          "assignment_id",
+          "excerpt",
+          "failure_detail"
+        ]
+      },
+      {
+        "check": "Every risk has a non-empty evidence_reference",
+        "match_field": "risks",
+        "condition": "all risks must have non-empty evidence_reference"
+      },
+      {
+        "check": "Frequency count matches number of example_evidence entries (or is >= 2)",
+        "match_field": "failure_patterns",
+        "condition": "for each pattern, frequency >= 2 AND frequency >= len(example_evidence)"
+      }
+    ],
+    "flag_rules": [
+      {
+        "flag_id": "insufficient_submissions",
+        "condition": "summary_statistics.total_submissions < 5",
+        "severity": "high",
+        "message": "Fewer than 5 submissions analyzed - cannot reliably detect systematic patterns"
+      },
+      {
+        "flag_id": "no_failure_patterns_detected",
+        "condition": "len(failure_patterns) == 0 AND summary_statistics.submissions_with_any_failure > 0",
+        "severity": "high",
+        "message": "Submissions had failures but no systematic patterns were extracted"
+      },
+      {
+        "flag_id": "pattern_without_evidence",
+        "condition": "any pattern has len(example_evidence) == 0",
+        "severity": "medium",
+        "message": "A failure pattern was reported without supporting example evidence"
+      },
+      {
+        "flag_id": "low_frequency_pattern",
+        "condition": "any pattern has frequency < 2",
+        "severity": "low",
+        "message": "A reported pattern appears in fewer than 2 submissions - may not be systematic"
+      },
+      {
+        "flag_id": "invalid_pattern_type",
+        "condition": "any pattern has pattern_type not in allowed enum",
+        "severity": "medium",
+        "message": "Pattern type is not from the allowed enum list"
+      },
+      {
+        "flag_id": "incomplete_self_check",
+        "condition": "self_check.all_required_sections_completed != true",
+        "severity": "high",
+        "message": "Agent did not complete all required self-check sections"
+      }
+    ]
+  }
 }

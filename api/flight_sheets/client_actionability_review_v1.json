@@ -76,5 +76,202 @@
     }
   ],
   "pass_threshold": 80,
-  "fail_threshold": 60
+  "fail_threshold": 60,
+  "eval_spec": {
+    "required_output_schema": {
+      "type": "object",
+      "required": [
+        "assignment_id",
+        "agent_summary",
+        "inputs_used",
+        "missing_inputs",
+        "claims",
+        "calculations",
+        "action_items",
+        "risks",
+        "assumptions",
+        "open_questions",
+        "final_output",
+        "self_check"
+      ],
+      "properties": {
+        "action_items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "action_id",
+              "requested_action",
+              "responsible_party",
+              "deadline",
+              "deadline_type",
+              "source_location"
+            ]
+          }
+        },
+        "calculations": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "name",
+              "formula",
+              "inputs",
+              "result",
+              "units",
+              "assumptions"
+            ]
+          }
+        },
+        "final_output": {
+          "type": "string",
+          "enum": [
+            "PASS",
+            "CONDITIONAL_PASS",
+            "FAIL"
+          ]
+        },
+        "self_check": {
+          "type": "object",
+          "required": [
+            "all_required_sections_completed",
+            "all_numbers_have_sources",
+            "assumptions_labeled",
+            "missing_inputs_disclosed"
+          ]
+        }
+      }
+    },
+    "deterministic_checks": [
+      {
+        "check": "final_output is one of PASS, CONDITIONAL_PASS, FAIL",
+        "match_field": "final_output",
+        "expected_values": [
+          "PASS",
+          "CONDITIONAL_PASS",
+          "FAIL"
+        ]
+      },
+      {
+        "check": "action_items is an array",
+        "match_field": "action_items",
+        "type": "array"
+      },
+      {
+        "check": "Every action item has all required fields",
+        "match_field": "action_items",
+        "required_keys": [
+          "action_id",
+          "requested_action",
+          "responsible_party",
+          "deadline",
+          "deadline_type",
+          "source_location"
+        ]
+      },
+      {
+        "check": "calculations array has exactly 5 entries",
+        "match_field": "len(calculations)",
+        "expected_value": 5
+      },
+      {
+        "check": "Each calculation has name, formula, inputs, result, units, assumptions",
+        "match_field": "calculations",
+        "required_keys": [
+          "name",
+          "formula",
+          "inputs",
+          "result",
+          "units",
+          "assumptions"
+        ]
+      },
+      {
+        "check": "total_actions_found equals length of action_items array",
+        "match_field": "calculations",
+        "condition": "calculations entry with name 'total_actions_found' must have result == len(action_items)"
+      },
+      {
+        "check": "self_check.all_required_sections_completed is true",
+        "match_field": "self_check.all_required_sections_completed",
+        "expected_value": true
+      }
+    ],
+    "math_checks": [
+      {
+        "check": "actionability_ratio = actions_fully_specified / total_actions_found (handle division by zero)",
+        "match_field": "calculations",
+        "formula_check": "entry with name 'actionability_ratio' has result equal to (actions_fully_specified result / total_actions_found result), or 0.0 if total_actions_found is 0"
+      },
+      {
+        "check": "PASS requires actionability_ratio >= 0.80",
+        "match_field": "final_output",
+        "condition": "if final_output == 'PASS', then calculations entry with name 'actionability_ratio' must have result >= 0.80"
+      },
+      {
+        "check": "CONDITIONAL_PASS requires 0 < actionability_ratio < 0.80",
+        "match_field": "final_output",
+        "condition": "if final_output == 'CONDITIONAL_PASS', then 0 < actionability_ratio result < 0.80"
+      },
+      {
+        "check": "FAIL requires total_actions_found == 0 OR actionability_ratio == 0",
+        "match_field": "final_output",
+        "condition": "if final_output == 'FAIL', then total_actions_found == 0 OR actions_fully_specified == 0"
+      }
+    ],
+    "evidence_checks": [
+      {
+        "check": "Every claim has a non-empty evidence_reference",
+        "match_field": "claims",
+        "condition": "all claims must have evidence_reference != '' and evidence_reference != null"
+      },
+      {
+        "check": "Every action item has a non-empty source_location",
+        "match_field": "action_items",
+        "condition": "all action_items must have source_location != '' and source_location != null"
+      },
+      {
+        "check": "If responsible_party is empty, agent should flag in risks",
+        "match_field": "risks",
+        "condition": "if any action_item has responsible_party == '', risks should contain an entry referencing that gap"
+      },
+      {
+        "check": "If deadline is empty, agent should flag in risks",
+        "match_field": "risks",
+        "condition": "if any action_item has deadline == '', risks should contain an entry referencing that gap"
+      }
+    ],
+    "flag_rules": [
+      {
+        "flag_id": "no_action_items_found",
+        "condition": "len(action_items) == 0",
+        "severity": "high",
+        "message": "No action items found in the deliverable - document is not actionable"
+      },
+      {
+        "flag_id": "unnamed_responsible_parties",
+        "condition": "calculations entry with name 'actions_with_named_party' has result < calculations entry with name 'total_actions_found' result",
+        "severity": "medium",
+        "message": "Some action items lack a named responsible party"
+      },
+      {
+        "flag_id": "missing_deadlines",
+        "condition": "calculations entry with name 'actions_with_deadline' has result < calculations entry with name 'total_actions_found' result",
+        "severity": "medium",
+        "message": "Some action items lack specified deadlines"
+      },
+      {
+        "flag_id": "low_actionability_ratio",
+        "condition": "calculations entry with name 'actionability_ratio' has result > 0 AND result < 0.80",
+        "severity": "medium",
+        "message": "Actionability ratio is below 80% threshold"
+      },
+      {
+        "flag_id": "incomplete_self_check",
+        "condition": "self_check.all_required_sections_completed != true",
+        "severity": "high",
+        "message": "Agent did not complete all required self-check sections"
+      }
+    ]
+  }
 }

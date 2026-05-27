@@ -75,5 +75,252 @@
     }
   ],
   "pass_threshold": 80,
-  "fail_threshold": 60
+  "fail_threshold": 60,
+  "eval_spec": {
+    "required_output_schema": {
+      "type": "object",
+      "required": [
+        "assignment_id",
+        "agent_summary",
+        "inputs_used",
+        "missing_inputs",
+        "claims",
+        "requested_action",
+        "calculations",
+        "risks",
+        "assumptions",
+        "open_questions",
+        "final_output",
+        "self_check"
+      ],
+      "properties": {
+        "assignment_id": {
+          "type": "string",
+          "const": "doc_requested_action_clarity_v1"
+        },
+        "agent_summary": {
+          "type": "string",
+          "minLength": 1
+        },
+        "inputs_used": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "missing_inputs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "claims": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "claim",
+              "evidence_reference",
+              "confidence"
+            ],
+            "properties": {
+              "claim": {
+                "type": "string"
+              },
+              "evidence_reference": {
+                "type": "string"
+              },
+              "confidence": {
+                "enum": [
+                  "provided",
+                  "inferred",
+                  "missing"
+                ]
+              }
+            }
+          }
+        },
+        "requested_action": {
+          "type": "object",
+          "required": [
+            "present",
+            "text",
+            "specific",
+            "actionable",
+            "specificity_score",
+            "reason"
+          ],
+          "properties": {
+            "present": {
+              "type": "boolean"
+            },
+            "text": {
+              "type": "string"
+            },
+            "specific": {
+              "type": "boolean"
+            },
+            "actionable": {
+              "type": "boolean"
+            },
+            "specificity_score": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 4
+            },
+            "reason": {
+              "type": "string"
+            }
+          }
+        },
+        "calculations": {
+          "type": "array"
+        },
+        "risks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "risk",
+              "severity",
+              "evidence_reference"
+            ],
+            "properties": {
+              "risk": {
+                "type": "string"
+              },
+              "severity": {
+                "enum": [
+                  "low",
+                  "medium",
+                  "high"
+                ]
+              },
+              "evidence_reference": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "assumptions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "open_questions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "final_output": {
+          "type": "string",
+          "enum": [
+            "PASS",
+            "FAIL"
+          ]
+        },
+        "self_check": {
+          "type": "object",
+          "required": [
+            "all_required_sections_completed",
+            "all_numbers_have_sources",
+            "assumptions_labeled",
+            "missing_inputs_disclosed"
+          ],
+          "properties": {
+            "all_required_sections_completed": {
+              "type": "boolean",
+              "const": true
+            },
+            "all_numbers_have_sources": {
+              "type": "boolean",
+              "const": true
+            },
+            "assumptions_labeled": {
+              "type": "boolean",
+              "const": true
+            },
+            "missing_inputs_disclosed": {
+              "type": "boolean",
+              "const": true
+            }
+          }
+        }
+      }
+    },
+    "deterministic_checks": [
+      {
+        "description": "requested_action must be present",
+        "condition": "requested_action.present == true",
+        "pass_on_true": true
+      },
+      {
+        "description": "requested_action must be marked specific",
+        "condition": "requested_action.specific == true",
+        "pass_on_true": true
+      },
+      {
+        "description": "requested_action must be marked actionable",
+        "condition": "requested_action.actionable == true",
+        "pass_on_true": true
+      },
+      {
+        "description": "specificity_score must be at least 3",
+        "condition": "requested_action.specificity_score >= 3",
+        "pass_on_true": true
+      },
+      {
+        "description": "final_output must be PASS only when all conditions met",
+        "condition": "final_output == \"PASS\" implies requested_action.present == true AND requested_action.specific == true AND requested_action.actionable == true AND requested_action.specificity_score >= 3",
+        "pass_on_true": true
+      }
+    ],
+    "math_checks": [],
+    "evidence_checks": [
+      {
+        "check_id": "action_text_evidence",
+        "description": "The requested action text must be quoted verbatim from the document with line reference",
+        "evidence_must_match_claim": true
+      },
+      {
+        "check_id": "specificity_reasoning",
+        "description": "The reason field must explain the specificity_score with concrete evidence from the text",
+        "required": true
+      }
+    ],
+    "flag_rules": [
+      {
+        "flag_id": "action_missing",
+        "condition": "requested_action.present == false",
+        "severity": "honey",
+        "message": "No requested action found in the document"
+      },
+      {
+        "flag_id": "action_not_specific",
+        "condition": "requested_action.present == true AND requested_action.specific == false",
+        "severity": "honey",
+        "message": "Requested action exists but is not specific"
+      },
+      {
+        "flag_id": "action_not_actionable",
+        "condition": "requested_action.present == true AND requested_action.actionable == false",
+        "severity": "honey",
+        "message": "Requested action exists but is not actionable"
+      },
+      {
+        "flag_id": "low_specificity_score",
+        "condition": "requested_action.specificity_score < 3",
+        "severity": "jelly",
+        "message": "Specificity score is below threshold (3)"
+      },
+      {
+        "flag_id": "false_pass",
+        "condition": "final_output == \"PASS\" AND (requested_action.present == false OR requested_action.specific == false OR requested_action.actionable == false OR requested_action.specificity_score < 3)",
+        "severity": "propolis",
+        "message": "final_output is PASS but action clarity requirements not met"
+      }
+    ]
+  }
 }

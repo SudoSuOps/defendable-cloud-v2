@@ -107,5 +107,150 @@
     }
   ],
   "pass_threshold": 80,
-  "fail_threshold": 60
+  "fail_threshold": 60,
+  "eval_spec": {
+    "required_output_schema": {
+      "type": "object",
+      "required": [
+        "assignment_id",
+        "agent_summary",
+        "inputs_used",
+        "missing_inputs",
+        "claims",
+        "calculations",
+        "risks",
+        "assumptions",
+        "open_questions",
+        "final_output",
+        "self_check"
+      ]
+    },
+    "deterministic_checks": [
+      {
+        "name": "assignment_id_exact",
+        "description": "assignment_id equals \"cre_memo_risk_assessment_v1\""
+      },
+      {
+        "name": "risks_has_at_least_5",
+        "description": "risks array has length >= 5"
+      },
+      {
+        "name": "each_risk_has_severity",
+        "description": "Every risks[].severity is one of low, medium, high"
+      },
+      {
+        "name": "each_risk_has_evidence",
+        "description": "Every risks[].evidence_reference is non-empty"
+      },
+      {
+        "name": "has_high_severity_risk",
+        "description": "At least one risk has severity \"high\""
+      },
+      {
+        "name": "has_medium_severity_risk",
+        "description": "At least one risk has severity \"medium\""
+      },
+      {
+        "name": "has_low_severity_risk",
+        "description": "At least one risk has severity \"low\""
+      },
+      {
+        "name": "four_risk_categories_covered",
+        "description": "Risks cover financial, operational, market, and lease categories"
+      },
+      {
+        "name": "calculations_has_dscr",
+        "description": "calculations contains DSCR calculation"
+      },
+      {
+        "name": "dscr_is_high_risk",
+        "description": "DSCR of ~1.10 is flagged as high severity risk"
+      }
+    ],
+    "math_checks": [
+      {
+        "formula_id": "dscr",
+        "formula": "noi / annual_debt_service",
+        "inputs": {
+          "noi": 1430000,
+          "annual_debt_service": 1300000
+        },
+        "expected_result": 1.1,
+        "tolerance": 0.01
+      },
+      {
+        "formula_id": "occupancy_gap",
+        "formula": "market_occupancy - current_occupancy",
+        "inputs": {
+          "market_occupancy": 0.94,
+          "current_occupancy": 0.88
+        },
+        "expected_result": 0.06,
+        "tolerance": 0.001
+      },
+      {
+        "formula_id": "lease_roll_pct",
+        "formula": "45 / 150",
+        "expected_result": 0.3,
+        "tolerance": 0.001
+      },
+      {
+        "formula_id": "capex_to_equity",
+        "formula": "800000 / 5500000",
+        "expected_result": 0.1455,
+        "tolerance": 0.001
+      }
+    ],
+    "evidence_checks": [
+      {
+        "name": "memo_sections_cited",
+        "description": "All relevant memo sections appear in inputs_used"
+      },
+      {
+        "name": "each_risk_cites_source",
+        "description": "Every risk evidence_reference matches a memo section"
+      },
+      {
+        "name": "no_generic_risk_descriptions",
+        "description": "Risk descriptions reference specific numbers from the memo"
+      }
+    ],
+    "flag_rules": [
+      {
+        "flag_id": "fewer_than_5_risks",
+        "severity": "propolis",
+        "condition": "risks array has fewer than 5 entries"
+      },
+      {
+        "flag_id": "missing_severity",
+        "severity": "jelly",
+        "condition": "Any risk is missing severity or has invalid severity value"
+      },
+      {
+        "flag_id": "missing_evidence_reference",
+        "severity": "jelly",
+        "condition": "Any risk has empty evidence_reference"
+      },
+      {
+        "flag_id": "no_high_severity_risk",
+        "severity": "jelly",
+        "condition": "No risk has severity \"high\" despite clear high-risk indicators"
+      },
+      {
+        "flag_id": "missing_dscr_calc",
+        "severity": "propolis",
+        "condition": "calculations array is missing DSCR calculation"
+      },
+      {
+        "flag_id": "dscr_not_flagged_high",
+        "severity": "jelly",
+        "condition": "DSCR of ~1.10 is not flagged as a high-severity risk"
+      },
+      {
+        "flag_id": "math_result_incorrect",
+        "severity": "jelly",
+        "condition": "Any math check result deviates beyond tolerance"
+      }
+    ]
+  }
 }

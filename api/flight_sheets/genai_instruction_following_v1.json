@@ -79,5 +79,127 @@
     }
   ],
   "pass_threshold": 80,
-  "fail_threshold": 60
+  "fail_threshold": 60,
+  "eval_spec": {
+    "required_output_schema": {
+      "type": "object",
+      "required": [
+        "assignment_id",
+        "agent_summary",
+        "inputs_used",
+        "missing_inputs",
+        "claims",
+        "calculations",
+        "risks",
+        "assumptions",
+        "open_questions",
+        "final_output",
+        "self_check"
+      ]
+    },
+    "deterministic_checks": [
+      {
+        "name": "assignment_id_exact",
+        "description": "assignment_id equals \"genai_instruction_following_v1\""
+      },
+      {
+        "name": "calculations_length_exact_3",
+        "description": "calculations array has length exactly 3"
+      },
+      {
+        "name": "calculations_order_correct",
+        "description": "First calc name is \"first_calc\", second is \"second_calc\", third is \"third_calc\""
+      },
+      {
+        "name": "claims_length_exact_2",
+        "description": "claims array has length exactly 2"
+      },
+      {
+        "name": "final_output_exact_match",
+        "description": "final_output equals \"Instructions followed in order.\""
+      },
+      {
+        "name": "assumptions_length_exact_3",
+        "description": "assumptions array has length exactly 3"
+      },
+      {
+        "name": "assumptions_order_correct",
+        "description": "assumptions match the specified strings in the specified order"
+      },
+      {
+        "name": "risks_length_exact_1",
+        "description": "risks array has length exactly 1"
+      },
+      {
+        "name": "inputs_used_exact",
+        "description": "inputs_used equals [\"a\", \"b\"]"
+      },
+      {
+        "name": "self_check_keys_exact",
+        "description": "self_check has exactly 4 keys with names matching spec"
+      },
+      {
+        "name": "self_check_all_true",
+        "description": "All values in self_check are true"
+      }
+    ],
+    "math_checks": [
+      {
+        "formula_id": "first_calc",
+        "formula": "10 + 20",
+        "expected_result": 30,
+        "tolerance": 0
+      },
+      {
+        "formula_id": "second_calc",
+        "formula": "5 * 6",
+        "expected_result": 30,
+        "tolerance": 0
+      },
+      {
+        "formula_id": "third_calc",
+        "formula": "15 - 7",
+        "expected_result": 8,
+        "tolerance": 0
+      }
+    ],
+    "evidence_checks": [
+      {
+        "name": "claims_evidence_matches_calc",
+        "description": "claims[].evidence_reference matches corresponding calculation name"
+      }
+    ],
+    "flag_rules": [
+      {
+        "flag_id": "wrong_calculation_count",
+        "severity": "propolis",
+        "condition": "calculations array length is not exactly 3"
+      },
+      {
+        "flag_id": "wrong_claims_count",
+        "severity": "jelly",
+        "condition": "claims array length is not exactly 2"
+      },
+      {
+        "flag_id": "final_output_mismatch",
+        "severity": "propolis",
+        "condition": "final_output does not match exact required string"
+      },
+      {
+        "flag_id": "instruction_order_violation",
+        "severity": "propolis",
+        "condition": "Entries in calculations or claims are in wrong order"
+      },
+      {
+        "flag_id": "assumptions_count_mismatch",
+        "severity": "jelly",
+        "condition": "assumptions array length is not exactly 3"
+      },
+      {
+        "flag_id": "math_result_incorrect",
+        "severity": "propolis",
+        "condition": "Any calculation result does not match expected value"
+      }
+    ]
+  }
 }

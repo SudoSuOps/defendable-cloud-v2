@@ -86,5 +86,119 @@
     }
   ],
   "pass_threshold": 80,
-  "fail_threshold": 60
+  "fail_threshold": 60,
+  "eval_spec": {
+    "required_output_schema": {
+      "type": "object",
+      "required": [
+        "assignment_id",
+        "agent_summary",
+        "inputs_used",
+        "missing_inputs",
+        "claims",
+        "calculations",
+        "risks",
+        "assumptions",
+        "open_questions",
+        "final_output",
+        "self_check"
+      ]
+    },
+    "deterministic_checks": [
+      {
+        "name": "assignment_id_exact",
+        "description": "assignment_id equals \"cre_memo_rent_roll_analysis_v1\""
+      },
+      {
+        "name": "calculations_has_weighted_avg_rent",
+        "description": "calculations contains weighted average rent entry"
+      },
+      {
+        "name": "calculations_has_below_market_count",
+        "description": "calculations contains below-market unit count entry"
+      },
+      {
+        "name": "calculations_has_lease_concentration",
+        "description": "calculations or claims identifies Q1 2026 as peak expiration"
+      },
+      {
+        "name": "calculations_has_rent_variance",
+        "description": "calculations contains rent roll variance entry"
+      },
+      {
+        "name": "all_unit_types_in_calculations",
+        "description": "All 4 unit types appear in calculation inputs"
+      }
+    ],
+    "math_checks": [
+      {
+        "formula_id": "weighted_avg_rent_monthly",
+        "formula": "(30*1450 + 25*1800 + 15*2100 + 10*2500) / 80",
+        "expected_result": 1856.25,
+        "tolerance": 0.5
+      },
+      {
+        "formula_id": "weighted_avg_rent_annual",
+        "formula": "monthly_weighted_avg * 12",
+        "inputs": {
+          "monthly_weighted_avg": 1856.25
+        },
+        "expected_result": 22275.0,
+        "tolerance": 1.0
+      },
+      {
+        "formula_id": "below_market_count",
+        "formula": "30 + 25 + 15 + 10",
+        "expected_result": 80,
+        "tolerance": 0
+      },
+      {
+        "formula_id": "rent_roll_variance_monthly",
+        "formula": "30*(1550-1450) + 25*(1950-1800) + 15*(2200-2100) + 10*(2600-2500)",
+        "expected_result": 10750.0,
+        "tolerance": 1.0
+      }
+    ],
+    "evidence_checks": [
+      {
+        "name": "unit_mix_cited",
+        "description": "All unit types and counts are cited in inputs_used"
+      },
+      {
+        "name": "rents_cited",
+        "description": "All avg rents and market rents are cited"
+      },
+      {
+        "name": "lease_schedule_cited",
+        "description": "Lease expiration schedule is cited in inputs_used"
+      }
+    ],
+    "flag_rules": [
+      {
+        "flag_id": "missing_weighted_avg_rent",
+        "severity": "propolis",
+        "condition": "calculations array is missing weighted average rent"
+      },
+      {
+        "flag_id": "missing_below_market_count",
+        "severity": "jelly",
+        "condition": "calculations array is missing below-market unit count"
+      },
+      {
+        "flag_id": "wrong_weighted_avg",
+        "severity": "propolis",
+        "condition": "Weighted average uses simple average instead of unit-weighted"
+      },
+      {
+        "flag_id": "no_lease_concentration_flag",
+        "severity": "jelly",
+        "condition": "Q1 2026 lease concentration is not identified"
+      },
+      {
+        "flag_id": "math_result_incorrect",
+        "severity": "propolis",
+        "condition": "Any math check result deviates beyond tolerance"
+      }
+    ]
+  }
 }

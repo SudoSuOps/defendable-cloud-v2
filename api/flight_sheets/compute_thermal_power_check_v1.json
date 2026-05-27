@@ -73,5 +73,107 @@
     }
   ],
   "pass_threshold": 80,
-  "fail_threshold": 60
+  "fail_threshold": 60,
+  "eval_spec": {
+    "required_output_schema": {
+      "type": "object",
+      "required": [
+        "assignment_id",
+        "gpu_model",
+        "max_temperature_c",
+        "avg_temperature_c",
+        "thermal_limit_c",
+        "thermal_safe",
+        "max_power_w",
+        "avg_power_w",
+        "power_limit_w",
+        "power_within_spec",
+        "thermal_throttle_detected",
+        "overall_safe",
+        "claims",
+        "self_check"
+      ]
+    },
+    "deterministic_checks": [
+      {
+        "check_id": "temperature_numeric",
+        "description": "All temperature values must be numbers",
+        "assertion": "isinstance(result.max_temperature_c, (int, float)) and isinstance(result.avg_temperature_c, (int, float))"
+      },
+      {
+        "check_id": "power_numeric",
+        "description": "All power values must be numbers",
+        "assertion": "isinstance(result.max_power_w, (int, float)) and isinstance(result.avg_power_w, (int, float))"
+      },
+      {
+        "check_id": "thermal_safe_logic",
+        "description": "thermal_safe must be true when max temp is below limit",
+        "assertion": "result.thermal_safe == (result.max_temperature_c < result.thermal_limit_c)"
+      },
+      {
+        "check_id": "power_within_spec_logic",
+        "description": "power_within_spec must be true when max power is at or below limit",
+        "assertion": "result.power_within_spec == (result.max_power_w <= result.power_limit_w)"
+      },
+      {
+        "check_id": "overall_safe_logic",
+        "description": "overall_safe must be true only when all conditions pass",
+        "assertion": "result.overall_safe == (result.thermal_safe and result.power_within_spec and not result.thermal_throttle_detected)"
+      },
+      {
+        "check_id": "avg_not_greater_than_max_temp",
+        "description": "Average temperature must not exceed maximum",
+        "assertion": "result.avg_temperature_c <= result.max_temperature_c"
+      },
+      {
+        "check_id": "avg_not_greater_than_max_power",
+        "description": "Average power must not exceed maximum",
+        "assertion": "result.avg_power_w <= result.max_power_w"
+      }
+    ],
+    "math_checks": [],
+    "evidence_checks": [
+      {
+        "evidence_field": "max_temperature_c",
+        "description": "Must be the actual maximum temperature observed in telemetry",
+        "required": true
+      },
+      {
+        "evidence_field": "max_power_w",
+        "description": "Must be the actual maximum power draw observed in telemetry",
+        "required": true
+      },
+      {
+        "evidence_field": "thermal_throttle_detected",
+        "description": "Must be based on explicit throttle indicators in logs, not inferred",
+        "required": true
+      }
+    ],
+    "flag_rules": [
+      {
+        "flag_id": "thermal_limit_exceeded",
+        "condition": "thermal_safe == false",
+        "severity": "high",
+        "description": "GPU temperature exceeded safe limit"
+      },
+      {
+        "flag_id": "power_limit_exceeded",
+        "condition": "power_within_spec == false",
+        "severity": "high",
+        "description": "GPU power draw exceeded specification"
+      },
+      {
+        "flag_id": "thermal_throttling",
+        "condition": "thermal_throttle_detected == true",
+        "severity": "medium",
+        "description": "GPU thermal throttling detected during benchmark"
+      },
+      {
+        "flag_id": "all_metrics_safe",
+        "condition": "overall_safe == true",
+        "severity": "low",
+        "description": "All thermal and power metrics within safe limits"
+      }
+    ]
+  }
 }

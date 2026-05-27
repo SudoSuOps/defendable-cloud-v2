@@ -73,5 +73,121 @@
     }
   ],
   "pass_threshold": 80,
-  "fail_threshold": 60
+  "fail_threshold": 60,
+  "eval_spec": {
+    "required_output_schema": {
+      "type": "object",
+      "required": [
+        "assignment_id",
+        "agent_summary",
+        "inputs_used",
+        "missing_inputs",
+        "claims",
+        "calculations",
+        "risks",
+        "assumptions",
+        "open_questions",
+        "final_output"
+      ]
+    },
+    "deterministic_checks": [
+      {
+        "name": "assignment_id_exact",
+        "description": "assignment_id equals \"genai_evidence_citation_v1\""
+      },
+      {
+        "name": "claims_is_non_empty_array",
+        "description": "claims array has length >= 1"
+      },
+      {
+        "name": "every_claim_has_evidence_reference",
+        "description": "Every claims[].evidence_reference is non-empty and not \"none\""
+      },
+      {
+        "name": "calculations_has_noi_cap_rate_dscr",
+        "description": "calculations array has entries for NOI, cap rate, and DSCR"
+      },
+      {
+        "name": "every_calc_has_formula",
+        "description": "Every calculations[].formula is a non-empty string"
+      },
+      {
+        "name": "risks_have_evidence_reference",
+        "description": "Every risks[].evidence_reference is non-empty"
+      }
+    ],
+    "math_checks": [
+      {
+        "formula_id": "effective_gross_income",
+        "formula": "gross_potential_rent * occupancy_rate",
+        "inputs": {
+          "gross_potential_rent": 1440000,
+          "occupancy_rate": 0.92
+        },
+        "expected_result": 1324800.0,
+        "tolerance": 1.0
+      },
+      {
+        "formula_id": "noi",
+        "formula": "effective_gross_income - operating_expenses",
+        "inputs": {
+          "effective_gross_income": 1324800,
+          "operating_expenses": 580000
+        },
+        "expected_result": 744800.0,
+        "tolerance": 1.0
+      },
+      {
+        "formula_id": "cap_rate",
+        "formula": "noi / purchase_price",
+        "inputs": {
+          "noi": 744800,
+          "purchase_price": 12500000
+        },
+        "expected_result": 0.059584,
+        "tolerance": 0.0001
+      }
+    ],
+    "evidence_checks": [
+      {
+        "name": "evidence_reference_in_source",
+        "description": "Every evidence_reference value appears in or maps to the source text"
+      },
+      {
+        "name": "no_empty_evidence",
+        "description": "No claim or risk has empty or \"none\" evidence_reference"
+      },
+      {
+        "name": "confidence_missing_for_unsourced_claims",
+        "description": "Any claim lacking source evidence has confidence \"missing\""
+      }
+    ],
+    "flag_rules": [
+      {
+        "flag_id": "empty_evidence_reference",
+        "severity": "propolis",
+        "condition": "Any claim or risk has empty or \"none\" evidence_reference"
+      },
+      {
+        "flag_id": "missing_calculation",
+        "severity": "propolis",
+        "condition": "calculations array is missing NOI, cap rate, or DSCR entries"
+      },
+      {
+        "flag_id": "evidence_not_in_source",
+        "severity": "jelly",
+        "condition": "evidence_reference cites a field not present in the source text"
+      },
+      {
+        "flag_id": "incorrect_confidence",
+        "severity": "jelly",
+        "condition": "A claim without source evidence has confidence other than \"missing\""
+      },
+      {
+        "flag_id": "math_result_incorrect",
+        "severity": "jelly",
+        "condition": "Any math check result deviates beyond tolerance"
+      }
+    ]
+  }
 }

@@ -77,5 +77,247 @@
     }
   ],
   "pass_threshold": 80,
-  "fail_threshold": 60
+  "fail_threshold": 60,
+  "eval_spec": {
+    "required_output_schema": {
+      "type": "object",
+      "required": [
+        "assignment_id",
+        "agent_summary",
+        "inputs_used",
+        "missing_inputs",
+        "claims",
+        "calculations",
+        "fine_tune_recommendation",
+        "risks",
+        "assumptions",
+        "open_questions",
+        "final_output",
+        "self_check"
+      ],
+      "properties": {
+        "calculations": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "name",
+              "formula",
+              "inputs",
+              "result",
+              "units",
+              "assumptions"
+            ]
+          }
+        },
+        "fine_tune_recommendation": {
+          "type": "object",
+          "required": [
+            "priority",
+            "recommended_action",
+            "justification",
+            "estimated_cost_usd",
+            "expected_improvement_rate",
+            "projected_annual_savings_usd",
+            "payback_period_months",
+            "three_year_roi_ratio"
+          ]
+        },
+        "final_output": {
+          "type": "string",
+          "enum": [
+            "PASS",
+            "CONDITIONAL_PASS",
+            "FAIL"
+          ]
+        },
+        "self_check": {
+          "type": "object",
+          "required": [
+            "all_required_sections_completed",
+            "all_numbers_have_sources",
+            "assumptions_labeled",
+            "missing_inputs_disclosed"
+          ]
+        }
+      }
+    },
+    "deterministic_checks": [
+      {
+        "check": "final_output is one of PASS, CONDITIONAL_PASS, FAIL",
+        "match_field": "final_output",
+        "expected_values": [
+          "PASS",
+          "CONDITIONAL_PASS",
+          "FAIL"
+        ]
+      },
+      {
+        "check": "calculations array has exactly 7 entries",
+        "match_field": "len(calculations)",
+        "expected_value": 7
+      },
+      {
+        "check": "Each calculation has name, formula, inputs, result, units, assumptions",
+        "match_field": "calculations",
+        "required_keys": [
+          "name",
+          "formula",
+          "inputs",
+          "result",
+          "units",
+          "assumptions"
+        ]
+      },
+      {
+        "check": "fine_tune_recommendation has all required fields",
+        "match_field": "fine_tune_recommendation",
+        "required_keys": [
+          "priority",
+          "recommended_action",
+          "justification",
+          "estimated_cost_usd",
+          "expected_improvement_rate",
+          "projected_annual_savings_usd",
+          "payback_period_months",
+          "three_year_roi_ratio"
+        ]
+      },
+      {
+        "check": "priority is from allowed enum",
+        "match_field": "fine_tune_recommendation.priority",
+        "allowed_values": [
+          "critical",
+          "high",
+          "medium",
+          "low",
+          "not_recommended"
+        ]
+      },
+      {
+        "check": "recommended_action is from allowed enum",
+        "match_field": "fine_tune_recommendation.recommended_action",
+        "allowed_values": [
+          "fine_tune",
+          "prompt_engineering",
+          "hybrid",
+          "monitor"
+        ]
+      },
+      {
+        "check": "estimated_cost_usd is non-negative number",
+        "match_field": "fine_tune_recommendation.estimated_cost_usd",
+        "type": "number",
+        "minimum": 0
+      },
+      {
+        "check": "expected_improvement_rate is between 0 and 1",
+        "match_field": "fine_tune_recommendation.expected_improvement_rate",
+        "type": "number",
+        "minimum": 0,
+        "maximum": 1
+      },
+      {
+        "check": "payback_period_months is number (or -1.0 for undefined)",
+        "match_field": "fine_tune_recommendation.payback_period_months",
+        "type": "number"
+      },
+      {
+        "check": "three_year_roi_ratio is number",
+        "match_field": "fine_tune_recommendation.three_year_roi_ratio",
+        "type": "number"
+      },
+      {
+        "check": "self_check.all_required_sections_completed is true",
+        "match_field": "self_check.all_required_sections_completed",
+        "expected_value": true
+      }
+    ],
+    "math_checks": [
+      {
+        "check": "current_monthly_cost_usd = per_inference_cost * monthly_volume",
+        "match_field": "calculations",
+        "formula_check": "entry with name 'current_monthly_cost_usd' has result == per_inference_cost_usd * monthly_inference_volume"
+      },
+      {
+        "check": "current_annual_cost_usd = monthly_cost * 12",
+        "match_field": "calculations",
+        "formula_check": "entry with name 'current_annual_cost_usd' has result == current_monthly_cost_usd result * 12"
+      },
+      {
+        "check": "cost_of_failures_annual = annual_cost * failure_rate * 0.5",
+        "match_field": "calculations",
+        "formula_check": "entry with name 'cost_of_failures_annual_usd' has result == current_annual_cost_usd result * estimated_failure_rate result * 0.5"
+      },
+      {
+        "check": "annual_savings = cost_of_failures * improvement_rate",
+        "match_field": "calculations",
+        "formula_check": "entry with name 'annual_savings_usd' has result == cost_of_failures_annual_usd result * projected_improvement_rate result"
+      },
+      {
+        "check": "payback_period = fine_tune_cost / (annual_savings / 12), or -1.0 if savings is 0",
+        "match_field": "calculations",
+        "formula_check": "entry with name 'payback_period_months' has result == estimated_fine_tune_cost_usd / (annual_savings_usd result / 12), or -1.0 if annual_savings_usd result == 0"
+      },
+      {
+        "check": "3yr ROI = (savings*3 - cost) / cost, or 0.0 if cost is 0",
+        "match_field": "calculations",
+        "formula_check": "entry with name 'three_year_roi_ratio' has result == (annual_savings_usd result * 3 - estimated_fine_tune_cost_usd) / estimated_fine_tune_cost_usd, or 0.0 if estimated_fine_tune_cost_usd == 0"
+      }
+    ],
+    "evidence_checks": [
+      {
+        "check": "Every claim has a non-empty evidence_reference",
+        "match_field": "claims",
+        "condition": "all claims must have evidence_reference != '' and evidence_reference != null"
+      },
+      {
+        "check": "Justification references specific failure patterns or cost data",
+        "match_field": "fine_tune_recommendation.justification",
+        "condition": "justification must reference at least one pattern_id from failure_patterns OR a specific cost figure"
+      },
+      {
+        "check": "Priority determination is consistent with priority rules",
+        "match_field": "fine_tune_recommendation.priority",
+        "condition": "priority must follow the defined rules based on failure_rate and pattern types"
+      },
+      {
+        "check": "Every risk has a non-empty evidence_reference",
+        "match_field": "risks",
+        "condition": "all risks must have non-empty evidence_reference"
+      }
+    ],
+    "flag_rules": [
+      {
+        "flag_id": "missing_cost_inputs",
+        "condition": "missing_inputs contains any of 'per_inference_cost_usd', 'monthly_inference_volume', 'estimated_fine_tune_cost_usd'",
+        "severity": "high",
+        "message": "Required cost inputs are missing - ROI analysis is incomplete"
+      },
+      {
+        "flag_id": "negative_financial_value",
+        "condition": "fine_tune_recommendation.estimated_cost_usd < 0 OR fine_tune_recommendation.projected_annual_savings_usd < 0 OR fine_tune_recommendation.payback_period_months < -1.0",
+        "severity": "high",
+        "message": "Financial values should not be negative (except payback_period which can be -1.0 for undefined)"
+      },
+      {
+        "flag_id": "improvement_rate_out_of_range",
+        "condition": "fine_tune_recommendation.expected_improvement_rate < 0 OR fine_tune_recommendation.expected_improvement_rate > 1",
+        "severity": "medium",
+        "message": "Expected improvement rate must be between 0 and 1"
+      },
+      {
+        "flag_id": "priority_mismatch",
+        "condition": "priority is 'not_recommended' but failure_patterns is non-empty, OR priority is 'critical' but failure_rate is 0",
+        "severity": "medium",
+        "message": "Priority determination is inconsistent with failure pattern data"
+      },
+      {
+        "flag_id": "incomplete_self_check",
+        "condition": "self_check.all_required_sections_completed != true",
+        "severity": "high",
+        "message": "Agent did not complete all required self-check sections"
+      }
+    ]
+  }
 }

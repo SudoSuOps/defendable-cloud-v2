@@ -85,5 +85,140 @@
     }
   ],
   "pass_threshold": 80,
-  "fail_threshold": 60
+  "fail_threshold": 60,
+  "eval_spec": {
+    "required_output_schema": {
+      "type": "object",
+      "required": [
+        "assignment_id",
+        "agent_summary",
+        "inputs_used",
+        "missing_inputs",
+        "claims",
+        "calculations",
+        "risks",
+        "assumptions",
+        "open_questions",
+        "final_output",
+        "self_check"
+      ]
+    },
+    "deterministic_checks": [
+      {
+        "name": "assignment_id_exact",
+        "description": "assignment_id equals \"cre_memo_price_per_unit_sqft_v1\""
+      },
+      {
+        "name": "calculations_has_subject_price_per_unit",
+        "description": "calculations contains subject price_per_unit entry"
+      },
+      {
+        "name": "calculations_has_subject_price_per_sqft",
+        "description": "calculations contains subject price_per_sqft entry"
+      },
+      {
+        "name": "calculations_has_all_3_comps",
+        "description": "calculations contains entries for all 3 comps"
+      },
+      {
+        "name": "calculations_has_comp_summary_ranges",
+        "description": "calculations contains min, max, average for both metrics"
+      },
+      {
+        "name": "claims_has_comparison_entries",
+        "description": "claims array has at least 2 entries comparing subject to comps"
+      }
+    ],
+    "math_checks": [
+      {
+        "formula_id": "subject_price_per_unit",
+        "formula": "purchase_price / total_units",
+        "inputs": {
+          "purchase_price": 18500000,
+          "total_units": 110
+        },
+        "expected_result": 168181.8182,
+        "tolerance": 1.0
+      },
+      {
+        "formula_id": "subject_price_per_sqft",
+        "formula": "purchase_price / total_rentable_sq_ft",
+        "inputs": {
+          "purchase_price": 18500000,
+          "total_rentable_sq_ft": 98500
+        },
+        "expected_result": 187.8173,
+        "tolerance": 0.1
+      },
+      {
+        "formula_id": "comp1_price_per_unit",
+        "formula": "17800000 / 108",
+        "expected_result": 164814.8148,
+        "tolerance": 1.0
+      },
+      {
+        "formula_id": "comp2_price_per_unit",
+        "formula": "19200000 / 115",
+        "expected_result": 166956.5217,
+        "tolerance": 1.0
+      },
+      {
+        "formula_id": "comp3_price_per_unit",
+        "formula": "17100000 / 105",
+        "expected_result": 162857.1429,
+        "tolerance": 1.0
+      },
+      {
+        "formula_id": "avg_price_per_unit",
+        "formula": "(164814.81 + 166956.52 + 162857.14) / 3",
+        "expected_result": 164876.16,
+        "tolerance": 10.0
+      }
+    ],
+    "evidence_checks": [
+      {
+        "name": "purchase_price_cited",
+        "description": "Purchase price is cited in inputs_used"
+      },
+      {
+        "name": "unit_count_cited",
+        "description": "Total units is cited in inputs_used"
+      },
+      {
+        "name": "square_footage_cited",
+        "description": "Total rentable sq ft is cited in inputs_used"
+      },
+      {
+        "name": "comps_cited",
+        "description": "All 3 comparable sales are cited in inputs_used"
+      }
+    ],
+    "flag_rules": [
+      {
+        "flag_id": "missing_price_per_unit",
+        "severity": "propolis",
+        "condition": "calculations array is missing subject price_per_unit"
+      },
+      {
+        "flag_id": "missing_price_per_sqft",
+        "severity": "propolis",
+        "condition": "calculations array is missing subject price_per_sqft"
+      },
+      {
+        "flag_id": "missing_comp_calculations",
+        "severity": "jelly",
+        "condition": "Any of the 3 comps is missing from calculations"
+      },
+      {
+        "flag_id": "no_comp_comparison",
+        "severity": "jelly",
+        "condition": "claims array has fewer than 2 comparison entries"
+      },
+      {
+        "flag_id": "math_result_incorrect",
+        "severity": "jelly",
+        "condition": "Any math check result deviates beyond tolerance"
+      }
+    ]
+  }
 }

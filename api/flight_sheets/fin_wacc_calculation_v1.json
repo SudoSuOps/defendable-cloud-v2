@@ -106,5 +106,386 @@
     }
   ],
   "pass_threshold": 80,
-  "fail_threshold": 60
+  "fail_threshold": 60,
+  "eval_spec": {
+    "required_output_schema": {
+      "type": "object",
+      "required": [
+        "assignment_id",
+        "agent_summary",
+        "inputs_used",
+        "missing_inputs",
+        "claims",
+        "calculations",
+        "risks",
+        "assumptions",
+        "open_questions",
+        "final_output",
+        "self_check"
+      ],
+      "properties": {
+        "assignment_id": {
+          "type": "string",
+          "const": "fin_wacc_calculation_v1"
+        },
+        "agent_summary": {
+          "type": "string",
+          "minLength": 1
+        },
+        "inputs_used": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "missing_inputs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "claims": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "claim",
+              "evidence_reference",
+              "confidence"
+            ],
+            "properties": {
+              "claim": {
+                "type": "string"
+              },
+              "evidence_reference": {
+                "type": "string"
+              },
+              "confidence": {
+                "enum": [
+                  "provided",
+                  "inferred",
+                  "missing"
+                ]
+              }
+            }
+          }
+        },
+        "calculations": {
+          "type": "array",
+          "minItems": 5,
+          "items": {
+            "type": "object",
+            "required": [
+              "name",
+              "formula",
+              "inputs",
+              "result",
+              "units",
+              "assumptions"
+            ],
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "formula": {
+                "type": "string"
+              },
+              "inputs": {
+                "type": "object"
+              },
+              "result": {
+                "type": "number"
+              },
+              "units": {
+                "type": "string"
+              },
+              "assumptions": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "risks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "risk",
+              "severity",
+              "evidence_reference"
+            ],
+            "properties": {
+              "risk": {
+                "type": "string"
+              },
+              "severity": {
+                "enum": [
+                  "low",
+                  "medium",
+                  "high"
+                ]
+              },
+              "evidence_reference": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "assumptions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "open_questions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "final_output": {
+          "type": "string",
+          "enum": [
+            "PASS",
+            "FAIL"
+          ]
+        },
+        "self_check": {
+          "type": "object",
+          "required": [
+            "all_required_sections_completed",
+            "all_numbers_have_sources",
+            "assumptions_labeled",
+            "missing_inputs_disclosed"
+          ],
+          "properties": {
+            "all_required_sections_completed": {
+              "type": "boolean",
+              "const": true
+            },
+            "all_numbers_have_sources": {
+              "type": "boolean",
+              "const": true
+            },
+            "assumptions_labeled": {
+              "type": "boolean",
+              "const": true
+            },
+            "missing_inputs_disclosed": {
+              "type": "boolean",
+              "const": true
+            }
+          }
+        }
+      }
+    },
+    "deterministic_checks": [
+      {
+        "description": "Must have exactly 5 calculations",
+        "condition": "calculations.length == 5",
+        "pass_on_true": true
+      },
+      {
+        "description": "All calculation results must be numeric",
+        "condition": "all calc in calculations have typeof calc.result == \"number\"",
+        "pass_on_true": true
+      },
+      {
+        "description": "total_capital must equal total_equity + total_debt",
+        "condition": "abs(total_capital_result - (total_equity + total_debt)) < 0.01",
+        "pass_on_true": true
+      },
+      {
+        "description": "Weights must sum to 1.0",
+        "condition": "abs(weight_of_equity_result + weight_of_debt_result - 1.0) < 0.001",
+        "pass_on_true": true
+      },
+      {
+        "description": "after_tax_cost_of_debt must equal cost_of_debt * (1 - tax_rate)",
+        "condition": "abs(after_tax_cost_of_debt_result - (cost_of_debt * (1 - tax_rate))) < 0.0001",
+        "pass_on_true": true
+      },
+      {
+        "description": "WACC must equal (E/V * Ke) + (D/V * Kd_after_tax)",
+        "condition": "abs(wacc_result - ((weight_of_equity_result * cost_of_equity) + (weight_of_debt_result * after_tax_cost_of_debt_result))) < 0.0001",
+        "pass_on_true": true
+      },
+      {
+        "description": "Tax rate must be between 0 and 1",
+        "condition": "tax_rate >= 0 AND tax_rate <= 1",
+        "pass_on_true": true
+      }
+    ],
+    "math_checks": [
+      {
+        "formula_id": "total_capital_formula",
+        "description": "Total Capital = Total Equity + Total Debt",
+        "formula": "total_capital = total_equity + total_debt",
+        "expected_precision": 0.01,
+        "variables": [
+          {
+            "name": "total_equity",
+            "type": "number"
+          },
+          {
+            "name": "total_debt",
+            "type": "number"
+          }
+        ],
+        "result_field": "calculations[?name=='total_capital'].result"
+      },
+      {
+        "formula_id": "weight_equity_formula",
+        "description": "Weight of Equity = Total Equity / Total Capital",
+        "formula": "weight_of_equity = total_equity / total_capital",
+        "expected_precision": 0.001,
+        "variables": [
+          {
+            "name": "total_equity",
+            "type": "number"
+          },
+          {
+            "name": "total_capital",
+            "type": "number"
+          }
+        ],
+        "result_field": "calculations[?name=='weight_of_equity'].result"
+      },
+      {
+        "formula_id": "weight_debt_formula",
+        "description": "Weight of Debt = Total Debt / Total Capital",
+        "formula": "weight_of_debt = total_debt / total_capital",
+        "expected_precision": 0.001,
+        "variables": [
+          {
+            "name": "total_debt",
+            "type": "number"
+          },
+          {
+            "name": "total_capital",
+            "type": "number"
+          }
+        ],
+        "result_field": "calculations[?name=='weight_of_debt'].result"
+      },
+      {
+        "formula_id": "after_tax_cost_debt_formula",
+        "description": "After-Tax Cost of Debt = Cost of Debt * (1 - Tax Rate)",
+        "formula": "after_tax_cost_of_debt = cost_of_debt * (1 - tax_rate)",
+        "expected_precision": 0.0001,
+        "variables": [
+          {
+            "name": "cost_of_debt",
+            "type": "number"
+          },
+          {
+            "name": "tax_rate",
+            "type": "number"
+          }
+        ],
+        "result_field": "calculations[?name=='after_tax_cost_of_debt'].result"
+      },
+      {
+        "formula_id": "wacc_formula",
+        "description": "WACC = (E/V * Ke) + (D/V * Kd_after_tax)",
+        "formula": "wacc = (weight_of_equity * cost_of_equity) + (weight_of_debt * after_tax_cost_of_debt)",
+        "expected_precision": 0.0001,
+        "variables": [
+          {
+            "name": "weight_of_equity",
+            "type": "number"
+          },
+          {
+            "name": "cost_of_equity",
+            "type": "number"
+          },
+          {
+            "name": "weight_of_debt",
+            "type": "number"
+          },
+          {
+            "name": "after_tax_cost_of_debt",
+            "type": "number"
+          }
+        ],
+        "result_field": "calculations[?name=='wacc'].result"
+      }
+    ],
+    "evidence_checks": [
+      {
+        "check_id": "all_inputs_echoed",
+        "description": "All five input values must appear across the calculations' inputs sub-objects",
+        "evidence_must_match_claim": true
+      },
+      {
+        "check_id": "formulas_exact_match",
+        "description": "All five formulas must match the exact specified formula strings",
+        "required": true
+      },
+      {
+        "check_id": "weights_sum_verification",
+        "description": "weight_of_equity + weight_of_debt must equal 1.0 within 0.001 tolerance",
+        "required": true
+      }
+    ],
+    "flag_rules": [
+      {
+        "flag_id": "missing_calculation",
+        "condition": "calculations.length < 5",
+        "severity": "propolis",
+        "message": "Not all 5 WACC component calculations are present"
+      },
+      {
+        "flag_id": "non_numeric_result",
+        "condition": "any calculation has non-numeric result",
+        "severity": "propolis",
+        "message": "One or more calculation results are not numeric"
+      },
+      {
+        "flag_id": "total_capital_mismatch",
+        "condition": "abs(total_capital_calc - (total_equity + total_debt)) >= 0.01",
+        "severity": "propolis",
+        "message": "Total capital does not equal equity plus debt"
+      },
+      {
+        "flag_id": "weights_sum_error",
+        "condition": "abs(weight_equity + weight_debt - 1.0) >= 0.001",
+        "severity": "propolis",
+        "message": "Weights of equity and debt do not sum to 1.0"
+      },
+      {
+        "flag_id": "after_tax_cost_mismatch",
+        "condition": "abs(after_tax_cost_calc - (cost_of_debt * (1 - tax_rate))) >= 0.0001",
+        "severity": "propolis",
+        "message": "After-tax cost of debt calculation is incorrect"
+      },
+      {
+        "flag_id": "wacc_mismatch",
+        "condition": "abs(wacc_calc - ((weight_equity * cost_of_equity) + (weight_debt * after_tax_cost_calc))) >= 0.0001",
+        "severity": "propolis",
+        "message": "WACC calculation does not match the formula"
+      },
+      {
+        "flag_id": "invalid_tax_rate",
+        "condition": "tax_rate < 0 OR tax_rate > 1",
+        "severity": "honey",
+        "message": "Tax rate is outside valid range [0, 1]"
+      },
+      {
+        "flag_id": "zero_total_capital",
+        "condition": "total_capital == 0",
+        "severity": "honey",
+        "message": "Total capital is zero \u2014 WACC is undefined"
+      },
+      {
+        "flag_id": "false_pass_invalid",
+        "condition": "final_output == \"PASS\" AND (tax_rate < 0 OR tax_rate > 1 OR total_capital == 0)",
+        "severity": "propolis",
+        "message": "final_output is PASS but inputs are invalid"
+      }
+    ]
+  }
 }

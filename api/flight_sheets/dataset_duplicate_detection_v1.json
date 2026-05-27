@@ -59,5 +59,87 @@
     }
   ],
   "pass_threshold": 80,
-  "fail_threshold": 60
+  "fail_threshold": 60,
+  "eval_spec": {
+    "required_output_schema": {
+      "type": "object",
+      "required": [
+        "assignment_id",
+        "total_rows",
+        "unique_rows",
+        "duplicate_rows",
+        "duplicate_rate",
+        "duplicate_subset_columns",
+        "calculations",
+        "self_check"
+      ]
+    },
+    "deterministic_checks": [
+      {
+        "check_id": "counts_consistent",
+        "description": "unique_rows + duplicate_rows must equal total_rows",
+        "assertion": "result.unique_rows + result.duplicate_rows == result.total_rows"
+      },
+      {
+        "check_id": "duplicate_rate_formula",
+        "description": "duplicate_rate must equal duplicate_rows / total_rows",
+        "assertion": "abs(result.duplicate_rate - (result.duplicate_rows / result.total_rows)) < 1e-9"
+      },
+      {
+        "check_id": "rate_between_0_and_1",
+        "description": "duplicate_rate must be between 0.0 and 1.0 inclusive",
+        "assertion": "0.0 <= result.duplicate_rate <= 1.0"
+      },
+      {
+        "check_id": "duplicate_rows_nonnegative",
+        "description": "duplicate_rows must be >= 0",
+        "assertion": "result.duplicate_rows >= 0"
+      }
+    ],
+    "math_checks": [
+      {
+        "formula_id": "duplicate_rate",
+        "formula": "duplicate_rows / total_rows",
+        "description": "Fraction of rows that are duplicates",
+        "output_field": "duplicate_rate"
+      }
+    ],
+    "evidence_checks": [
+      {
+        "evidence_field": "total_rows",
+        "description": "Must match provided total_row_count",
+        "required": true
+      },
+      {
+        "evidence_field": "duplicate_rows",
+        "description": "Must be derived from actual duplicate detection, not estimated",
+        "required": true
+      },
+      {
+        "evidence_field": "sample_duplicate_keys",
+        "description": "Must provide concrete examples, not just counts",
+        "required": false
+      }
+    ],
+    "flag_rules": [
+      {
+        "flag_id": "high_duplicate_rate",
+        "condition": "duplicate_rate > 0.05",
+        "severity": "high",
+        "description": "Duplicate rate exceeds 5%"
+      },
+      {
+        "flag_id": "moderate_duplicates",
+        "condition": "duplicate_rate > 0.01 and duplicate_rate <= 0.05",
+        "severity": "medium",
+        "description": "Duplicate rate between 1% and 5%"
+      },
+      {
+        "flag_id": "no_duplicates",
+        "condition": "duplicate_rate == 0.0",
+        "severity": "low",
+        "description": "No duplicate rows found"
+      }
+    ]
+  }
 }

@@ -72,5 +72,108 @@
     }
   ],
   "pass_threshold": 80,
-  "fail_threshold": 60
+  "fail_threshold": 60,
+  "eval_spec": {
+    "required_output_schema": {
+      "type": "object",
+      "required": [
+        "assignment_id",
+        "disk_space_free_gb",
+        "disk_space_sufficient",
+        "network_speed_gbps",
+        "network_speed_sufficient",
+        "gpu_utilization_avg",
+        "gpu_utilization_sufficient",
+        "gpu_utilization_scale",
+        "readiness_score",
+        "overall_ready",
+        "failing_checks",
+        "claims",
+        "self_check"
+      ]
+    },
+    "deterministic_checks": [
+      {
+        "check_id": "disk_sufficient_logic",
+        "description": "disk_space_sufficient must be true when free >= required",
+        "assertion": "result.disk_space_sufficient == (result.disk_space_free_gb >= result.disk_space_min_required_gb)"
+      },
+      {
+        "check_id": "network_sufficient_logic",
+        "description": "network_speed_sufficient must be true when speed >= required",
+        "assertion": "result.network_speed_sufficient == (result.network_speed_gbps >= result.network_speed_min_gbps)"
+      },
+      {
+        "check_id": "gpu_util_sufficient_logic",
+        "description": "gpu_utilization_sufficient must be true when utilization >= threshold",
+        "assertion": "result.gpu_utilization_sufficient == (result.gpu_utilization_avg >= result.gpu_utilization_threshold)"
+      },
+      {
+        "check_id": "readiness_score_formula",
+        "description": "readiness_score must equal passing checks divided by 3",
+        "assertion": "result.readiness_score == sum([result.disk_space_sufficient, result.network_speed_sufficient, result.gpu_utilization_sufficient]) / 3.0"
+      },
+      {
+        "check_id": "overall_ready_logic",
+        "description": "overall_ready must be true only when all three checks pass",
+        "assertion": "result.overall_ready == (result.disk_space_sufficient and result.network_speed_sufficient and result.gpu_utilization_sufficient)"
+      },
+      {
+        "check_id": "failing_checks_consistent",
+        "description": "Each check in failing_checks must have corresponding sufficient == false",
+        "assertion": "all((not result.disk_space_sufficient if 'disk_space' in check else not result.network_speed_sufficient if 'network_speed' in check else not result.gpu_utilization_sufficient if 'gpu_utilization' in check else True) for check in result.failing_checks)"
+      }
+    ],
+    "math_checks": [
+      {
+        "formula_id": "readiness_score",
+        "formula": "passing_checks_count / 3",
+        "description": "Fraction of readiness checks that passed",
+        "output_field": "readiness_score"
+      }
+    ],
+    "evidence_checks": [
+      {
+        "evidence_field": "disk_space_free_gb",
+        "description": "Must be from actual system check (e.g., df command output)",
+        "required": true
+      },
+      {
+        "evidence_field": "network_speed_gbps",
+        "description": "Must be from actual network test (e.g., iperf)",
+        "required": true
+      },
+      {
+        "evidence_field": "gpu_utilization_avg",
+        "description": "Must be from actual GPU telemetry during benchmark",
+        "required": true
+      }
+    ],
+    "flag_rules": [
+      {
+        "flag_id": "insufficient_disk_space",
+        "condition": "disk_space_sufficient == false",
+        "severity": "high",
+        "description": "Free disk space is below minimum requirement"
+      },
+      {
+        "flag_id": "insufficient_network_speed",
+        "condition": "network_speed_sufficient == false",
+        "severity": "medium",
+        "description": "Network speed is below minimum requirement"
+      },
+      {
+        "flag_id": "low_gpu_utilization",
+        "condition": "gpu_utilization_sufficient == false",
+        "severity": "medium",
+        "description": "GPU utilization is below threshold during benchmark"
+      },
+      {
+        "flag_id": "system_not_ready",
+        "condition": "overall_ready == false",
+        "severity": "high",
+        "description": "One or more system readiness checks failed"
+      }
+    ]
+  }
 }

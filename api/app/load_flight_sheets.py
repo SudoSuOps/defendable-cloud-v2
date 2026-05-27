@@ -39,11 +39,13 @@ async def sync() -> None:
                 await db.execute(select(FlightSheet).where(FlightSheet.slug == fs["slug"]))
             ).scalar_one_or_none()
             if row is None:
-                db.add(FlightSheet(id=new_id(), slug=fs["slug"], active=True, **{k: fs[k] for k in FIELDS}))
+                db.add(FlightSheet(id=new_id(), slug=fs["slug"], active=True,
+                                   eval_spec=fs.get("eval_spec"), **{k: fs[k] for k in FIELDS}))
                 added += 1
             else:
                 for k in FIELDS:
                     setattr(row, k, fs[k])
+                row.eval_spec = fs.get("eval_spec")
                 row.active = True
                 updated += 1
 

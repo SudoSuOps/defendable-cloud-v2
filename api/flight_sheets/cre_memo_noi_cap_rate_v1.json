@@ -82,5 +82,140 @@
     }
   ],
   "pass_threshold": 80,
-  "fail_threshold": 60
+  "fail_threshold": 60,
+  "eval_spec": {
+    "required_output_schema": {
+      "type": "object",
+      "required": [
+        "assignment_id",
+        "agent_summary",
+        "inputs_used",
+        "missing_inputs",
+        "claims",
+        "calculations",
+        "risks",
+        "assumptions",
+        "open_questions",
+        "final_output",
+        "self_check"
+      ]
+    },
+    "deterministic_checks": [
+      {
+        "name": "assignment_id_exact",
+        "description": "assignment_id equals \"cre_memo_noi_cap_rate_v1\""
+      },
+      {
+        "name": "calculations_has_egi",
+        "description": "calculations contains entry named \"Effective Gross Income\" or equivalent"
+      },
+      {
+        "name": "calculations_has_opex_total",
+        "description": "calculations contains entry for total operating expenses"
+      },
+      {
+        "name": "calculations_has_noi",
+        "description": "calculations contains entry named \"Net Operating Income\" or equivalent"
+      },
+      {
+        "name": "calculations_has_cap_rate",
+        "description": "calculations contains entry named \"Capitalization Rate\" or equivalent"
+      },
+      {
+        "name": "vacancy_rate_is_decimal",
+        "description": "vacancy_rate in inputs is decimal (0.065) not percentage (6.5)"
+      },
+      {
+        "name": "all_expense_line_items_present",
+        "description": "All 6 expense line items appear in calculations[].inputs"
+      }
+    ],
+    "math_checks": [
+      {
+        "formula_id": "effective_gross_income",
+        "formula": "gross_potential_rent * (1 - vacancy_rate)",
+        "inputs": {
+          "gross_potential_rent": 1785000,
+          "vacancy_rate": 0.065
+        },
+        "expected_result": 1669025.0,
+        "tolerance": 1.0
+      },
+      {
+        "formula_id": "total_operating_expenses",
+        "formula": "sum of all expense line items",
+        "inputs": {
+          "property_taxes": 210000,
+          "insurance": 68000,
+          "maintenance_repairs": 112000,
+          "management_fees": 89250,
+          "utilities": 47500,
+          "marketing_admin": 23000
+        },
+        "expected_result": 549750.0,
+        "tolerance": 1.0
+      },
+      {
+        "formula_id": "noi",
+        "formula": "effective_gross_income - total_operating_expenses",
+        "inputs": {
+          "effective_gross_income": 1669025,
+          "total_operating_expenses": 549750
+        },
+        "expected_result": 1119275.0,
+        "tolerance": 1.0
+      },
+      {
+        "formula_id": "cap_rate",
+        "formula": "noi / purchase_price",
+        "inputs": {
+          "noi": 1119275,
+          "purchase_price": 14200000
+        },
+        "expected_result": 0.0788222,
+        "tolerance": 0.0001
+      }
+    ],
+    "evidence_checks": [
+      {
+        "name": "gpr_cited",
+        "description": "Gross Potential Rent is cited in inputs_used"
+      },
+      {
+        "name": "purchase_price_cited",
+        "description": "Purchase Price is cited in inputs_used"
+      },
+      {
+        "name": "all_expenses_cited",
+        "description": "Every expense line item is cited in inputs_used or calculations"
+      }
+    ],
+    "flag_rules": [
+      {
+        "flag_id": "missing_noi_calculation",
+        "severity": "propolis",
+        "condition": "calculations array is missing NOI entry"
+      },
+      {
+        "flag_id": "missing_cap_rate_calculation",
+        "severity": "propolis",
+        "condition": "calculations array is missing cap rate entry"
+      },
+      {
+        "flag_id": "vacancy_as_percentage",
+        "severity": "jelly",
+        "condition": "vacancy_rate is expressed as 6.5 instead of 0.065 in calc inputs"
+      },
+      {
+        "flag_id": "math_result_incorrect",
+        "severity": "propolis",
+        "condition": "Any math check result deviates beyond tolerance"
+      },
+      {
+        "flag_id": "missing_expense_line_item",
+        "severity": "jelly",
+        "condition": "Any of the 6 expense line items is absent from calculations"
+      }
+    ]
+  }
 }

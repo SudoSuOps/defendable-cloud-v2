@@ -83,5 +83,316 @@
     }
   ],
   "pass_threshold": 80,
-  "fail_threshold": 60
+  "fail_threshold": 60,
+  "eval_spec": {
+    "required_output_schema": {
+      "type": "object",
+      "required": [
+        "assignment_id",
+        "agent_summary",
+        "inputs_used",
+        "missing_inputs",
+        "claims",
+        "calculations",
+        "risks",
+        "assumptions",
+        "open_questions",
+        "final_output",
+        "self_check"
+      ],
+      "properties": {
+        "assignment_id": {
+          "type": "string",
+          "const": "fin_gross_net_margin_v1"
+        },
+        "agent_summary": {
+          "type": "string",
+          "minLength": 1
+        },
+        "inputs_used": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "missing_inputs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "claims": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "claim",
+              "evidence_reference",
+              "confidence"
+            ],
+            "properties": {
+              "claim": {
+                "type": "string"
+              },
+              "evidence_reference": {
+                "type": "string"
+              },
+              "confidence": {
+                "enum": [
+                  "provided",
+                  "inferred",
+                  "missing"
+                ]
+              }
+            }
+          }
+        },
+        "calculations": {
+          "type": "array",
+          "minItems": 3,
+          "items": {
+            "type": "object",
+            "required": [
+              "name",
+              "formula",
+              "inputs",
+              "result",
+              "units",
+              "assumptions"
+            ],
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "formula": {
+                "type": "string"
+              },
+              "inputs": {
+                "type": "object"
+              },
+              "result": {
+                "type": "number"
+              },
+              "units": {
+                "type": "string"
+              },
+              "assumptions": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "risks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "risk",
+              "severity",
+              "evidence_reference"
+            ],
+            "properties": {
+              "risk": {
+                "type": "string"
+              },
+              "severity": {
+                "enum": [
+                  "low",
+                  "medium",
+                  "high"
+                ]
+              },
+              "evidence_reference": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "assumptions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "open_questions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "final_output": {
+          "type": "string",
+          "enum": [
+            "PASS",
+            "FAIL"
+          ]
+        },
+        "self_check": {
+          "type": "object",
+          "required": [
+            "all_required_sections_completed",
+            "all_numbers_have_sources",
+            "assumptions_labeled",
+            "missing_inputs_disclosed"
+          ],
+          "properties": {
+            "all_required_sections_completed": {
+              "type": "boolean",
+              "const": true
+            },
+            "all_numbers_have_sources": {
+              "type": "boolean",
+              "const": true
+            },
+            "assumptions_labeled": {
+              "type": "boolean",
+              "const": true
+            },
+            "missing_inputs_disclosed": {
+              "type": "boolean",
+              "const": true
+            }
+          }
+        }
+      }
+    },
+    "deterministic_checks": [
+      {
+        "description": "Must have exactly 3 calculations (gross_profit, gross_margin, net_margin)",
+        "condition": "calculations.length == 3",
+        "pass_on_true": true
+      },
+      {
+        "description": "All calculation results must be numeric",
+        "condition": "all calc in calculations have typeof calc.result == \"number\"",
+        "pass_on_true": true
+      },
+      {
+        "description": "Revenue must not be zero or negative",
+        "condition": "revenue > 0",
+        "pass_on_true": true
+      },
+      {
+        "description": "Gross profit must equal revenue minus COGS",
+        "condition": "abs(calculations[0].result - (revenue - cogs)) < 0.01",
+        "pass_on_true": true
+      },
+      {
+        "description": "Gross margin must equal (gross_profit / revenue) * 100",
+        "condition": "abs(calculations[1].result - ((revenue - cogs) / revenue * 100)) < 0.01",
+        "pass_on_true": true
+      },
+      {
+        "description": "Net margin must equal (net_income / revenue) * 100",
+        "condition": "abs(calculations[2].result - (net_income / revenue * 100)) < 0.01",
+        "pass_on_true": true
+      }
+    ],
+    "math_checks": [
+      {
+        "formula_id": "gross_profit_formula",
+        "description": "Gross Profit = Revenue - COGS",
+        "formula": "gross_profit = revenue - cogs",
+        "expected_precision": 0.01,
+        "variables": [
+          {
+            "name": "revenue",
+            "type": "number"
+          },
+          {
+            "name": "cogs",
+            "type": "number"
+          }
+        ],
+        "result_field": "calculations[?name=='gross_profit'].result"
+      },
+      {
+        "formula_id": "gross_margin_formula",
+        "description": "Gross Margin = (Gross Profit / Revenue) * 100",
+        "formula": "gross_margin = ((revenue - cogs) / revenue) * 100",
+        "expected_precision": 0.01,
+        "variables": [
+          {
+            "name": "revenue",
+            "type": "number"
+          },
+          {
+            "name": "cogs",
+            "type": "number"
+          }
+        ],
+        "result_field": "calculations[?name=='gross_margin'].result"
+      },
+      {
+        "formula_id": "net_margin_formula",
+        "description": "Net Margin = (Net Income / Revenue) * 100",
+        "formula": "net_margin = (net_income / revenue) * 100",
+        "expected_precision": 0.01,
+        "variables": [
+          {
+            "name": "net_income",
+            "type": "number"
+          },
+          {
+            "name": "revenue",
+            "type": "number"
+          }
+        ],
+        "result_field": "calculations[?name=='net_margin'].result"
+      }
+    ],
+    "evidence_checks": [
+      {
+        "check_id": "input_values_echoed",
+        "description": "All input financial values must be echoed in the inputs sub-objects of calculations",
+        "evidence_must_match_claim": true
+      },
+      {
+        "check_id": "formulas_exact",
+        "description": "Formulas must match the exact specified formula strings",
+        "required": true
+      }
+    ],
+    "flag_rules": [
+      {
+        "flag_id": "missing_calculation",
+        "condition": "calculations.length < 3",
+        "severity": "propolis",
+        "message": "Not all required calculations (gross_profit, gross_margin, net_margin) are present"
+      },
+      {
+        "flag_id": "non_numeric_result",
+        "condition": "any calculation has non-numeric result",
+        "severity": "propolis",
+        "message": "One or more calculation results are not numeric"
+      },
+      {
+        "flag_id": "zero_revenue",
+        "condition": "revenue <= 0",
+        "severity": "honey",
+        "message": "Revenue is zero or negative \u2014 margins cannot be computed"
+      },
+      {
+        "flag_id": "gross_margin_mismatch",
+        "condition": "abs(gross_margin_calc - ((revenue - cogs) / revenue * 100)) >= 0.01",
+        "severity": "propolis",
+        "message": "Gross margin calculation does not match expected formula result"
+      },
+      {
+        "flag_id": "net_margin_mismatch",
+        "condition": "abs(net_margin_calc - (net_income / revenue * 100)) >= 0.01",
+        "severity": "propolis",
+        "message": "Net margin calculation does not match expected formula result"
+      },
+      {
+        "flag_id": "pass_with_zero_revenue",
+        "condition": "final_output == \"PASS\" AND revenue <= 0",
+        "severity": "propolis",
+        "message": "final_output is PASS but revenue is zero or negative"
+      }
+    ]
+  }
 }

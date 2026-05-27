@@ -59,5 +59,88 @@
     }
   ],
   "pass_threshold": 80,
-  "fail_threshold": 60
+  "fail_threshold": 60,
+  "eval_spec": {
+    "required_output_schema": {
+      "type": "object",
+      "required": [
+        "assignment_id",
+        "overall_missing_rate",
+        "column_missing_rates",
+        "columns_above_threshold",
+        "total_rows",
+        "total_columns",
+        "calculations",
+        "self_check"
+      ]
+    },
+    "deterministic_checks": [
+      {
+        "check_id": "overall_rate_is_number",
+        "description": "overall_missing_rate must be a float",
+        "assertion": "isinstance(result.overall_missing_rate, float)"
+      },
+      {
+        "check_id": "overall_rate_range",
+        "description": "overall_missing_rate must be between 0.0 and 1.0",
+        "assertion": "0.0 <= result.overall_missing_rate <= 1.0"
+      },
+      {
+        "check_id": "column_rates_match_count",
+        "description": "Number of column rates must equal total_columns",
+        "assertion": "len(result.column_missing_rates) == result.total_columns"
+      },
+      {
+        "check_id": "columns_above_threshold_consistent",
+        "description": "Every column in columns_above_threshold must have rate > 0.10",
+        "assertion": "all(col.missing_rate > 0.10 for col in result.column_missing_rates if col.column_name in result.columns_above_threshold)"
+      }
+    ],
+    "math_checks": [
+      {
+        "formula_id": "overall_missing_rate",
+        "formula": "total_null_cells / (total_rows * total_columns)",
+        "description": "Overall rate of missing values across entire dataset",
+        "output_field": "overall_missing_rate"
+      },
+      {
+        "formula_id": "column_missing_rate",
+        "formula": "null_count_in_column / total_rows",
+        "description": "Per-column missing value rate",
+        "output_field": "column_missing_rates[].missing_rate"
+      }
+    ],
+    "evidence_checks": [
+      {
+        "evidence_field": "column_missing_rates",
+        "description": "Each entry must have column_name, missing_count, total_rows, missing_rate",
+        "required": true
+      },
+      {
+        "evidence_field": "total_rows",
+        "description": "Must be an integer > 0",
+        "required": true
+      }
+    ],
+    "flag_rules": [
+      {
+        "flag_id": "high_overall_missing_rate",
+        "condition": "overall_missing_rate > 0.10",
+        "severity": "high",
+        "description": "Overall missing value rate exceeds 10%"
+      },
+      {
+        "flag_id": "column_missing_rate_high",
+        "condition": "len(columns_above_threshold) > 0",
+        "severity": "medium",
+        "description": "One or more columns have missing rate exceeding 10%"
+      },
+      {
+        "flag_id": "perfect_data",
+        "condition": "overall_missing_rate == 0.0",
+        "severity": "low",
+        "description": "No missing values detected"
+      }
+    ]
+  }
 }

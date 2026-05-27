@@ -69,5 +69,100 @@
     }
   ],
   "pass_threshold": 80,
-  "fail_threshold": 60
+  "fail_threshold": 60,
+  "eval_spec": {
+    "required_output_schema": {
+      "type": "object",
+      "required": [
+        "assignment_id",
+        "benchmark_name",
+        "gpu_model",
+        "score",
+        "score_units",
+        "score_within_expected_range",
+        "score_not_null",
+        "units_correct",
+        "claims",
+        "self_check"
+      ]
+    },
+    "deterministic_checks": [
+      {
+        "check_id": "score_is_numeric",
+        "description": "score must be a number (int or float)",
+        "assertion": "isinstance(result.score, (int, float))"
+      },
+      {
+        "check_id": "score_not_null",
+        "description": "score_not_null must be true",
+        "assertion": "result.score_not_null == True"
+      },
+      {
+        "check_id": "range_check_logic",
+        "description": "If expected range provided, score_within_expected_range must be computed correctly",
+        "assertion": "result.score_within_expected_range == (result.expected_range_min <= result.score <= result.expected_range_max) if (result.expected_range_min is not None and result.expected_range_max is not None) else None"
+      },
+      {
+        "check_id": "percentile_formula",
+        "description": "If range provided, score_percentile must be computed correctly",
+        "assertion": "abs(result.score_percentile - ((result.score - result.expected_range_min) / (result.expected_range_max - result.expected_range_min))) < 1e-6 if (result.expected_range_min is not None and result.expected_range_max is not None and result.expected_range_max != result.expected_range_min) else True"
+      },
+      {
+        "check_id": "units_non_empty",
+        "description": "score_units must be a non-empty string",
+        "assertion": "isinstance(result.score_units, str) and len(result.score_units) > 0"
+      }
+    ],
+    "math_checks": [
+      {
+        "formula_id": "score_percentile",
+        "formula": "(score - expected_range_min) / (expected_range_max - expected_range_min)",
+        "description": "Percentile position within expected range",
+        "output_field": "score_percentile"
+      }
+    ],
+    "evidence_checks": [
+      {
+        "evidence_field": "score",
+        "description": "Must match the actual benchmark output score",
+        "required": true
+      },
+      {
+        "evidence_field": "gpu_model",
+        "description": "Must match the actual GPU used during benchmarking",
+        "required": true
+      },
+      {
+        "evidence_field": "score_units",
+        "description": "Must be the exact units reported by the benchmark tool",
+        "required": true
+      }
+    ],
+    "flag_rules": [
+      {
+        "flag_id": "score_below_expected",
+        "condition": "score_within_expected_range == false and score < expected_range_min",
+        "severity": "high",
+        "description": "Benchmark score is below expected range for this GPU"
+      },
+      {
+        "flag_id": "score_above_expected",
+        "condition": "score_within_expected_range == false and score > expected_range_max",
+        "severity": "medium",
+        "description": "Benchmark score is above expected range (possible measurement error)"
+      },
+      {
+        "flag_id": "score_is_null",
+        "condition": "score_not_null == false",
+        "severity": "high",
+        "description": "Benchmark score is missing or null"
+      },
+      {
+        "flag_id": "units_unrecognized",
+        "condition": "units_correct == false",
+        "severity": "medium",
+        "description": "Benchmark score units are not recognized"
+      }
+    ]
+  }
 }

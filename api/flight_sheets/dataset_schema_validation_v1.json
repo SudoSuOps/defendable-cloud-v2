@@ -57,5 +57,76 @@
     }
   ],
   "pass_threshold": 80,
-  "fail_threshold": 60
+  "fail_threshold": 60,
+  "eval_spec": {
+    "required_output_schema": {
+      "type": "object",
+      "required": [
+        "assignment_id",
+        "schema_compliance_rate",
+        "field_checks",
+        "missing_required_fields",
+        "extra_fields_detected",
+        "claims",
+        "self_check"
+      ]
+    },
+    "deterministic_checks": [
+      {
+        "check_id": "schema_rate_between_0_and_1",
+        "description": "schema_compliance_rate must be a float between 0.0 and 1.0 inclusive",
+        "assertion": "result.schema_compliance_rate >= 0.0 and result.schema_compliance_rate <= 1.0"
+      },
+      {
+        "check_id": "all_required_fields_accounted",
+        "description": "Every field in declared_schema must appear in field_checks",
+        "assertion": "len(result.field_checks) >= len(required_fields_from_input)"
+      },
+      {
+        "check_id": "missing_fields_listed",
+        "description": "Any non-compliant required field must be in missing_required_fields",
+        "assertion": "all(not f.compliant for f in result.field_checks if f.field_name in required_fields) implies f.field_name in result.missing_required_fields"
+      }
+    ],
+    "math_checks": [
+      {
+        "formula_id": "schema_compliance_rate",
+        "formula": "compliant_field_count / total_required_fields",
+        "description": "Fraction of required fields that match declared type",
+        "output_field": "schema_compliance_rate"
+      }
+    ],
+    "evidence_checks": [
+      {
+        "evidence_field": "field_checks",
+        "description": "Each field check must reference a specific field from the declared schema",
+        "required": true
+      },
+      {
+        "evidence_field": "actual_type",
+        "description": "Must report actual detected type, not just boolean",
+        "required": true
+      }
+    ],
+    "flag_rules": [
+      {
+        "flag_id": "schema_compliance_below_100",
+        "condition": "schema_compliance_rate < 1.0",
+        "severity": "medium",
+        "description": "Schema is not fully compliant"
+      },
+      {
+        "flag_id": "missing_required_field",
+        "condition": "len(missing_required_fields) > 0",
+        "severity": "high",
+        "description": "One or more required fields are missing or non-compliant"
+      },
+      {
+        "flag_id": "extra_fields_present",
+        "condition": "len(extra_fields_detected) > 0",
+        "severity": "low",
+        "description": "Undeclared fields detected in dataset"
+      }
+    ]
+  }
 }

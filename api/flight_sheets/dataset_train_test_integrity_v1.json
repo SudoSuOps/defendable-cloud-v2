@@ -61,5 +61,106 @@
     }
   ],
   "pass_threshold": 80,
-  "fail_threshold": 60
+  "fail_threshold": 60,
+  "eval_spec": {
+    "required_output_schema": {
+      "type": "object",
+      "required": [
+        "assignment_id",
+        "train_rows",
+        "test_rows",
+        "total_rows",
+        "actual_train_ratio",
+        "overlap_detected",
+        "overlap_count",
+        "leakage_flag",
+        "calculations",
+        "self_check"
+      ]
+    },
+    "deterministic_checks": [
+      {
+        "check_id": "row_counts_consistent",
+        "description": "train_rows + test_rows must equal total_rows",
+        "assertion": "result.train_rows + result.test_rows == result.total_rows"
+      },
+      {
+        "check_id": "actual_ratio_formula",
+        "description": "actual_train_ratio must equal train_rows / total_rows",
+        "assertion": "abs(result.actual_train_ratio - (result.train_rows / result.total_rows)) < 1e-9"
+      },
+      {
+        "check_id": "overlap_count_nonnegative",
+        "description": "overlap_count must be >= 0",
+        "assertion": "result.overlap_count >= 0"
+      },
+      {
+        "check_id": "overlap_percentage_formula",
+        "description": "overlap_percentage must equal overlap_count / total_rows",
+        "assertion": "result.overlap_percentage == result.overlap_count / result.total_rows"
+      },
+      {
+        "check_id": "leakage_flag_logic",
+        "description": "leakage_flag must be true when overlap detected or ratio out of tolerance",
+        "assertion": "result.leakage_flag == (result.overlap_detected or not result.ratio_within_tolerance)"
+      }
+    ],
+    "math_checks": [
+      {
+        "formula_id": "actual_train_ratio",
+        "formula": "train_rows / total_rows",
+        "description": "Actual fraction of data in training set",
+        "output_field": "actual_train_ratio"
+      },
+      {
+        "formula_id": "ratio_difference",
+        "formula": "abs(actual_train_ratio - declared_train_ratio)",
+        "description": "Absolute difference between actual and declared train ratio",
+        "output_field": "ratio_difference"
+      },
+      {
+        "formula_id": "overlap_percentage",
+        "formula": "overlap_count / total_rows",
+        "description": "Percentage of total data that overlaps between splits",
+        "output_field": "overlap_percentage"
+      }
+    ],
+    "evidence_checks": [
+      {
+        "evidence_field": "overlap_detected",
+        "description": "Must be based on actual row-by-row comparison, not estimate",
+        "required": true
+      },
+      {
+        "evidence_field": "overlap_count",
+        "description": "Must be exact count, not estimate",
+        "required": true
+      },
+      {
+        "evidence_field": "actual_train_ratio",
+        "description": "Must be computed from actual row counts",
+        "required": true
+      }
+    ],
+    "flag_rules": [
+      {
+        "flag_id": "data_leakage_detected",
+        "condition": "overlap_detected == true",
+        "severity": "high",
+        "description": "Train and test sets contain overlapping rows (data leakage)"
+      },
+      {
+        "flag_id": "split_ratio_mismatch",
+        "condition": "ratio_within_tolerance == false",
+        "severity": "medium",
+        "description": "Actual train ratio differs from declared by more than 5%"
+      },
+      {
+        "flag_id": "clean_split",
+        "condition": "leakage_flag == false",
+        "severity": "low",
+        "description": "No leakage detected and split ratio within tolerance"
+      }
+    ]
+  }
 }

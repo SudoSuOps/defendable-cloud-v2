@@ -80,5 +80,327 @@
     }
   ],
   "pass_threshold": 80,
-  "fail_threshold": 60
+  "fail_threshold": 60,
+  "eval_spec": {
+    "required_output_schema": {
+      "type": "object",
+      "required": [
+        "assignment_id",
+        "agent_summary",
+        "inputs_used",
+        "missing_inputs",
+        "claims",
+        "facts_used",
+        "missing_facts",
+        "total_claims",
+        "claims_with_evidence",
+        "claims_without_evidence",
+        "evidence_ratio",
+        "calculations",
+        "risks",
+        "assumptions",
+        "open_questions",
+        "final_output",
+        "self_check"
+      ],
+      "properties": {
+        "assignment_id": {
+          "type": "string",
+          "const": "doc_facts_evidence_basis_v1"
+        },
+        "agent_summary": {
+          "type": "string",
+          "minLength": 1
+        },
+        "inputs_used": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "missing_inputs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "claims": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "claim",
+              "evidence_reference",
+              "confidence"
+            ],
+            "properties": {
+              "claim": {
+                "type": "string"
+              },
+              "evidence_reference": {
+                "type": "string"
+              },
+              "confidence": {
+                "enum": [
+                  "provided",
+                  "inferred",
+                  "missing"
+                ]
+              }
+            }
+          }
+        },
+        "facts_used": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "claim",
+              "evidence_reference",
+              "confidence"
+            ],
+            "properties": {
+              "claim": {
+                "type": "string"
+              },
+              "evidence_reference": {
+                "type": "string"
+              },
+              "confidence": {
+                "enum": [
+                  "provided",
+                  "inferred",
+                  "missing"
+                ]
+              }
+            }
+          }
+        },
+        "missing_facts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "claim",
+              "reason_missing",
+              "severity"
+            ],
+            "properties": {
+              "claim": {
+                "type": "string"
+              },
+              "reason_missing": {
+                "type": "string"
+              },
+              "severity": {
+                "enum": [
+                  "low",
+                  "medium",
+                  "high"
+                ]
+              }
+            }
+          }
+        },
+        "total_claims": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "claims_with_evidence": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "claims_without_evidence": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "evidence_ratio": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "calculations": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "name",
+              "formula",
+              "inputs",
+              "result",
+              "units",
+              "assumptions"
+            ]
+          }
+        },
+        "risks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "risk",
+              "severity",
+              "evidence_reference"
+            ],
+            "properties": {
+              "risk": {
+                "type": "string"
+              },
+              "severity": {
+                "enum": [
+                  "low",
+                  "medium",
+                  "high"
+                ]
+              },
+              "evidence_reference": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "assumptions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "open_questions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "final_output": {
+          "type": "string",
+          "enum": [
+            "PASS",
+            "FAIL"
+          ]
+        },
+        "self_check": {
+          "type": "object",
+          "required": [
+            "all_required_sections_completed",
+            "all_numbers_have_sources",
+            "assumptions_labeled",
+            "missing_inputs_disclosed"
+          ],
+          "properties": {
+            "all_required_sections_completed": {
+              "type": "boolean",
+              "const": true
+            },
+            "all_numbers_have_sources": {
+              "type": "boolean",
+              "const": true
+            },
+            "assumptions_labeled": {
+              "type": "boolean",
+              "const": true
+            },
+            "missing_inputs_disclosed": {
+              "type": "boolean",
+              "const": true
+            }
+          }
+        }
+      }
+    },
+    "deterministic_checks": [
+      {
+        "description": "total_claims must equal sum of claims_with_evidence and claims_without_evidence",
+        "condition": "total_claims == claims_with_evidence + claims_without_evidence",
+        "pass_on_true": true
+      },
+      {
+        "description": "evidence_ratio must equal claims_with_evidence / total_claims",
+        "condition": "abs(evidence_ratio - (claims_with_evidence / max(total_claims, 1))) < 0.001",
+        "pass_on_true": true
+      },
+      {
+        "description": "PASS requires evidence_ratio >= 0.80",
+        "condition": "final_output == \"PASS\" implies evidence_ratio >= 0.80",
+        "pass_on_true": true
+      },
+      {
+        "description": "PASS requires no high-severity missing facts",
+        "condition": "final_output == \"PASS\" implies no missing_fact has severity == \"high\"",
+        "pass_on_true": true
+      },
+      {
+        "description": "Every factual claim must be accounted for",
+        "condition": "facts_used.length + missing_facts.length == total_claims",
+        "pass_on_true": true
+      }
+    ],
+    "math_checks": [
+      {
+        "formula_id": "evidence_ratio_formula",
+        "description": "Calculate evidence ratio as claims with evidence divided by total claims",
+        "formula": "evidence_ratio = claims_with_evidence / total_claims",
+        "expected_precision": 0.01,
+        "variables": [
+          {
+            "name": "claims_with_evidence",
+            "type": "integer"
+          },
+          {
+            "name": "total_claims",
+            "type": "integer"
+          }
+        ],
+        "result_field": "evidence_ratio"
+      }
+    ],
+    "evidence_checks": [
+      {
+        "check_id": "fact_claims_complete",
+        "description": "Every factual claim in the document must appear in either facts_used or missing_facts",
+        "evidence_must_match_claim": true
+      },
+      {
+        "check_id": "evidence_references_verifiable",
+        "description": "Each evidence_reference in facts_used must point to a specific location or source in the document",
+        "required": true
+      },
+      {
+        "check_id": "missing_facts_explained",
+        "description": "Each missing_fact must have a non-empty reason_missing explaining why evidence is absent",
+        "required": true
+      }
+    ],
+    "flag_rules": [
+      {
+        "flag_id": "low_evidence_ratio",
+        "condition": "evidence_ratio < 0.50",
+        "severity": "honey",
+        "message": "Evidence ratio is below 50% \u2014 majority of claims lack evidence"
+      },
+      {
+        "flag_id": "medium_evidence_gap",
+        "condition": "evidence_ratio >= 0.50 AND evidence_ratio < 0.80",
+        "severity": "jelly",
+        "message": "Evidence ratio is between 50% and 80% \u2014 significant gaps in fact support"
+      },
+      {
+        "flag_id": "high_severity_missing_fact",
+        "condition": "any missing_fact has severity == \"high\"",
+        "severity": "propolis",
+        "message": "At least one factual claim with high severity lacks evidence"
+      },
+      {
+        "flag_id": "false_pass_low_ratio",
+        "condition": "final_output == \"PASS\" AND evidence_ratio < 0.80",
+        "severity": "propolis",
+        "message": "final_output is PASS but evidence ratio is below 0.80 threshold"
+      },
+      {
+        "flag_id": "claim_count_mismatch",
+        "condition": "total_claims != claims_with_evidence + claims_without_evidence",
+        "severity": "propolis",
+        "message": "Claim count arithmetic does not match"
+      }
+    ]
+  }
 }

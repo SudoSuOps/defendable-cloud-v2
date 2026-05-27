@@ -89,6 +89,9 @@ class FlightSheet(Base):
     required_inputs: Mapped[list] = mapped_column(JSONB, default=list, nullable=False)
     expected_outputs: Mapped[list] = mapped_column(JSONB, default=list, nullable=False)
     audit_checks: Mapped[list] = mapped_column(JSONB, default=list, nullable=False)  # [{key,label,category,kind}]
+    # Phase 6: executable eval spec (required_output_schema, deterministic/math/evidence checks, flag_rules).
+    # When present + the submission is JSON, the executor runs these deterministically.
+    eval_spec: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     pass_threshold: Mapped[int] = mapped_column(BigInteger, default=80, nullable=False)
     fail_threshold: Mapped[int] = mapped_column(BigInteger, default=60, nullable=False)
     active: Mapped[bool] = mapped_column(default=True, nullable=False)

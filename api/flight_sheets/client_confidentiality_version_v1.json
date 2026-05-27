@@ -85,5 +85,229 @@
     }
   ],
   "pass_threshold": 80,
-  "fail_threshold": 60
+  "fail_threshold": 60,
+  "eval_spec": {
+    "required_output_schema": {
+      "type": "object",
+      "required": [
+        "assignment_id",
+        "agent_summary",
+        "inputs_used",
+        "missing_inputs",
+        "claims",
+        "confidentiality_notice",
+        "version_control",
+        "document_date",
+        "change_log",
+        "risks",
+        "assumptions",
+        "open_questions",
+        "final_output",
+        "self_check"
+      ],
+      "properties": {
+        "confidentiality_notice": {
+          "type": "object",
+          "required": [
+            "present",
+            "location",
+            "text",
+            "classification_level"
+          ]
+        },
+        "version_control": {
+          "type": "object",
+          "required": [
+            "present",
+            "version_string",
+            "location"
+          ]
+        },
+        "document_date": {
+          "type": "object",
+          "required": [
+            "present",
+            "date_string",
+            "date_parsed",
+            "is_current",
+            "location"
+          ]
+        },
+        "change_log": {
+          "type": "object",
+          "required": [
+            "present",
+            "entry_count",
+            "location",
+            "latest_entry"
+          ]
+        },
+        "final_output": {
+          "type": "string",
+          "enum": [
+            "PASS",
+            "CONDITIONAL_PASS",
+            "FAIL"
+          ]
+        },
+        "self_check": {
+          "type": "object",
+          "required": [
+            "all_required_sections_completed",
+            "all_numbers_have_sources",
+            "assumptions_labeled",
+            "missing_inputs_disclosed"
+          ]
+        }
+      }
+    },
+    "deterministic_checks": [
+      {
+        "check": "final_output is one of PASS, CONDITIONAL_PASS, FAIL",
+        "match_field": "final_output",
+        "expected_values": [
+          "PASS",
+          "CONDITIONAL_PASS",
+          "FAIL"
+        ]
+      },
+      {
+        "check": "confidentiality_notice has all required sub-fields",
+        "match_field": "confidentiality_notice",
+        "required_keys": [
+          "present",
+          "location",
+          "text",
+          "classification_level"
+        ]
+      },
+      {
+        "check": "version_control has all required sub-fields",
+        "match_field": "version_control",
+        "required_keys": [
+          "present",
+          "version_string",
+          "location"
+        ]
+      },
+      {
+        "check": "document_date has all required sub-fields",
+        "match_field": "document_date",
+        "required_keys": [
+          "present",
+          "date_string",
+          "date_parsed",
+          "is_current",
+          "location"
+        ]
+      },
+      {
+        "check": "change_log has all required sub-fields",
+        "match_field": "change_log",
+        "required_keys": [
+          "present",
+          "entry_count",
+          "location",
+          "latest_entry"
+        ]
+      },
+      {
+        "check": "confidentiality_notice.present is boolean",
+        "match_field": "confidentiality_notice.present",
+        "type": "boolean"
+      },
+      {
+        "check": "version_control.present is boolean",
+        "match_field": "version_control.present",
+        "type": "boolean"
+      },
+      {
+        "check": "document_date.present is boolean",
+        "match_field": "document_date.present",
+        "type": "boolean"
+      },
+      {
+        "check": "change_log.present is boolean",
+        "match_field": "change_log.present",
+        "type": "boolean"
+      },
+      {
+        "check": "change_log.entry_count is integer >= 0",
+        "match_field": "change_log.entry_count",
+        "type": "integer",
+        "minimum": 0
+      },
+      {
+        "check": "self_check.all_required_sections_completed is true",
+        "match_field": "self_check.all_required_sections_completed",
+        "expected_value": true
+      }
+    ],
+    "math_checks": [],
+    "evidence_checks": [
+      {
+        "check": "Every claim has a non-empty evidence_reference",
+        "match_field": "claims",
+        "condition": "all claims must have evidence_reference != '' and evidence_reference != null"
+      },
+      {
+        "check": "If confidentiality_notice.present is true, location and text must be non-empty",
+        "match_field": "confidentiality_notice",
+        "condition": "if present == true, then location != '' AND text != '' AND classification_level != ''"
+      },
+      {
+        "check": "If version_control.present is true, version_string and location must be non-empty",
+        "match_field": "version_control",
+        "condition": "if present == true, then version_string != '' AND location != ''"
+      },
+      {
+        "check": "If document_date.present is true, date_string and location must be non-empty",
+        "match_field": "document_date",
+        "condition": "if present == true, then date_string != '' AND location != ''"
+      },
+      {
+        "check": "risks array has evidence_reference for each entry",
+        "match_field": "risks",
+        "condition": "all risks must have non-empty evidence_reference"
+      }
+    ],
+    "flag_rules": [
+      {
+        "flag_id": "missing_confidentiality_notice",
+        "condition": "confidentiality_notice.present == false",
+        "severity": "high",
+        "message": "Confidentiality notice is missing - this is a legal/compliance risk"
+      },
+      {
+        "flag_id": "missing_version_number",
+        "condition": "version_control.present == false",
+        "severity": "high",
+        "message": "Version number is missing - clients cannot track document revisions"
+      },
+      {
+        "flag_id": "missing_document_date",
+        "condition": "document_date.present == false",
+        "severity": "high",
+        "message": "Document date is missing - prevents currency verification"
+      },
+      {
+        "flag_id": "stale_document_date",
+        "condition": "document_date.is_current == false",
+        "severity": "medium",
+        "message": "Document date is older than 30 days - may indicate outdated deliverable"
+      },
+      {
+        "flag_id": "missing_change_log",
+        "condition": "change_log.present == false",
+        "severity": "low",
+        "message": "Change log is missing - reduces transparency for the client"
+      },
+      {
+        "flag_id": "incomplete_self_check",
+        "condition": "self_check.all_required_sections_completed != true",
+        "severity": "high",
+        "message": "Agent did not complete all required self-check sections"
+      }
+    ]
+  }
 }

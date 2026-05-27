@@ -90,5 +90,175 @@
     }
   ],
   "pass_threshold": 80,
-  "fail_threshold": 60
+  "fail_threshold": 60,
+  "eval_spec": {
+    "required_output_schema": {
+      "type": "object",
+      "required": [
+        "assignment_id",
+        "claim_evidence_pairs",
+        "inputs_used",
+        "missing_inputs",
+        "self_check"
+      ],
+      "properties": {
+        "assignment_id": {
+          "type": "string",
+          "const": "evx_claim_evidence_pairing_v1"
+        },
+        "claim_evidence_pairs": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "claim",
+              "evidence",
+              "match_type",
+              "source_document",
+              "confidence"
+            ],
+            "properties": {
+              "claim": {
+                "type": "string",
+                "minLength": 1
+              },
+              "evidence": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "match_type": {
+                "type": "string",
+                "enum": [
+                  "direct",
+                  "indirect",
+                  "unsupported",
+                  "contradicted"
+                ]
+              },
+              "source_document": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "confidence": {
+                "type": "string",
+                "enum": [
+                  "high",
+                  "medium",
+                  "low"
+                ]
+              }
+            }
+          }
+        },
+        "inputs_used": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "missing_inputs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "self_check": {
+          "type": "object",
+          "required": [
+            "all_required_sections_completed",
+            "all_numbers_have_sources",
+            "assumptions_labeled",
+            "missing_inputs_disclosed"
+          ]
+        }
+      }
+    },
+    "deterministic_checks": [
+      {
+        "description": "Every claim in the input claims_list must appear in claim_evidence_pairs[].claim.",
+        "method": "Set equality check \u2014 input claims set equals output claims set."
+      },
+      {
+        "description": "match_type must be one of [direct, indirect, unsupported, contradicted].",
+        "method": "Enum validation against schema."
+      },
+      {
+        "description": "confidence must be one of [high, medium, low].",
+        "method": "Enum validation against schema."
+      },
+      {
+        "description": "If match_type is unsupported, evidence and source_document must be null.",
+        "method": "Conditional null check on evidence and source_document fields."
+      },
+      {
+        "description": "If match_type is direct or indirect, evidence and source_document must be non-null.",
+        "method": "Conditional non-null check on evidence and source_document fields."
+      },
+      {
+        "description": "claim_evidence_pairs array length must equal input claims_list length.",
+        "method": "Length equality check."
+      }
+    ],
+    "math_checks": [],
+    "evidence_checks": [
+      {
+        "description": "For direct/indirect matches, verify evidence text exists in the stated source document.",
+        "method": "Substring search evidence against source_documents."
+      },
+      {
+        "description": "Verify unsupported claims truly have no supporting evidence in any source document.",
+        "method": "Manual or keyword search review of source_documents for each unsupported claim."
+      },
+      {
+        "description": "Verify contradicted claims have evidence that actually contradicts (not merely omits).",
+        "method": "Semantic comparison of evidence text against claim text."
+      }
+    ],
+    "flag_rules": [
+      {
+        "flag_id": "missing_claim",
+        "condition": "Input claim not present in claim_evidence_pairs",
+        "severity": "propolis"
+      },
+      {
+        "flag_id": "fabricated_evidence",
+        "condition": "evidence text not found in any source document",
+        "severity": "honey"
+      },
+      {
+        "flag_id": "invalid_match_type",
+        "condition": "match_type not in [direct, indirect, unsupported, contradicted]",
+        "severity": "honey"
+      },
+      {
+        "flag_id": "unsupported_with_evidence",
+        "condition": "match_type is unsupported AND evidence is non-null",
+        "severity": "jelly"
+      },
+      {
+        "flag_id": "direct_without_source",
+        "condition": "match_type is direct/indirect AND source_document is null",
+        "severity": "jelly"
+      },
+      {
+        "flag_id": "invalid_confidence",
+        "condition": "confidence not in [high, medium, low]",
+        "severity": "honey"
+      },
+      {
+        "flag_id": "claim_count_mismatch",
+        "condition": "len(claim_evidence_pairs) != len(input claims_list)",
+        "severity": "propolis"
+      },
+      {
+        "flag_id": "self_check_false",
+        "condition": "any self_check boolean is false",
+        "severity": "jelly"
+      }
+    ]
+  }
 }

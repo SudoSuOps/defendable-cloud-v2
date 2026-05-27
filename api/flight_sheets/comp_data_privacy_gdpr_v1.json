@@ -97,5 +97,204 @@
     }
   ],
   "pass_threshold": 80,
-  "fail_threshold": 60
+  "fail_threshold": 60,
+  "eval_spec": {
+    "required_output_schema": {
+      "type": "object",
+      "required": [
+        "assignment_id",
+        "privacy_checks",
+        "inputs_used",
+        "missing_inputs",
+        "self_check"
+      ],
+      "properties": {
+        "assignment_id": {
+          "type": "string",
+          "const": "comp_data_privacy_gdpr_v1"
+        },
+        "privacy_checks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "requirement",
+              "data_category",
+              "status",
+              "evidence",
+              "source_document",
+              "finding_details",
+              "article_reference"
+            ],
+            "properties": {
+              "requirement": {
+                "type": "string",
+                "minLength": 1
+              },
+              "data_category": {
+                "type": "string",
+                "enum": [
+                  "personal_data",
+                  "sensitive_personal_data",
+                  "special_category_data",
+                  "childrens_data",
+                  "financial_data",
+                  "biometric_data",
+                  "not_specified"
+                ]
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "compliant",
+                  "non_compliant",
+                  "partially_compliant",
+                  "not_assessable"
+                ]
+              },
+              "evidence": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "source_document": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "finding_details": {
+                "type": "string",
+                "minLength": 1
+              },
+              "article_reference": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            }
+          }
+        },
+        "inputs_used": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "missing_inputs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "self_check": {
+          "type": "object",
+          "required": [
+            "all_required_sections_completed",
+            "all_numbers_have_sources",
+            "assumptions_labeled",
+            "missing_inputs_disclosed"
+          ]
+        }
+      }
+    },
+    "deterministic_checks": [
+      {
+        "description": "All status values must be in [compliant, non_compliant, partially_compliant, not_assessable].",
+        "method": "Enum validation against schema."
+      },
+      {
+        "description": "All data_category values must be in [personal_data, sensitive_personal_data, special_category_data, childrens_data, financial_data, biometric_data, not_specified].",
+        "method": "Enum validation against schema."
+      },
+      {
+        "description": "Every requirement in the input checklist must appear in privacy_checks[].requirement.",
+        "method": "Set equality check \u2014 input requirements set equals output requirements set."
+      },
+      {
+        "description": "privacy_checks array length must equal input privacy_requirement_checklist length.",
+        "method": "Length equality check."
+      },
+      {
+        "description": "If status is compliant, partially_compliant, or non_compliant, evidence and source_document must be non-null.",
+        "method": "Conditional non-null check."
+      },
+      {
+        "description": "If status is not_assessable, evidence and source_document should be null.",
+        "method": "Conditional null check."
+      },
+      {
+        "description": "finding_details must be non-empty for every privacy check.",
+        "method": "String length check > 0."
+      }
+    ],
+    "math_checks": [],
+    "evidence_checks": [
+      {
+        "description": "For compliant/partially_compliant/non_compliant items, verify evidence text exists in the stated source document.",
+        "method": "Substring search evidence against source_documents."
+      },
+      {
+        "description": "Verify data_category classification is appropriate for the requirement.",
+        "method": "Review data_category assignments against requirement text by evaluator."
+      },
+      {
+        "description": "Verify article_reference values match references in the input requirement list.",
+        "method": "Cross-check privacy_checks[].article_reference against input checklist."
+      },
+      {
+        "description": "Verify no requirements were omitted from the output privacy_checks array.",
+        "method": "Cross-check output array length and requirement texts against input checklist."
+      }
+    ],
+    "flag_rules": [
+      {
+        "flag_id": "missing_requirement",
+        "condition": "Input requirement not present in privacy_checks",
+        "severity": "propolis"
+      },
+      {
+        "flag_id": "fabricated_evidence",
+        "condition": "evidence text not found in stated source document",
+        "severity": "honey"
+      },
+      {
+        "flag_id": "invalid_status",
+        "condition": "status not in [compliant, non_compliant, partially_compliant, not_assessable]",
+        "severity": "honey"
+      },
+      {
+        "flag_id": "invalid_data_category",
+        "condition": "data_category not in allowed enum",
+        "severity": "honey"
+      },
+      {
+        "flag_id": "compliant_without_evidence",
+        "condition": "status is compliant AND evidence is null",
+        "severity": "jelly"
+      },
+      {
+        "flag_id": "not_assessable_with_evidence",
+        "condition": "status is not_assessable AND evidence is non-null",
+        "severity": "jelly"
+      },
+      {
+        "flag_id": "missing_finding_details",
+        "condition": "finding_details is empty or null",
+        "severity": "jelly"
+      },
+      {
+        "flag_id": "privacy_check_count_mismatch",
+        "condition": "len(privacy_checks) != len(input privacy_requirement_checklist)",
+        "severity": "propolis"
+      },
+      {
+        "flag_id": "self_check_false",
+        "condition": "any self_check boolean is false",
+        "severity": "jelly"
+      }
+    ]
+  }
 }

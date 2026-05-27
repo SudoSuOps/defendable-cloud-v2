@@ -77,5 +77,160 @@
     }
   ],
   "pass_threshold": 80,
-  "fail_threshold": 60
+  "fail_threshold": 60,
+  "eval_spec": {
+    "required_output_schema": {
+      "type": "object",
+      "required": [
+        "assignment_id",
+        "agent_summary",
+        "inputs_used",
+        "missing_inputs",
+        "claims",
+        "calculations",
+        "risks",
+        "assumptions",
+        "open_questions",
+        "final_output",
+        "self_check"
+      ]
+    },
+    "deterministic_checks": [
+      {
+        "name": "assignment_id_exact",
+        "description": "assignment_id equals \"cre_memo_egi_vacancy_v1\""
+      },
+      {
+        "name": "calculations_has_egi",
+        "description": "calculations contains EGI entry"
+      },
+      {
+        "name": "calculations_has_vacancy_loss",
+        "description": "calculations contains vacancy loss amount entry"
+      },
+      {
+        "name": "calculations_has_vacancy_premium",
+        "description": "calculations contains vacancy premium over market entry"
+      },
+      {
+        "name": "calculations_has_potential_egi",
+        "description": "calculations contains potential EGI at market vacancy entry"
+      },
+      {
+        "name": "calculations_has_egi_uplift",
+        "description": "calculations contains EGI uplift opportunity entry"
+      },
+      {
+        "name": "vacancy_as_decimal",
+        "description": "vacancy rates are expressed as decimals (0.115, 0.072)"
+      },
+      {
+        "name": "other_income_included",
+        "description": "EGI calculation includes other_income"
+      },
+      {
+        "name": "vacancy_comparison_in_claims",
+        "description": "claims array has at least one entry comparing vacancy rates"
+      }
+    ],
+    "math_checks": [
+      {
+        "formula_id": "egi",
+        "formula": "gpr * (1 - reported_vacancy) + other_income",
+        "inputs": {
+          "gpr": 3200000,
+          "reported_vacancy": 0.115,
+          "other_income": 85000
+        },
+        "expected_result": 2918000.0,
+        "tolerance": 1.0
+      },
+      {
+        "formula_id": "vacancy_loss",
+        "formula": "gpr * reported_vacancy",
+        "inputs": {
+          "gpr": 3200000,
+          "reported_vacancy": 0.115
+        },
+        "expected_result": 368000.0,
+        "tolerance": 1.0
+      },
+      {
+        "formula_id": "vacancy_premium",
+        "formula": "reported_vacancy - market_vacancy",
+        "inputs": {
+          "reported_vacancy": 0.115,
+          "market_vacancy": 0.072
+        },
+        "expected_result": 0.043,
+        "tolerance": 0.001
+      },
+      {
+        "formula_id": "potential_egi_at_market",
+        "formula": "gpr * (1 - market_vacancy) + other_income",
+        "inputs": {
+          "gpr": 3200000,
+          "market_vacancy": 0.072,
+          "other_income": 85000
+        },
+        "expected_result": 3052600.0,
+        "tolerance": 1.0
+      },
+      {
+        "formula_id": "egi_uplift",
+        "formula": "potential_egi_at_market - egi",
+        "inputs": {
+          "potential_egi_at_market": 3052600,
+          "egi": 2918000
+        },
+        "expected_result": 134600.0,
+        "tolerance": 1.0
+      }
+    ],
+    "evidence_checks": [
+      {
+        "name": "gpr_cited",
+        "description": "Gross Potential Rent is cited in inputs_used"
+      },
+      {
+        "name": "reported_vacancy_cited",
+        "description": "Reported vacancy is cited in inputs_used"
+      },
+      {
+        "name": "market_vacancy_cited",
+        "description": "Market vacancy is cited in inputs_used"
+      },
+      {
+        "name": "other_income_cited",
+        "description": "Other income is cited in inputs_used"
+      }
+    ],
+    "flag_rules": [
+      {
+        "flag_id": "missing_egi_calculation",
+        "severity": "propolis",
+        "condition": "calculations array is missing EGI entry"
+      },
+      {
+        "flag_id": "vacancy_not_decimal",
+        "severity": "jelly",
+        "condition": "vacancy rates expressed as 11.5 and 7.2 instead of 0.115 and 0.072"
+      },
+      {
+        "flag_id": "other_income_excluded",
+        "severity": "propolis",
+        "condition": "EGI calculation omits other_income"
+      },
+      {
+        "flag_id": "no_vacancy_comparison",
+        "severity": "jelly",
+        "condition": "claims array has no entry comparing reported to market vacancy"
+      },
+      {
+        "flag_id": "math_result_incorrect",
+        "severity": "propolis",
+        "condition": "Any math check result deviates beyond tolerance"
+      }
+    ]
+  }
 }

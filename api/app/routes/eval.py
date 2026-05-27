@@ -79,7 +79,17 @@ async def run_audit(run_id: str, current: Principal = Depends(get_current_user))
             raise HTTPException(status_code=409, detail="add the agent submission first")
 
         evidence = [{"kind": e.kind, "label": e.label, "sha256": e.sha256} for e in run.evidence]
-        results = eval_engine.run_audit(flight_sheet_out(fs), sub.output_text, evidence)
+
+        # Phase 6: if the flight sheet carries an executable spec, run the structured
+        # executor — fully deterministic, no operator grading. Otherwise fall back to
+        # the heuristic rulebook (auto checks + operator-applied checklist rules).
+        deterministic = bool(fs.eval_spec)
+        if deterministic:
+            from app.executor import run_structured_audit
+            results, verdict = run_structured_audit(fs.eval_spec, sub.output_text)
+        else:
+            results = eval_engine.run_audit(flight_sheet_out(fs), sub.output_text, evidence)
+            verdict = None
 
         await db.execute(delete(CheckResult).where(CheckResult.run_id == run_id))
         await db.execute(delete(Verdict).where(Verdict.run_id == run_id))
@@ -89,10 +99,21 @@ async def run_audit(run_id: str, current: Principal = Depends(get_current_user))
                 category=r["category"], status=r["status"], severity=r.get("severity"),
                 source=r.get("source", "auto"), detail=r.get("detail"),
             ))
+
         needs_grading = any(r["status"] == "open" for r in results)
-        run.status = "audited" if needs_grading else "findings_ready"
+        if verdict is not None:
+            # Deterministic path: the referee already ruled — no human grading of checks.
+            db.add(Verdict(
+                id=new_id(), run_id=run_id, outcome=verdict["outcome"], summary=verdict["summary"],
+                score=verdict["score"], score_100=verdict["score_100"], severity=verdict["severity"],
+                client_ready=verdict["client_ready"], recommended_action=verdict["recommended_action"],
+                checks_passed=verdict["checks_passed"], checks_failed=verdict["checks_failed"],
+            ))
+            run.status = "findings_ready"
+        else:
+            run.status = "audited" if needs_grading else "findings_ready"
         await db.flush()
-        return {"checks": results, "needs_grading": needs_grading}
+        return {"checks": results, "needs_grading": needs_grading, "deterministic": deterministic, "verdict": verdict}
 
 
 @router.patch("/runs/{run_id}/checks/{check_id}")

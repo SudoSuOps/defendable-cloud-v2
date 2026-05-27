@@ -75,5 +75,310 @@
     }
   ],
   "pass_threshold": 80,
-  "fail_threshold": 60
+  "fail_threshold": 60,
+  "eval_spec": {
+    "required_output_schema": {
+      "type": "object",
+      "required": [
+        "assignment_id",
+        "agent_summary",
+        "inputs_used",
+        "missing_inputs",
+        "claims",
+        "header_fields",
+        "calculations",
+        "risks",
+        "assumptions",
+        "open_questions",
+        "final_output",
+        "self_check"
+      ],
+      "properties": {
+        "assignment_id": {
+          "type": "string",
+          "const": "doc_recipient_sender_subject_v1"
+        },
+        "agent_summary": {
+          "type": "string",
+          "minLength": 1
+        },
+        "inputs_used": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "missing_inputs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "claims": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "claim",
+              "evidence_reference",
+              "confidence"
+            ],
+            "properties": {
+              "claim": {
+                "type": "string"
+              },
+              "evidence_reference": {
+                "type": "string"
+              },
+              "confidence": {
+                "enum": [
+                  "provided",
+                  "inferred",
+                  "missing"
+                ]
+              }
+            }
+          }
+        },
+        "header_fields": {
+          "type": "object",
+          "required": [
+            "recipient",
+            "sender",
+            "subject",
+            "date"
+          ],
+          "properties": {
+            "recipient": {
+              "type": "object",
+              "required": [
+                "present",
+                "value",
+                "valid"
+              ],
+              "properties": {
+                "present": {
+                  "type": "boolean"
+                },
+                "value": {
+                  "type": "string"
+                },
+                "valid": {
+                  "type": "boolean"
+                }
+              }
+            },
+            "sender": {
+              "type": "object",
+              "required": [
+                "present",
+                "value",
+                "valid"
+              ],
+              "properties": {
+                "present": {
+                  "type": "boolean"
+                },
+                "value": {
+                  "type": "string"
+                },
+                "valid": {
+                  "type": "boolean"
+                }
+              }
+            },
+            "subject": {
+              "type": "object",
+              "required": [
+                "present",
+                "value",
+                "valid"
+              ],
+              "properties": {
+                "present": {
+                  "type": "boolean"
+                },
+                "value": {
+                  "type": "string"
+                },
+                "valid": {
+                  "type": "boolean"
+                }
+              }
+            },
+            "date": {
+              "type": "object",
+              "required": [
+                "present",
+                "value",
+                "valid",
+                "is_date_format"
+              ],
+              "properties": {
+                "present": {
+                  "type": "boolean"
+                },
+                "value": {
+                  "type": "string"
+                },
+                "valid": {
+                  "type": "boolean"
+                },
+                "is_date_format": {
+                  "type": "boolean"
+                }
+              }
+            }
+          }
+        },
+        "calculations": {
+          "type": "array"
+        },
+        "risks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "risk",
+              "severity",
+              "evidence_reference"
+            ],
+            "properties": {
+              "risk": {
+                "type": "string"
+              },
+              "severity": {
+                "enum": [
+                  "low",
+                  "medium",
+                  "high"
+                ]
+              },
+              "evidence_reference": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "assumptions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "open_questions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "final_output": {
+          "type": "string",
+          "enum": [
+            "PASS",
+            "FAIL"
+          ]
+        },
+        "self_check": {
+          "type": "object",
+          "required": [
+            "all_required_sections_completed",
+            "all_numbers_have_sources",
+            "assumptions_labeled",
+            "missing_inputs_disclosed"
+          ],
+          "properties": {
+            "all_required_sections_completed": {
+              "type": "boolean",
+              "const": true
+            },
+            "all_numbers_have_sources": {
+              "type": "boolean",
+              "const": true
+            },
+            "assumptions_labeled": {
+              "type": "boolean",
+              "const": true
+            },
+            "missing_inputs_disclosed": {
+              "type": "boolean",
+              "const": true
+            }
+          }
+        }
+      }
+    },
+    "deterministic_checks": [
+      {
+        "description": "recipient field must be present and valid",
+        "condition": "header_fields.recipient.present == true AND header_fields.recipient.valid == true",
+        "pass_on_true": true
+      },
+      {
+        "description": "sender field must be present and valid",
+        "condition": "header_fields.sender.present == true AND header_fields.sender.valid == true",
+        "pass_on_true": true
+      },
+      {
+        "description": "subject field must be present and valid",
+        "condition": "header_fields.subject.present == true AND header_fields.subject.valid == true",
+        "pass_on_true": true
+      },
+      {
+        "description": "date field must be present, valid, and parseable as date",
+        "condition": "header_fields.date.present == true AND header_fields.date.valid == true AND header_fields.date.is_date_format == true",
+        "pass_on_true": true
+      },
+      {
+        "description": "final_output must be PASS only when all fields pass",
+        "condition": "final_output == \"PASS\" implies all four fields are present and valid",
+        "pass_on_true": true
+      }
+    ],
+    "math_checks": [],
+    "evidence_checks": [
+      {
+        "check_id": "header_fields_evidence",
+        "description": "Each header field claim must reference the portion of the document where the field was found",
+        "evidence_must_match_claim": true
+      },
+      {
+        "check_id": "missing_fields_disclosed",
+        "description": "Any missing or invalid header field must be listed in risks with severity \"high\"",
+        "required": true
+      }
+    ],
+    "flag_rules": [
+      {
+        "flag_id": "missing_recipient",
+        "condition": "header_fields.recipient.present == false OR header_fields.recipient.valid == false",
+        "severity": "honey",
+        "message": "Recipient field is missing or invalid"
+      },
+      {
+        "flag_id": "missing_sender",
+        "condition": "header_fields.sender.present == false OR header_fields.sender.valid == false",
+        "severity": "honey",
+        "message": "Sender field is missing or invalid"
+      },
+      {
+        "flag_id": "missing_subject",
+        "condition": "header_fields.subject.present == false OR header_fields.subject.valid == false",
+        "severity": "honey",
+        "message": "Subject field is missing or invalid"
+      },
+      {
+        "flag_id": "missing_date",
+        "condition": "header_fields.date.present == false OR header_fields.date.valid == false OR header_fields.date.is_date_format == false",
+        "severity": "honey",
+        "message": "Date field is missing, invalid, or not a parseable date format"
+      },
+      {
+        "flag_id": "pass_with_missing_fields",
+        "condition": "final_output == \"PASS\" AND (any header field is missing or invalid)",
+        "severity": "propolis",
+        "message": "final_output is PASS but one or more header fields are missing or invalid \u2014 critical scoring error"
+      }
+    ]
+  }
 }

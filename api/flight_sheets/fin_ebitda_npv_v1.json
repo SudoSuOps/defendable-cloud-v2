@@ -94,5 +94,325 @@
     }
   ],
   "pass_threshold": 80,
-  "fail_threshold": 60
+  "fail_threshold": 60,
+  "eval_spec": {
+    "required_output_schema": {
+      "type": "object",
+      "required": [
+        "assignment_id",
+        "agent_summary",
+        "inputs_used",
+        "missing_inputs",
+        "claims",
+        "calculations",
+        "risks",
+        "assumptions",
+        "open_questions",
+        "final_output",
+        "self_check"
+      ],
+      "properties": {
+        "assignment_id": {
+          "type": "string",
+          "const": "fin_ebitda_npv_v1"
+        },
+        "agent_summary": {
+          "type": "string",
+          "minLength": 1
+        },
+        "inputs_used": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "missing_inputs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "claims": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "claim",
+              "evidence_reference",
+              "confidence"
+            ],
+            "properties": {
+              "claim": {
+                "type": "string"
+              },
+              "evidence_reference": {
+                "type": "string"
+              },
+              "confidence": {
+                "enum": [
+                  "provided",
+                  "inferred",
+                  "missing"
+                ]
+              }
+            }
+          }
+        },
+        "calculations": {
+          "type": "array",
+          "minItems": 2,
+          "items": {
+            "type": "object",
+            "required": [
+              "name",
+              "formula",
+              "inputs",
+              "result",
+              "units",
+              "assumptions"
+            ],
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "formula": {
+                "type": "string"
+              },
+              "inputs": {
+                "type": "object"
+              },
+              "intermediate_steps": {
+                "type": "array"
+              },
+              "result": {
+                "type": "number"
+              },
+              "units": {
+                "type": "string"
+              },
+              "assumptions": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "risks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "risk",
+              "severity",
+              "evidence_reference"
+            ],
+            "properties": {
+              "risk": {
+                "type": "string"
+              },
+              "severity": {
+                "enum": [
+                  "low",
+                  "medium",
+                  "high"
+                ]
+              },
+              "evidence_reference": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "assumptions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "open_questions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "final_output": {
+          "type": "string",
+          "enum": [
+            "PASS",
+            "FAIL"
+          ]
+        },
+        "self_check": {
+          "type": "object",
+          "required": [
+            "all_required_sections_completed",
+            "all_numbers_have_sources",
+            "assumptions_labeled",
+            "missing_inputs_disclosed"
+          ],
+          "properties": {
+            "all_required_sections_completed": {
+              "type": "boolean",
+              "const": true
+            },
+            "all_numbers_have_sources": {
+              "type": "boolean",
+              "const": true
+            },
+            "assumptions_labeled": {
+              "type": "boolean",
+              "const": true
+            },
+            "missing_inputs_disclosed": {
+              "type": "boolean",
+              "const": true
+            }
+          }
+        }
+      }
+    },
+    "deterministic_checks": [
+      {
+        "description": "Must have at least 2 calculations (ebitda and npv)",
+        "condition": "calculations.length >= 2",
+        "pass_on_true": true
+      },
+      {
+        "description": "All calculation results must be numeric",
+        "condition": "all calc in calculations have typeof calc.result == \"number\"",
+        "pass_on_true": true
+      },
+      {
+        "description": "EBITDA must equal Revenue - COGS - OpEx + D&A",
+        "condition": "abs(ebitda_result - (revenue - cogs - operating_expenses + depreciation + amortization)) < 0.01",
+        "pass_on_true": true
+      },
+      {
+        "description": "NPV intermediate steps must be present",
+        "condition": "npv_calculation.intermediate_steps is array AND length > 0",
+        "pass_on_true": true
+      },
+      {
+        "description": "NPV must equal sum of discounted cash flows",
+        "condition": "abs(npv_result - sum(discounted_cfs)) < 0.01",
+        "pass_on_true": true
+      },
+      {
+        "description": "Discount rate must not be negative",
+        "condition": "discount_rate >= 0",
+        "pass_on_true": true
+      }
+    ],
+    "math_checks": [
+      {
+        "formula_id": "ebitda_formula",
+        "description": "EBITDA = Revenue - COGS - Operating Expenses + Depreciation + Amortization",
+        "formula": "ebitda = revenue - cogs - operating_expenses + depreciation + amortization",
+        "expected_precision": 0.01,
+        "variables": [
+          {
+            "name": "revenue",
+            "type": "number"
+          },
+          {
+            "name": "cogs",
+            "type": "number"
+          },
+          {
+            "name": "operating_expenses",
+            "type": "number"
+          },
+          {
+            "name": "depreciation",
+            "type": "number"
+          },
+          {
+            "name": "amortization",
+            "type": "number"
+          }
+        ],
+        "result_field": "calculations[?name=='ebitda'].result"
+      },
+      {
+        "formula_id": "npv_formula",
+        "description": "NPV = sum of discounted cash flows",
+        "formula": "npv = sum(cf_t / (1 + r) ^ t) for t = 0..n",
+        "expected_precision": 0.01,
+        "variables": [
+          {
+            "name": "cash_flows",
+            "type": "array"
+          },
+          {
+            "name": "discount_rate",
+            "type": "number"
+          }
+        ],
+        "result_field": "calculations[?name=='npv'].result"
+      }
+    ],
+    "evidence_checks": [
+      {
+        "check_id": "ebitda_components_echoed",
+        "description": "All five EBITDA component values must appear in the ebitda calculation inputs",
+        "evidence_must_match_claim": true
+      },
+      {
+        "check_id": "npv_intermediate_steps",
+        "description": "NPV calculation must include intermediate_steps array with year-by-year breakdown",
+        "required": true
+      },
+      {
+        "check_id": "npv_steps_match_formula",
+        "description": "Each intermediate step's discounted_cf must equal cash_flow / (1 + discount_rate) ^ year",
+        "required": true
+      }
+    ],
+    "flag_rules": [
+      {
+        "flag_id": "missing_ebitda_calculation",
+        "condition": "no calculation has name == \"ebitda\"",
+        "severity": "propolis",
+        "message": "EBITDA calculation is missing"
+      },
+      {
+        "flag_id": "missing_npv_calculation",
+        "condition": "no calculation has name == \"npv\"",
+        "severity": "propolis",
+        "message": "NPV calculation is missing"
+      },
+      {
+        "flag_id": "non_numeric_result",
+        "condition": "any calculation has non-numeric result",
+        "severity": "propolis",
+        "message": "One or more calculation results are not numeric"
+      },
+      {
+        "flag_id": "ebitda_mismatch",
+        "condition": "abs(ebitda_calc - (revenue - cogs - operating_expenses + depreciation + amortization)) >= 0.01",
+        "severity": "propolis",
+        "message": "EBITDA calculation does not match formula"
+      },
+      {
+        "flag_id": "npv_missing_intermediate_steps",
+        "condition": "npv_calc.intermediate_steps is missing OR length == 0",
+        "severity": "jelly",
+        "message": "NPV calculation is missing intermediate steps"
+      },
+      {
+        "flag_id": "negative_discount_rate",
+        "condition": "discount_rate < 0",
+        "severity": "honey",
+        "message": "Discount rate is negative"
+      },
+      {
+        "flag_id": "npv_mismatch",
+        "condition": "abs(npv_calc.result - sum_of_discounted_cfs) >= 0.01",
+        "severity": "propolis",
+        "message": "NPV result does not match sum of discounted cash flows"
+      }
+    ]
+  }
 }

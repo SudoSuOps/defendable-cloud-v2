@@ -79,5 +79,310 @@
     }
   ],
   "pass_threshold": 80,
-  "fail_threshold": 60
+  "fail_threshold": 60,
+  "eval_spec": {
+    "required_output_schema": {
+      "type": "object",
+      "required": [
+        "assignment_id",
+        "agent_summary",
+        "inputs_used",
+        "missing_inputs",
+        "claims",
+        "tone_analysis",
+        "policy_checklist",
+        "policy_compliance_ratio",
+        "calculations",
+        "risks",
+        "assumptions",
+        "open_questions",
+        "final_output",
+        "self_check"
+      ],
+      "properties": {
+        "assignment_id": {
+          "type": "string",
+          "const": "doc_tone_policy_compliance_v1"
+        },
+        "agent_summary": {
+          "type": "string",
+          "minLength": 1
+        },
+        "inputs_used": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "missing_inputs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "claims": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "claim",
+              "evidence_reference",
+              "confidence"
+            ],
+            "properties": {
+              "claim": {
+                "type": "string"
+              },
+              "evidence_reference": {
+                "type": "string"
+              },
+              "confidence": {
+                "enum": [
+                  "provided",
+                  "inferred",
+                  "missing"
+                ]
+              }
+            }
+          }
+        },
+        "tone_analysis": {
+          "type": "object",
+          "required": [
+            "detected_tone",
+            "required_tone",
+            "tone_compliant"
+          ],
+          "properties": {
+            "detected_tone": {
+              "enum": [
+                "formal",
+                "informal",
+                "neutral",
+                "persuasive",
+                "instructional",
+                "urgent"
+              ]
+            },
+            "required_tone": {
+              "enum": [
+                "formal",
+                "informal",
+                "neutral",
+                "persuasive",
+                "instructional",
+                "urgent"
+              ]
+            },
+            "tone_compliant": {
+              "type": "boolean"
+            }
+          }
+        },
+        "policy_checklist": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "item",
+              "addressed",
+              "evidence"
+            ],
+            "properties": {
+              "item": {
+                "type": "string"
+              },
+              "addressed": {
+                "type": "boolean"
+              },
+              "evidence": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "policy_compliance_ratio": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "calculations": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "name",
+              "formula",
+              "inputs",
+              "result",
+              "units",
+              "assumptions"
+            ]
+          }
+        },
+        "risks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "risk",
+              "severity",
+              "evidence_reference"
+            ],
+            "properties": {
+              "risk": {
+                "type": "string"
+              },
+              "severity": {
+                "enum": [
+                  "low",
+                  "medium",
+                  "high"
+                ]
+              },
+              "evidence_reference": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "assumptions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "open_questions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "final_output": {
+          "type": "string",
+          "enum": [
+            "PASS",
+            "FAIL"
+          ]
+        },
+        "self_check": {
+          "type": "object",
+          "required": [
+            "all_required_sections_completed",
+            "all_numbers_have_sources",
+            "assumptions_labeled",
+            "missing_inputs_disclosed"
+          ],
+          "properties": {
+            "all_required_sections_completed": {
+              "type": "boolean",
+              "const": true
+            },
+            "all_numbers_have_sources": {
+              "type": "boolean",
+              "const": true
+            },
+            "assumptions_labeled": {
+              "type": "boolean",
+              "const": true
+            },
+            "missing_inputs_disclosed": {
+              "type": "boolean",
+              "const": true
+            }
+          }
+        }
+      }
+    },
+    "deterministic_checks": [
+      {
+        "description": "detected_tone must match one of the enum values",
+        "condition": "detected_tone in [\"formal\", \"informal\", \"neutral\", \"persuasive\", \"instructional\", \"urgent\"]",
+        "pass_on_true": true
+      },
+      {
+        "description": "required_tone must match one of the enum values",
+        "condition": "required_tone in [\"formal\", \"informal\", \"neutral\", \"persuasive\", \"instructional\", \"urgent\"]",
+        "pass_on_true": true
+      },
+      {
+        "description": "tone_compliant must be true when detected_tone equals required_tone",
+        "condition": "tone_compliant == (detected_tone == required_tone)",
+        "pass_on_true": true
+      },
+      {
+        "description": "policy_compliance_ratio must equal addressed_items / total_items",
+        "condition": "abs(policy_compliance_ratio - (addressed_count / total_count)) < 0.001",
+        "pass_on_true": true
+      },
+      {
+        "description": "PASS requires tone compliance and all policy items addressed",
+        "condition": "final_output == \"PASS\" implies tone_compliant == true AND policy_compliance_ratio == 1.0",
+        "pass_on_true": true
+      }
+    ],
+    "math_checks": [
+      {
+        "formula_id": "policy_compliance_ratio_formula",
+        "description": "Calculate policy compliance ratio as addressed items divided by total items",
+        "formula": "policy_compliance_ratio = addressed_items / total_items",
+        "expected_precision": 0.01,
+        "variables": [
+          {
+            "name": "addressed_items",
+            "type": "integer"
+          },
+          {
+            "name": "total_items",
+            "type": "integer"
+          }
+        ],
+        "result_field": "policy_compliance_ratio"
+      }
+    ],
+    "evidence_checks": [
+      {
+        "check_id": "tone_evidence",
+        "description": "The detected_tone classification must be supported by quoted evidence from the document",
+        "evidence_must_match_claim": true
+      },
+      {
+        "check_id": "policy_item_evidence",
+        "description": "Each policy_checklist item marked addressed=true must have a non-empty evidence field citing document location",
+        "required": true
+      }
+    ],
+    "flag_rules": [
+      {
+        "flag_id": "tone_mismatch",
+        "condition": "tone_compliant == false",
+        "severity": "honey",
+        "message": "Document tone does not match required tone"
+      },
+      {
+        "flag_id": "policy_partial_compliance",
+        "condition": "policy_compliance_ratio < 1.0 AND policy_compliance_ratio >= 0.5",
+        "severity": "jelly",
+        "message": "Some but not all policy checklist items are addressed"
+      },
+      {
+        "flag_id": "policy_low_compliance",
+        "condition": "policy_compliance_ratio < 0.5",
+        "severity": "honey",
+        "message": "Less than half of policy checklist items are addressed"
+      },
+      {
+        "flag_id": "false_pass_tone",
+        "condition": "final_output == \"PASS\" AND tone_compliant == false",
+        "severity": "propolis",
+        "message": "final_output is PASS but tone is not compliant"
+      },
+      {
+        "flag_id": "false_pass_policy",
+        "condition": "final_output == \"PASS\" AND policy_compliance_ratio < 1.0",
+        "severity": "propolis",
+        "message": "final_output is PASS but not all policy items are addressed"
+      }
+    ]
+  }
 }

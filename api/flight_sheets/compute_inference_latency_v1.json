@@ -67,5 +67,109 @@
     }
   ],
   "pass_threshold": 80,
-  "fail_threshold": 60
+  "fail_threshold": 60,
+  "eval_spec": {
+    "required_output_schema": {
+      "type": "object",
+      "required": [
+        "assignment_id",
+        "model_name",
+        "gpu_model",
+        "batch_size",
+        "total_requests",
+        "latency_p50_ms",
+        "latency_p95_ms",
+        "latency_p99_ms",
+        "latency_unit",
+        "real_time_threshold_ms",
+        "meets_real_time",
+        "p99_to_p50_ratio",
+        "tail_latency_severity",
+        "calculations",
+        "self_check"
+      ]
+    },
+    "deterministic_checks": [
+      {
+        "check_id": "latency_values_positive",
+        "description": "All latency percentiles must be positive numbers",
+        "assertion": "result.latency_p50_ms > 0 and result.latency_p95_ms > 0 and result.latency_p99_ms > 0"
+      },
+      {
+        "check_id": "percentile_order",
+        "description": "Latency percentiles must be non-decreasing p50 <= p95 <= p99",
+        "assertion": "result.latency_p50_ms <= result.latency_p95_ms <= result.latency_p99_ms"
+      },
+      {
+        "check_id": "p99_ratio_formula",
+        "description": "p99_to_p50_ratio must equal p99 / p50",
+        "assertion": "abs(result.p99_to_p50_ratio - (result.latency_p99_ms / result.latency_p50_ms)) < 1e-6"
+      },
+      {
+        "check_id": "real_time_logic",
+        "description": "meets_real_time must be true when p99 < threshold",
+        "assertion": "result.meets_real_time == (result.latency_p99_ms < result.real_time_threshold_ms)"
+      },
+      {
+        "check_id": "latency_unit_ms",
+        "description": "latency_unit must be exactly \"ms\"",
+        "assertion": "result.latency_unit == 'ms'"
+      },
+      {
+        "check_id": "tail_severity_consistent",
+        "description": "tail_latency_severity must match the p99/p50 ratio bands",
+        "assertion": "result.tail_latency_severity == ('low' if result.p99_to_p50_ratio < 2 else 'medium' if result.p99_to_p50_ratio <= 5 else 'high')"
+      }
+    ],
+    "math_checks": [
+      {
+        "formula_id": "p99_to_p50_ratio",
+        "formula": "latency_p99_ms / latency_p50_ms",
+        "description": "Ratio measuring tail latency spread relative to median",
+        "output_field": "p99_to_p50_ratio"
+      }
+    ],
+    "evidence_checks": [
+      {
+        "evidence_field": "latency_p50_ms",
+        "description": "Must be actual 50th percentile from benchmark",
+        "required": true
+      },
+      {
+        "evidence_field": "latency_p95_ms",
+        "description": "Must be actual 95th percentile from benchmark",
+        "required": true
+      },
+      {
+        "evidence_field": "latency_p99_ms",
+        "description": "Must be actual 99th percentile from benchmark",
+        "required": true
+      },
+      {
+        "evidence_field": "total_requests",
+        "description": "Must be the actual number of requests measured",
+        "required": true
+      }
+    ],
+    "flag_rules": [
+      {
+        "flag_id": "exceeds_real_time_threshold",
+        "condition": "meets_real_time == false",
+        "severity": "high",
+        "description": "P99 latency exceeds real-time threshold (100ms)"
+      },
+      {
+        "flag_id": "high_tail_latency",
+        "condition": "tail_latency_severity == 'high'",
+        "severity": "medium",
+        "description": "P99 is more than 5x the P50 latency"
+      },
+      {
+        "flag_id": "moderate_tail_latency",
+        "condition": "tail_latency_severity == 'medium'",
+        "severity": "low",
+        "description": "P99 is 2-5x the P50 latency"
+      }
+    ]
+  }
 }

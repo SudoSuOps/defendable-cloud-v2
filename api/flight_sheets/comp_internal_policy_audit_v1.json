@@ -90,5 +90,187 @@
     }
   ],
   "pass_threshold": 80,
-  "fail_threshold": 60
+  "fail_threshold": 60,
+  "eval_spec": {
+    "required_output_schema": {
+      "type": "object",
+      "required": [
+        "assignment_id",
+        "policy_items",
+        "inputs_used",
+        "missing_inputs",
+        "self_check"
+      ],
+      "properties": {
+        "assignment_id": {
+          "type": "string",
+          "const": "comp_internal_policy_audit_v1"
+        },
+        "policy_items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "policy_id",
+              "policy_name",
+              "status",
+              "test_result",
+              "evidence",
+              "source_document",
+              "deviation_details"
+            ],
+            "properties": {
+              "policy_id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "policy_name": {
+                "type": "string",
+                "minLength": 1
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "adhered",
+                  "violated",
+                  "partially_adhered",
+                  "not_verifiable"
+                ]
+              },
+              "test_result": {
+                "type": "string",
+                "minLength": 1
+              },
+              "evidence": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "source_document": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "deviation_details": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            }
+          }
+        },
+        "inputs_used": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "missing_inputs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "self_check": {
+          "type": "object",
+          "required": [
+            "all_required_sections_completed",
+            "all_numbers_have_sources",
+            "assumptions_labeled",
+            "missing_inputs_disclosed"
+          ]
+        }
+      }
+    },
+    "deterministic_checks": [
+      {
+        "description": "All status values must be in [adhered, violated, partially_adhered, not_verifiable].",
+        "method": "Enum validation against schema."
+      },
+      {
+        "description": "Every policy in the input internal_policy_list must appear in policy_items[].policy_id.",
+        "method": "Set equality check \u2014 input policy_id set equals output policy_id set."
+      },
+      {
+        "description": "policy_items array length must equal input internal_policy_list length.",
+        "method": "Length equality check."
+      },
+      {
+        "description": "If status is violated or partially_adhered, deviation_details must be non-null non-empty string.",
+        "method": "Conditional non-null check on deviation_details."
+      },
+      {
+        "description": "If status is adhered or not_verifiable, deviation_details must be null.",
+        "method": "Conditional null check on deviation_details."
+      },
+      {
+        "description": "If status is adhered, violated, or partially_adhered, evidence and source_document must be non-null.",
+        "method": "Conditional non-null check on evidence and source_document."
+      },
+      {
+        "description": "test_result must be non-empty for every policy item.",
+        "method": "String length check > 0."
+      }
+    ],
+    "math_checks": [],
+    "evidence_checks": [
+      {
+        "description": "For adhered/violated/partially_adhered items, verify evidence text exists in the stated source document.",
+        "method": "Substring search evidence against source_documents."
+      },
+      {
+        "description": "Verify status assignments are supported by the evidence and test_result description.",
+        "method": "Review sample of status+test_result+evidence triplets by evaluator."
+      },
+      {
+        "description": "Verify deviation_details accurately describes the specific deviation when status is violated/partially_adhered.",
+        "method": "Compare deviation_details against evidence text."
+      }
+    ],
+    "flag_rules": [
+      {
+        "flag_id": "missing_policy",
+        "condition": "Input policy not present in policy_items",
+        "severity": "propolis"
+      },
+      {
+        "flag_id": "fabricated_evidence",
+        "condition": "evidence text not found in stated source document",
+        "severity": "honey"
+      },
+      {
+        "flag_id": "invalid_status",
+        "condition": "status not in [adhered, violated, partially_adhered, not_verifiable]",
+        "severity": "honey"
+      },
+      {
+        "flag_id": "violated_without_deviation",
+        "condition": "status is violated or partially_adhered AND deviation_details is null",
+        "severity": "jelly"
+      },
+      {
+        "flag_id": "deviation_when_adhered",
+        "condition": "status is adhered AND deviation_details is non-null",
+        "severity": "jelly"
+      },
+      {
+        "flag_id": "missing_test_result",
+        "condition": "test_result is empty or null",
+        "severity": "jelly"
+      },
+      {
+        "flag_id": "policy_count_mismatch",
+        "condition": "len(policy_items) != len(input internal_policy_list)",
+        "severity": "propolis"
+      },
+      {
+        "flag_id": "self_check_false",
+        "condition": "any self_check boolean is false",
+        "severity": "jelly"
+      }
+    ]
+  }
 }

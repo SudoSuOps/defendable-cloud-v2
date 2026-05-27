@@ -89,5 +89,183 @@
     }
   ],
   "pass_threshold": 80,
-  "fail_threshold": 60
+  "fail_threshold": 60,
+  "eval_spec": {
+    "required_output_schema": {
+      "type": "object",
+      "required": [
+        "assignment_id",
+        "contradictions",
+        "inputs_used",
+        "missing_inputs",
+        "self_check"
+      ],
+      "properties": {
+        "assignment_id": {
+          "type": "string",
+          "const": "evx_contradiction_detection_v1"
+        },
+        "contradictions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "statement_a",
+              "source_a",
+              "statement_b",
+              "source_b",
+              "contradiction_type",
+              "confidence",
+              "resolution"
+            ],
+            "properties": {
+              "statement_a": {
+                "type": "string",
+                "minLength": 1
+              },
+              "source_a": {
+                "type": "string"
+              },
+              "statement_b": {
+                "type": "string",
+                "minLength": 1
+              },
+              "source_b": {
+                "type": "string"
+              },
+              "contradiction_type": {
+                "type": "string",
+                "enum": [
+                  "direct",
+                  "temporal",
+                  "quantitative",
+                  "qualitative"
+                ]
+              },
+              "confidence": {
+                "type": "string",
+                "enum": [
+                  "high",
+                  "medium",
+                  "low"
+                ]
+              },
+              "resolution": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        },
+        "inputs_used": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "missing_inputs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "self_check": {
+          "type": "object",
+          "required": [
+            "all_required_sections_completed",
+            "all_numbers_have_sources",
+            "assumptions_labeled",
+            "missing_inputs_disclosed"
+          ]
+        }
+      }
+    },
+    "deterministic_checks": [
+      {
+        "description": "All contradiction_type values must be in [direct, temporal, quantitative, qualitative].",
+        "method": "Enum validation against schema."
+      },
+      {
+        "description": "All confidence values must be in [high, medium, low].",
+        "method": "Enum validation against schema."
+      },
+      {
+        "description": "statement_a and statement_b must be non-empty strings.",
+        "method": "String length check > 0."
+      },
+      {
+        "description": "source_a and source_b must reference documents present in inputs_used.",
+        "method": "Cross-reference against inputs_used array."
+      },
+      {
+        "description": "resolution must be non-empty for every contradiction.",
+        "method": "String length check > 0."
+      },
+      {
+        "description": "contradictions array must not contain duplicate pairs (same statement_a and statement_b regardless of order).",
+        "method": "Deduplication check by normalized pair comparison."
+      }
+    ],
+    "math_checks": [],
+    "evidence_checks": [
+      {
+        "description": "Verify statement_a exists in source_a document.",
+        "method": "Substring search statement_a against source_a."
+      },
+      {
+        "description": "Verify statement_b exists in source_b document.",
+        "method": "Substring search statement_b against source_b."
+      },
+      {
+        "description": "Verify each reported contradiction is genuinely contradictory, not merely a paraphrase.",
+        "method": "Semantic review of statement pair by evaluator."
+      },
+      {
+        "description": "Verify no genuine contradictions were missed (check source documents for any unstated contradictions).",
+        "method": "Manual or automated comparison of source documents."
+      }
+    ],
+    "flag_rules": [
+      {
+        "flag_id": "false_positive_contradiction",
+        "condition": "statement pair is a paraphrase or restatement, not a genuine contradiction",
+        "severity": "honey"
+      },
+      {
+        "flag_id": "invalid_contradiction_type",
+        "condition": "contradiction_type not in [direct, temporal, quantitative, qualitative]",
+        "severity": "honey"
+      },
+      {
+        "flag_id": "invalid_confidence",
+        "condition": "confidence not in [high, medium, low]",
+        "severity": "honey"
+      },
+      {
+        "flag_id": "fabricated_statement",
+        "condition": "statement_a or statement_b not found in respective source document",
+        "severity": "honey"
+      },
+      {
+        "flag_id": "missing_resolution",
+        "condition": "resolution is empty or null",
+        "severity": "jelly"
+      },
+      {
+        "flag_id": "duplicate_contradiction",
+        "condition": "same statement pair reported more than once",
+        "severity": "honey"
+      },
+      {
+        "flag_id": "unreferenced_source",
+        "condition": "source_a or source_b not in inputs_used",
+        "severity": "honey"
+      },
+      {
+        "flag_id": "self_check_false",
+        "condition": "any self_check boolean is false",
+        "severity": "jelly"
+      }
+    ]
+  }
 }
