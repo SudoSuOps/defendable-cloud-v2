@@ -418,11 +418,12 @@ def _render_eval(payload: dict, receipt_sha256: str) -> bytes:
     row("Agent / model", f'{sub.get("agent_name") or "—"} · {sub.get("model_name") or "—"} ({sub.get("provider") or "—"})')
     pdf.ln(1)
 
-    section("Referee findings")
+    section("Referee flags")
     pdf.set_font("Courier", "", 9)
     for f in payload["findings"]:
-        mark = {"pass": "[PASS]", "fail": "[FAIL]", "risk": "[RISK]", "skip": "[skip]", "review": "[????]"}.get(f["status"], "[ ?? ]")
-        wrap(f'{mark} {f["label"]} ({f["category"]}) - {f.get("detail") or ""}')
+        mark = {"pass": "[PASS]", "flag": "[FLAG]", "open": "[OPEN]", "skip": "[skip]"}.get(f["status"], "[ ?? ]")
+        sev = f' {f.get("severity")}' if f["status"] == "flag" and f.get("severity") else ""
+        wrap(f'{mark}{sev} {f["label"]} ({f["category"]}) - {f.get("detail") or ""}')
     pdf.ln(1)
     pdf.set_font("Helvetica", "B", 10)
     wrap(f'Recommended action: {v["recommended_action"]}', h=5.5)

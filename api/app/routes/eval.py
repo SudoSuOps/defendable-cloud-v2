@@ -12,8 +12,6 @@ from app.util import iso, new_id
 
 router = APIRouter(tags=["eval"])
 
-SEV_FOR = {"pass": "honey", "risk": "jelly", "fail": "propolis", "skip": None, "review": None}
-
 
 def flight_sheet_out(fs: FlightSheet) -> dict:
     return {
@@ -91,7 +89,7 @@ async def run_audit(run_id: str, current: Principal = Depends(get_current_user))
                 category=r["category"], status=r["status"], severity=r.get("severity"),
                 source=r.get("source", "auto"), detail=r.get("detail"),
             ))
-        needs_grading = any(r["status"] == "review" for r in results)
+        needs_grading = any(r["status"] == "open" for r in results)
         run.status = "audited" if needs_grading else "findings_ready"
         await db.flush()
         return {"checks": results, "needs_grading": needs_grading}
@@ -104,16 +102,17 @@ async def grade_check(
     body: dict = Body(...),
     current: Principal = Depends(get_current_user),
 ):
+    # The operator applies a declared rule: it is SATISFIED (pass) or it raises a
+    # FLAG. Not a quality grade. The flag's severity is the rule's declared severity.
     status = body.get("status")
-    if status not in ("pass", "fail", "risk"):
-        raise HTTPException(status_code=400, detail="status must be pass | fail | risk")
+    if status not in ("pass", "flag"):
+        raise HTTPException(status_code=400, detail="status must be pass (satisfied) | flag")
     async with session_scope() as db:
         await _run(db, run_id, current.org_id)
         chk = await db.get(CheckResult, check_id)
         if chk is None or chk.run_id != run_id:
-            raise HTTPException(status_code=404, detail="check not found")
-        chk.status = status
-        chk.severity = SEV_FOR.get(status)
+            raise HTTPException(status_code=404, detail="rule not found")
+        chk.status = status  # severity stays the rule's declared flag-severity
         chk.source = "operator"
         if body.get("detail"):
             chk.detail = body["detail"]
@@ -129,9 +128,9 @@ async def finalize_findings(run_id: str, current: Principal = Depends(get_curren
         checks = list(run.checks)
         if not checks:
             raise HTTPException(status_code=409, detail="run the audit first")
-        ungraded = [c for c in checks if c.status == "review"]
-        if ungraded:
-            raise HTTPException(status_code=409, detail=f"{len(ungraded)} finding(s) still need a judgment")
+        open_rules = [c for c in checks if c.status == "open"]
+        if open_rules:
+            raise HTTPException(status_code=409, detail=f"{len(open_rules)} rule(s) still need to be applied (satisfied or flagged)")
 
         fsd = flight_sheet_out(fs) if fs else {"pass_threshold": 80, "fail_threshold": 60}
         v = eval_engine.compute_verdict(fsd, checks)

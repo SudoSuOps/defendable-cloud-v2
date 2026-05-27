@@ -1,10 +1,19 @@
-"""Flight-sheet-driven audit + referee verdict.
+"""The referee is a rulebook engine — not a judge model.
 
-Auto checks run deterministically on the agent's pasted output (structure,
-schema, format, declared numbers). Judgment checks (evidence-use, math validity,
-hallucination, client-readiness) are created as `review` for the operator to
-grade — the referee is automated logic + a human, with a judge-model slot for
-later. No model calls in v1.
+It applies the Flight Sheet (the declared rulebook) to the agent submission and
+throws FLAGS when a rule is violated. Every rule either PASSES or raises a flag.
+There is no opinion, no "seems good", no quality grade.
+
+- auto rules     — code/math/schema/structure/citations/thresholds. The engine
+                   decides pass | flag deterministically.
+- checklist rules — a declared binary rule the human operator applies
+                   ("assumption labeled? satisfied / raise flag"). Not a 1-100
+                   opinion — a rule, applied by the human authority.
+
+Severity is declared per rule and flag-driven:
+  propolis = a critical flag · jelly = non-critical flag(s) only · honey = no flags.
+
+Any future model assistance is advisory only — never the referee, never proof.
 """
 from __future__ import annotations
 
@@ -12,7 +21,6 @@ import re
 
 
 def build_assignment(fs: dict) -> str:
-    """Generate the assignment prompt the operator sends to the agent."""
     outs = "\n".join(f"  {i + 1}. {o}" for i, o in enumerate(fs.get("expected_outputs", [])))
     return (
         f"ASSIGNMENT — {fs['name']}\n\n"
@@ -33,87 +41,84 @@ def _present(label: str, text: str) -> bool:
     return bool(words) and all(w in t for w in words)
 
 
-def _auto_check(key: str, label: str, category: str, fs: dict, text: str, evidence: list[dict]) -> dict:
-    out = {"check_key": key, "label": label, "category": category, "source": "auto"}
+def _auto_rule(rule: dict, fs: dict, text: str, evidence: list[dict]) -> tuple[str, str]:
+    """Return (status, detail) for an auto rule. status in {pass, flag}."""
+    key = rule["key"]
 
     if key == "sections_present":
         expected = fs.get("expected_outputs", [])
         missing = [o for o in expected if not _present(o, text)]
-        present = len(expected) - len(missing)
         if not missing:
-            return {**out, "status": "pass", "severity": "honey", "detail": f"All {len(expected)} sections present."}
-        ratio = present / max(len(expected), 1)
-        status = "risk" if ratio >= 0.5 else "fail"
-        return {**out, "status": status, "severity": "jelly" if status == "risk" else "propolis",
-                "detail": f"Missing: {', '.join(missing)}."}
+            return "pass", f"All {len(expected)} required sections present."
+        return "flag", f"Missing required section(s): {', '.join(missing)}."
 
     if key == "output_nonempty":
         n = len(text.strip())
-        ok = n >= 200
-        return {**out, "status": "pass" if ok else "fail", "severity": "honey" if ok else "propolis",
-                "detail": f"{n} characters." + ("" if ok else " Output looks too thin.")}
+        return ("pass", f"{n} characters.") if n >= 200 else ("flag", f"Output too thin ({n} chars).")
 
     if key in ("numbers_present", "specs_present"):
-        has = bool(re.search(r"\d", text))
-        return {**out, "status": "pass" if has else "risk", "severity": "honey" if has else "jelly",
-                "detail": "Quantified figures found." if has else "No numbers found where metrics were expected."}
+        return ("pass", "Quantified figures present.") if re.search(r"\d", text) else ("flag", "No numbers where metrics were required.")
 
     if key == "citations_present":
         markers = ["source", "per the", "according to", "exhibit", "rent roll", "t12", "page", "[", "cited", "provided"]
-        has = any(m in text.lower() for m in markers)
-        return {**out, "status": "pass" if has else "risk", "severity": "honey" if has else "jelly",
-                "detail": "Evidence references found." if has else "No evidence citations detected."}
+        return ("pass", "Evidence references present.") if any(m in text.lower() for m in markers) else ("flag", "No evidence citations detected.")
 
-    # Unknown auto check — don't fabricate a pass.
-    return {**out, "status": "review", "severity": None, "detail": "Needs review."}
+    if key == "evidence_attached":
+        return ("pass", f"{len(evidence)} evidence item(s) attached.") if evidence else ("flag", "No evidence attached to the run.")
+
+    # Unknown auto rule — fail closed: raise a flag rather than fake a pass.
+    return "flag", "Auto rule has no implementation; flagged for review."
 
 
 def run_audit(fs: dict, submission_text: str, evidence: list[dict]) -> list[dict]:
     results: list[dict] = []
-    for chk in fs.get("audit_checks", []):
-        key, label, category, kind = chk["key"], chk["label"], chk["category"], chk.get("kind", "judgment")
+    for rule in fs.get("audit_checks", []):
+        kind = rule.get("kind", "checklist")
+        severity = rule.get("severity", "noncritical")
+        base = {
+            "check_key": rule["key"], "label": rule["label"], "category": rule["category"],
+            "kind": kind, "severity": severity,
+        }
         if kind == "auto":
-            results.append(_auto_check(key, label, category, fs, submission_text, evidence))
+            status, detail = _auto_rule(rule, fs, submission_text, evidence)
+            results.append({**base, "source": "auto", "status": status, "detail": detail})
         else:
             results.append({
-                "check_key": key, "label": label, "category": category, "source": "operator",
-                "status": "review", "severity": None,
-                "detail": "Operator judgment required — grade this finding.",
+                **base, "source": "operator", "status": "open",
+                "detail": "Operator must apply this rule: confirm satisfied or raise a flag.",
             })
     return results
 
 
-def compute_verdict(fs: dict, checks: list[dict]) -> dict:
-    """checks: dicts/objects with .status (pass|fail|risk|skip|review)."""
-    def st(c):
-        return c["status"] if isinstance(c, dict) else c.status
+def compute_verdict(fs: dict, checks: list) -> dict:
+    """checks: ORM CheckResult objects (or dicts) with status + severity + label."""
+    def g(c, k):
+        return c[k] if isinstance(c, dict) else getattr(c, k)
 
-    def lbl(c):
-        return c["label"] if isinstance(c, dict) else c.label
+    applied = [c for c in checks if g(c, "status") in ("pass", "flag")]
+    passed = [c for c in applied if g(c, "status") == "pass"]
+    flags = [c for c in applied if g(c, "status") == "flag"]
+    critical = [c for c in flags if g(c, "severity") == "critical"]
+    noncritical = [c for c in flags if g(c, "severity") != "critical"]
+    total = max(len(applied), 1)
+    score_100 = round(100 * len(passed) / total)
 
-    graded = [c for c in checks if st(c) in ("pass", "fail", "risk")]
-    passed = sum(1 for c in graded if st(c) == "pass")
-    failed = sum(1 for c in graded if st(c) == "fail")
-    risky = sum(1 for c in graded if st(c) == "risk")
-    total = max(len(graded), 1)
-    score_100 = round(100 * (passed + 0.5 * risky) / total)
-
-    pass_t = int(fs.get("pass_threshold", 80))
-    fail_t = int(fs.get("fail_threshold", 60))
-
-    if score_100 >= pass_t and failed == 0:
-        outcome, severity, client_ready = "pass", "honey", "yes"
-    elif score_100 < fail_t:
-        outcome, severity, client_ready = "fail", "propolis", "no"
+    if critical:
+        severity, outcome, client_ready = "propolis", "fail", "No — critical flag"
+    elif flags:
+        severity, outcome, client_ready = "jelly", "risk", "With limitations / after repair"
     else:
-        outcome, severity, client_ready = "risk", "jelly", "after minor edits"
+        severity, outcome, client_ready = "honey", "pass", "Yes"
 
-    problems = [lbl(c) for c in graded if st(c) in ("fail", "risk")]
-    recommended = (
-        "Correct or review: " + "; ".join(problems) + "." if problems
-        else "Clean across all checks. Approve and issue the receipt."
+    if flags:
+        recommended = "Clear flags: " + "; ".join(g(c, "label") for c in flags) + "."
+    else:
+        recommended = "No flags raised. Approve and issue the receipt."
+
+    summary = (
+        f"{len(passed)}/{len(applied)} rules passed · "
+        f"{len(critical)} critical, {len(noncritical)} non-critical flag(s)."
     )
-    summary = f"{passed} passed, {risky} flagged, {failed} failed of {total} graded checks. Score {score_100}/100."
 
     return {
         "outcome": outcome,
@@ -123,6 +128,6 @@ def compute_verdict(fs: dict, checks: list[dict]) -> dict:
         "client_ready": client_ready,
         "recommended_action": recommended,
         "summary": summary,
-        "checks_passed": passed,
-        "checks_failed": failed,
+        "checks_passed": len(passed),
+        "checks_failed": len(flags),
     }

@@ -6,7 +6,7 @@ import { EVIDENCE_KIND_HELP, laneGuide } from "../lib/guidance";
 
 interface Evidence { id: string; kind: string; label: string; sha256: string | null; }
 interface Check { id: string; check_key: string; label: string; category: string; status: string; severity: string | null; source: string; detail: string | null; }
-interface Verdict { outcome: string; summary: string; score_100: number; severity: string | null; client_ready: string | null; recommended_action: string | null; }
+interface Verdict { outcome: string; summary: string; score_100: number; severity: string | null; client_ready: string | null; recommended_action: string | null; checks_passed: number; checks_failed: number; }
 interface Approval { decision: string; approver_email: string | null; note: string | null; }
 interface Receipt { receipt_id: string; receipt_sha256: string; parent_hash: string; org_seq: number; share_token: string; pdf_url: string; }
 interface Submission { agent_name: string | null; model_name: string | null; provider: string | null; output_text: string; sha256: string; }
@@ -206,27 +206,26 @@ const SEV_TONE: Record<string, string> = {
 function AuditSection({ run, busy, act }: { run: Run; busy: string | null; act: Act }) {
   const hasSubmission = !!run.submission;
   const checks = run.checks;
-  const reviewLeft = checks.filter((c) => c.status === "review").length;
+  const openLeft = checks.filter((c) => c.status === "open").length;
   const v = run.verdict;
 
   return (
-    <Card title="Referee" subtitle="Automated checks · operator judgment · human authority"
+    <Card title="Referee" subtitle="Rulebook applied · flags thrown · human holds authority"
       actions={hasSubmission && !run.receipt && (
-        <Button variant="ghost" disabled={busy === "audit"} onClick={() => act("audit", () => api(`/runs/${run.id}/audit`, { method: "POST" }))}>{busy === "audit" ? "Auditing…" : checks.length ? "Re-run audit" : "Run audit"}</Button>
+        <Button variant="ghost" disabled={busy === "audit"} onClick={() => act("audit", () => api(`/runs/${run.id}/audit`, { method: "POST" }))}>{busy === "audit" ? "Auditing…" : checks.length ? "Re-run ruleset audit" : "Run ruleset audit"}</Button>
       )}>
       {!hasSubmission ? (
-        <p className="text-sm text-paper/50">Add the agent submission, then run the audit. The referee runs the flight sheet's checks against the output.</p>
+        <p className="text-sm text-paper/50">Add the agent submission, then run the ruleset audit. The referee applies the flight sheet's rules and throws flags — it does not judge.</p>
       ) : !checks.length ? (
-        <p className="text-sm text-paper/50">Run the audit to grade the submission against the flight sheet.</p>
+        <p className="text-sm text-paper/50">Run the ruleset audit to apply the flight sheet's rules to the submission.</p>
       ) : (
         <div>
           {v && (
             <div className="mb-5 rounded-lg border border-white/8 bg-white/[0.02] p-4">
               <div className="flex flex-wrap items-center gap-3">
-                <span className="text-lg font-semibold text-paper">{v.score_100}/100</span>
-                <Badge value={v.outcome} />
-                {v.severity && <span className={`rounded-md border px-2 py-0.5 font-mono text-xs uppercase ${SEV_TONE[v.severity] || ""}`}>{v.severity}</span>}
-                <span className="text-sm text-paper/55">Client ready: {v.client_ready}</span>
+                {v.severity && <span className={`rounded-md border px-2.5 py-1 text-sm font-semibold uppercase ${SEV_TONE[v.severity] || ""}`}>{v.severity}</span>}
+                <span className="text-sm text-paper/70">{v.checks_passed} of {v.checks_passed + v.checks_failed} rules passed · {v.checks_failed} flag(s)</span>
+                <span className="text-sm text-paper/45">· client-ready: {v.client_ready}</span>
               </div>
               {v.recommended_action && <p className="mt-3 text-sm text-paper/70"><span className="uppercase tracking-widest text-paper/35 text-xs">Recommended</span> · {v.recommended_action}</p>}
             </div>
@@ -236,23 +235,26 @@ function AuditSection({ run, busy, act }: { run: Run; busy: string | null; act: 
               <li key={c.id} className="flex flex-wrap items-center gap-2 text-sm">
                 <Badge value={c.status} />
                 <span className="text-paper/75">{c.label}</span>
-                <span className="text-paper/35 text-xs">({c.category}{c.source === "operator" ? " · judgment" : ""})</span>
+                <span className="text-paper/35 text-xs">
+                  ({c.category}{c.source === "operator" ? " · checklist rule" : " · auto rule"}
+                  {c.status === "flag" && c.severity ? ` · ${c.severity} flag` : ""})
+                </span>
                 {c.detail && <span className="w-full pl-1 text-xs text-paper/40">{c.detail}</span>}
-                {c.status === "review" && !run.receipt && (
+                {c.status === "open" && !run.receipt && (
                   <span className="flex gap-1.5">
-                    {(["pass", "risk", "fail"] as const).map((g) => (
-                      <button key={g} disabled={!!busy} onClick={() => act("grade", () => api(`/runs/${run.id}/checks/${c.id}`, { method: "PATCH", body: { status: g } }))}
-                        className="rounded border border-white/15 px-2 py-0.5 font-mono text-[10px] uppercase text-paper/60 hover:border-honey-400/50 hover:text-honey-200">{g}</button>
-                    ))}
+                    <button disabled={!!busy} onClick={() => act("grade", () => api(`/runs/${run.id}/checks/${c.id}`, { method: "PATCH", body: { status: "pass" } }))}
+                      className="rounded border border-emerald-400/30 px-2 py-0.5 font-mono text-[10px] uppercase text-emerald-300/80 hover:bg-emerald-400/10">Satisfied</button>
+                    <button disabled={!!busy} onClick={() => act("grade", () => api(`/runs/${run.id}/checks/${c.id}`, { method: "PATCH", body: { status: "flag" } }))}
+                      className="rounded border border-red-400/30 px-2 py-0.5 font-mono text-[10px] uppercase text-red-300/80 hover:bg-red-400/10">Raise flag</button>
                   </span>
                 )}
               </li>
             ))}
           </ul>
-          {reviewLeft > 0 ? (
-            <p className="mt-4 text-xs text-paper/45">{reviewLeft} finding(s) need your judgment before findings can be finalized.</p>
+          {openLeft > 0 ? (
+            <p className="mt-4 text-xs text-paper/45">{openLeft} rule(s) still need to be applied — mark satisfied or raise a flag.</p>
           ) : !v && (
-            <div className="mt-4"><Button disabled={busy === "fin"} onClick={() => act("fin", () => api(`/runs/${run.id}/findings`, { method: "POST" }))}>{busy === "fin" ? "Finalizing…" : "Finalize findings"}</Button></div>
+            <div className="mt-4"><Button disabled={busy === "fin"} onClick={() => act("fin", () => api(`/runs/${run.id}/findings`, { method: "POST" }))}>{busy === "fin" ? "Finalizing…" : "Finalize flags"}</Button></div>
           )}
         </div>
       )}
