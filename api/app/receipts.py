@@ -84,6 +84,20 @@ def _s(text: Any) -> str:
     return str(text).encode("latin-1", "replace").decode("latin-1")
 
 
+# Phase 9 · risk tiers for the printed report — game-changers first.
+_TIER_RANK = {"high": 0, "mid": 1, "low": 2}
+_TIER_LABEL = {"high": "HIGH-RISK", "mid": "MID-RISK", "low": "LOW-RISK"}
+
+
+def _tier(severity: Any) -> str:
+    s = str(severity or "").strip().lower()
+    if s in ("high", "critical", "propolis"):
+        return "high"
+    if s in ("low", "honey", "minor"):
+        return "low"
+    return "mid"
+
+
 def build_cook_payload(
     *,
     receipt_id: str,
@@ -410,6 +424,13 @@ def _render_eval(payload: dict, receipt_sha256: str) -> bytes:
     line(f'Verdict: {v["outcome"].upper()}  ·  {v["score_100"]}/100  ·  {(v["severity"] or "").upper()}', h=9)
     pdf.set_font("Helvetica", "", 10)
     wrap(f'Client ready: {v["client_ready"]}', h=6)
+
+    # Risk readout — the clear view of the penalties by tier.
+    _flags = [f for f in payload["findings"] if f.get("status") == "flag"]
+    if _flags:
+        _c = {t: sum(1 for f in _flags if _tier(f.get("severity")) == t) for t in ("high", "mid", "low")}
+        pdf.set_font("Helvetica", "B", 10)
+        line(f'Risk: {_c["high"]} high-risk  ·  {_c["mid"]} mid  ·  {_c["low"]} low', h=6)
     pdf.ln(2)
 
     section("Eval")
@@ -418,12 +439,17 @@ def _render_eval(payload: dict, receipt_sha256: str) -> bytes:
     row("Agent / model", f'{sub.get("agent_name") or "—"} · {sub.get("model_name") or "—"} ({sub.get("provider") or "—"})')
     pdf.ln(1)
 
-    section("Referee flags")
+    section("Referee findings")
     pdf.set_font("Courier", "", 9)
-    for f in payload["findings"]:
+    _status_rank = {"flag": 0, "open": 1, "pass": 2, "review": 3, "skip": 4}
+    findings = sorted(
+        payload["findings"],
+        key=lambda f: (_status_rank.get(f.get("status"), 5), _TIER_RANK.get(_tier(f.get("severity")), 1)),
+    )
+    for f in findings:
         mark = {"pass": "[PASS]", "flag": "[FLAG]", "open": "[OPEN]", "skip": "[skip]"}.get(f["status"], "[ ?? ]")
-        sev = f' {f.get("severity")}' if f["status"] == "flag" and f.get("severity") else ""
-        wrap(f'{mark}{sev} {f["label"]} ({f["category"]}) - {f.get("detail") or ""}')
+        tier = f' {_TIER_LABEL[_tier(f.get("severity"))]}' if f["status"] == "flag" else ""
+        wrap(f'{mark}{tier} {f["label"]} ({f["category"]}) - {f.get("detail") or ""}')
     pdf.ln(1)
     pdf.set_font("Helvetica", "B", 10)
     wrap(f'Recommended action: {v["recommended_action"]}', h=5.5)

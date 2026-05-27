@@ -90,34 +90,76 @@ def run_audit(fs: dict, submission_text: str, evidence: list[dict]) -> list[dict
     return results
 
 
+# Phase 9 — three risk tiers. Not all penalties are equal: a missing citation is a
+# 5-yarder, a CRE deal penciled at a 10-cap when it's a 5-cap (or a $5k check that
+# should be $100) is a game-changer. The flight sheet pre-weights each rule; the
+# math/approx referee can escalate by the size of the miss (the spot of the foul).
+TIER_WEIGHT = {"high": 5, "mid": 2, "low": 1}
+TIER_ORDER = ("high", "mid", "low")
+
+
+def tier_of(severity) -> str:
+    """Normalize a check's severity to a risk tier (legacy values mapped in)."""
+    s = (severity or "").strip().lower()
+    if s in ("high", "critical", "propolis"):
+        return "high"
+    if s in ("low", "honey", "minor"):
+        return "low"
+    return "mid"  # mid | medium | noncritical | jelly | unknown
+
+
 def compute_verdict(fs: dict, checks: list) -> dict:
-    """checks: ORM CheckResult objects (or dicts) with status + severity + label."""
+    """checks: ORM CheckResult objects (or dicts) with status + severity + label.
+
+    Outcome is risk-tier-driven, not a quality grade:
+      any HIGH flag  → propolis (a game-changer — do not release)
+      MID flag(s)    → jelly    (usable with limitations / after repair)
+      LOW flag(s) only → honey  (small hits — safe to release, noted)
+      no flags       → honey
+    Score is weighted by tier (high=5, mid=2, low=1) so a high-risk miss drops it hard.
+    """
     def g(c, k):
         return c[k] if isinstance(c, dict) else getattr(c, k)
 
     applied = [c for c in checks if g(c, "status") in ("pass", "flag")]
     passed = [c for c in applied if g(c, "status") == "pass"]
     flags = [c for c in applied if g(c, "status") == "flag"]
-    critical = [c for c in flags if g(c, "severity") == "critical"]
-    noncritical = [c for c in flags if g(c, "severity") != "critical"]
-    total = max(len(applied), 1)
-    score_100 = round(100 * len(passed) / total)
 
-    if critical:
-        severity, outcome, client_ready = "propolis", "fail", "No — critical flag"
-    elif flags:
+    def w(c):
+        return TIER_WEIGHT[tier_of(g(c, "severity"))]
+
+    total_w = sum(w(c) for c in applied) or 1
+    passed_w = sum(w(c) for c in passed)
+    score_100 = round(100 * passed_w / total_w)
+
+    by_tier = {t: [c for c in flags if tier_of(g(c, "severity")) == t] for t in TIER_ORDER}
+    high, mid, low = by_tier["high"], by_tier["mid"], by_tier["low"]
+
+    if high:
+        severity, outcome, client_ready = "propolis", "fail", "No — high-risk flag"
+    elif mid:
         severity, outcome, client_ready = "jelly", "risk", "With limitations / after repair"
+    elif low:
+        severity, outcome, client_ready = "honey", "pass", "Yes — minor notes only"
     else:
         severity, outcome, client_ready = "honey", "pass", "Yes"
 
-    if flags:
-        recommended = "Clear flags: " + "; ".join(g(c, "label") for c in flags) + "."
+    def names(cs):
+        return "; ".join(g(c, "label") for c in cs)
+
+    if high:
+        recommended = "HIGH-RISK — resolve before release: " + names(high) + "."
+    elif mid:
+        recommended = "Clear flags: " + names(mid) + "."
+    elif low:
+        recommended = "Minor notes (safe to release): " + names(low) + "."
     else:
         recommended = "No flags raised. Approve and issue the receipt."
 
     summary = (
         f"{len(passed)}/{len(applied)} rules passed · "
-        f"{len(critical)} critical, {len(noncritical)} non-critical flag(s)."
+        f"{len(high)} high-risk, {len(mid)} mid, {len(low)} low flag(s) · "
+        f"{score_100}/100 weighted."
     )
 
     return {
@@ -130,4 +172,5 @@ def compute_verdict(fs: dict, checks: list) -> dict:
         "summary": summary,
         "checks_passed": len(passed),
         "checks_failed": len(flags),
+        "risk_breakdown": {t: [g(c, "label") for c in by_tier[t]] for t in TIER_ORDER},
     }

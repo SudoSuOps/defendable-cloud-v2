@@ -158,10 +158,25 @@ def _is_monetary(name: str | None, units: str | None) -> bool:
     return any(w in n for w in _MONEY_WORDS)
 
 
+def _rule_tier(rule: dict) -> str:
+    """Declared risk tier for a rule: explicit `risk`, else legacy `severity`."""
+    r = str(rule.get("risk") or "").strip().lower()
+    if r in ("high", "mid", "low"):
+        return r
+    s = str(rule.get("severity", "")).strip().lower()
+    if s in ("critical", "high", "propolis"):
+        return "high"
+    if s in ("low", "honey", "minor"):
+        return "low"
+    return "mid"
+
+
 def _penalty(stated: float, truth: float, monetary: bool, bands: dict) -> tuple[str, str | None, str]:
-    """Variable penalty — the spot of the foul. Severity scales with the size of
-    the miss (relative %, escalated by material absolute $)."""
+    """Variable penalty — the spot of the foul. The risk tier scales with the size
+    of the miss (relative %, escalated by material absolute $):
+      within tol → pass · small → low · moderate → mid · large/high-$ → high."""
     tol_rel = float(bands.get("tol_rel", 0.01))
+    low_rel = float(bands.get("low_rel", 0.05))
     crit_rel = float(bands.get("critical_rel", 0.10))
     crit_abs = float(bands.get("critical_abs", 1000.0))
     abs_floor_rel = float(bands.get("abs_floor_rel", 0.02))
@@ -171,12 +186,15 @@ def _penalty(stated: float, truth: float, monetary: bool, bands: dict) -> tuple[
     if rel <= tol_rel:
         return "pass", None, f"matches (within {tol_rel:.0%})"
     big_dollar = monetary and abs_d >= crit_abs and rel >= abs_floor_rel
-    critical = rel >= crit_rel or big_dollar
     amt = f"${abs_d:,.2f}" if monetary else f"{abs_d:,.4g}"
-    note = " · high-dollar impact" if big_dollar else ""
-    sev = "critical" if critical else "noncritical"
-    tag = "" if critical else " · minor variance"
-    return "flag", sev, f"off by {amt} ({rel:.1%}){note}{tag}"
+    if rel >= crit_rel or big_dollar:
+        tier = "high"
+        note = " · high-dollar impact" if big_dollar else " · material miss"
+    elif rel >= low_rel:
+        tier, note = "mid", ""
+    else:
+        tier, note = "low", " · minor variance"
+    return "flag", tier, f"off by {amt} ({rel:.1%}){note}"
 
 
 def run_structured_audit(eval_spec: dict, submission_text: str) -> tuple[list[dict], dict | None]:
@@ -290,7 +308,7 @@ def run_structured_audit(eval_spec: dict, submission_text: str) -> tuple[list[di
             continue
         key = str(rule.get("id") or f"rule_{i+1}")
         label = str(rule.get("label") or key)[:300]
-        sev = "critical" if str(rule.get("severity", "")).lower() in ("critical", "high", "propolis") else "noncritical"
+        sev = _rule_tier(rule)  # declared risk tier — the fixed penalty (like holding)
         cat = rule.get("category", "policy")
         expr = rule.get("expr") or {}
 
@@ -312,5 +330,20 @@ def run_structured_audit(eval_spec: dict, submission_text: str) -> tuple[list[di
         else:
             results.append(_r(key, label, cat, "pass" if res else "flag", sev,
                               "Rule satisfied." if res else "Rule violated."))
+
+    # Phase 9 · normalize fixed checks to risk tiers (the math/approx/rule checks
+    # above already carry low|mid|high — magnitude-scaled or declared — so they're
+    # left as-is). Schema/structure integrity = high (a broken contract is a
+    # game-changer); evidence-present = mid; anything skipped = low.
+    _TIERS = {"high", "mid", "low"}
+    for r in results:
+        if (r.get("severity") or "").lower() in _TIERS:
+            continue
+        if r["status"] == "skip":
+            r["severity"] = "low"
+        elif r["category"] == "evidence":
+            r["severity"] = "mid"
+        else:
+            r["severity"] = "high"
 
     return results, compute_verdict({}, results)

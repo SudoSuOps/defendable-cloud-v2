@@ -222,14 +222,14 @@
         "id": "noi_positive",
         "label": "NOI is positive",
         "category": "math",
-        "severity": "critical",
         "expr": {
           "op": ">",
           "left": {
             "calc": "Net Operating Income"
           },
           "right": 0
-        }
+        },
+        "risk": "high"
       }
     ]
   }

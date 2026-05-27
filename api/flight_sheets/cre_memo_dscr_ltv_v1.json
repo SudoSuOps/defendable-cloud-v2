@@ -217,14 +217,14 @@
         "id": "dscr_gate",
         "label": "DSCR >= 1.20 lending gate",
         "category": "policy",
-        "severity": "noncritical",
         "expr": {
           "op": ">=",
           "left": {
             "calc": "Debt Service Coverage Ratio"
           },
           "right": 1.2
-        }
+        },
+        "risk": "high"
       }
     ]
   }

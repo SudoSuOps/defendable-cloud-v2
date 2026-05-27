@@ -203,9 +203,32 @@ const SEV_TONE: Record<string, string> = {
   propolis: "border-red-400/30 bg-red-400/10 text-red-300",
 };
 
+// Phase 9 · three risk tiers — not all penalties are equal. The flight sheet
+// pre-weights each rule; the math/approx referee scales by the size of the miss.
+function tierOf(sev: string | null): "high" | "mid" | "low" {
+  const s = (sev || "").toLowerCase();
+  if (s === "high" || s === "critical" || s === "propolis") return "high";
+  if (s === "low" || s === "honey" || s === "minor") return "low";
+  return "mid";
+}
+const TIER_TONE: Record<string, string> = {
+  high: "border-red-400/40 bg-red-400/10 text-red-300",
+  mid: "border-amber-400/40 bg-amber-400/10 text-amber-300",
+  low: "border-sky-400/30 bg-sky-400/10 text-sky-300",
+};
+const TIER_LABEL: Record<string, string> = { high: "HIGH-RISK", mid: "mid-risk", low: "low-risk" };
+const TIER_RANK: Record<string, number> = { high: 0, mid: 1, low: 2 };
+
 function AuditSection({ run, busy, act }: { run: Run; busy: string | null; act: Act }) {
   const hasSubmission = !!run.submission;
-  const checks = run.checks;
+  // Game-changers first: flags ranked high→mid→low, then open rules, then passes/skips.
+  const STATUS_RANK: Record<string, number> = { flag: 0, open: 1, pass: 2, review: 3, skip: 4 };
+  const checks = [...run.checks].sort((a, b) =>
+    (STATUS_RANK[a.status] ?? 5) - (STATUS_RANK[b.status] ?? 5) ||
+    TIER_RANK[tierOf(a.severity)] - TIER_RANK[tierOf(b.severity)],
+  );
+  const flags = checks.filter((c) => c.status === "flag");
+  const tierCount = (t: string) => flags.filter((c) => tierOf(c.severity) === t).length;
   const openLeft = checks.filter((c) => c.status === "open").length;
   const v = run.verdict;
 
@@ -227,6 +250,17 @@ function AuditSection({ run, busy, act }: { run: Run; busy: string | null; act: 
                 <span className="text-sm text-paper/70">{v.checks_passed} of {v.checks_passed + v.checks_failed} rules passed · {v.checks_failed} flag(s)</span>
                 <span className="text-sm text-paper/45">· client-ready: {v.client_ready}</span>
               </div>
+              {/* Risk readout — the clear view of the penalties by tier */}
+              {flags.length > 0 && (
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {(["high", "mid", "low"] as const).map((t) => (
+                    <span key={t} className={`rounded-md border px-2 py-0.5 font-mono text-xs ${tierCount(t) ? TIER_TONE[t] : "border-white/10 text-paper/25"}`}>
+                      {tierCount(t)} {TIER_LABEL[t]}
+                    </span>
+                  ))}
+                  <span className="rounded-md border border-white/10 px-2 py-0.5 font-mono text-xs text-paper/45">{v.score_100}/100 weighted</span>
+                </div>
+              )}
               {v.recommended_action && <p className="mt-3 text-sm text-paper/70"><span className="uppercase tracking-widest text-paper/35 text-xs">Recommended</span> · {v.recommended_action}</p>}
             </div>
           )}
@@ -234,10 +268,12 @@ function AuditSection({ run, busy, act }: { run: Run; busy: string | null; act: 
             {checks.map((c) => (
               <li key={c.id} className="flex flex-wrap items-center gap-2 text-sm">
                 <Badge value={c.status} />
+                {c.status === "flag" && (
+                  <span className={`rounded border px-1.5 py-0.5 font-mono text-[10px] uppercase ${TIER_TONE[tierOf(c.severity)]}`}>{TIER_LABEL[tierOf(c.severity)]}</span>
+                )}
                 <span className="text-paper/75">{c.label}</span>
                 <span className="text-paper/35 text-xs">
-                  ({c.category}{c.source === "operator" ? " · checklist rule" : " · auto rule"}
-                  {c.status === "flag" && c.severity ? ` · ${c.severity} flag` : ""})
+                  ({c.category}{c.source === "operator" ? " · checklist rule" : " · auto rule"})
                 </span>
                 {c.detail && <span className="w-full pl-1 text-xs text-paper/40">{c.detail}</span>}
                 {c.status === "open" && !run.receipt && (
