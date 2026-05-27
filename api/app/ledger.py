@@ -55,6 +55,10 @@ async def mint_receipt(db: AsyncSession, *, org_id: str, run_id: str, build: Pay
         payload=payload, json_key=sj, pdf_key=sp,
     )
     db.add(r)
+    # Persist the receipt before its artifacts: the artifacts carry a FK to
+    # receipts.id and are flushed via a batched executemany that would otherwise
+    # race ahead of the parent insert (artifacts_receipt_id_fkey violation).
+    await db.flush()
     if sj:
         db.add(Artifact(id=new_id(), run_id=run_id, receipt_id=rid, kind="receipt_json",
                         tigris_key=json_key, sha256=sha256_hex(json_bytes), byte_size=len(json_bytes),
