@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "defendable-cloud-api"
+version = "0.1.0"
+description = "DefendableCloud API — hosted Proof of Execution. The Defendable Run: inputs, evidence, checks, verdict, approval, receipt."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "Proprietary" }
+dynamic = ["dependencies"]
+
+[tool.setuptools.dynamic]
+dependencies = { file = ["requirements.txt"] }
+
+[tool.setuptools.packages.find]
+include = ["app*"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0,<9.0", "pytest-asyncio>=0.24,<1.0", "ruff>=0.6,<1.0"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+addopts = "-ra"
