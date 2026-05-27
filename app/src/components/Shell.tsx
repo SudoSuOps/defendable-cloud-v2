@@ -28,8 +28,10 @@ export function Shell({ children }: { children: ReactNode }) {
         <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-3.5">
           <Wordmark />
           {me && (
-            <div className="flex items-center gap-4 text-sm">
-              <span className="hidden text-paper/45 sm:inline">{me.email}</span>
+            <div className="flex items-center gap-5 text-sm">
+              <Link to="/" className="text-paper/60 transition-colors hover:text-paper">Runs</Link>
+              <Link to="/datasets" className="text-paper/60 transition-colors hover:text-paper">Datasets</Link>
+              <span className="hidden text-paper/40 sm:inline">{me.email}</span>
               <button
                 onClick={() => {
                   signOut();

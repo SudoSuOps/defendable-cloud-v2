@@ -1,0 +1,7 @@
+# Only needed for COOK_MODE=real (on the GPU rig). sim mode is stdlib-only.
+torch>=2.3
+transformers>=4.44
+peft>=0.12
+trl>=0.9
+datasets>=2.20
+accelerate>=0.33

@@ -169,6 +169,50 @@ class Receipt(Base):
     __table_args__ = (UniqueConstraint("org_id", "org_seq", name="uq_receipts_org_seq"),)
 
 
+class Dataset(Base):
+    """A pre-baked, eval-aligned dataset available in the vault to fine-tune with."""
+
+    __tablename__ = "datasets"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    slug: Mapped[str] = mapped_column(String(80), unique=True, nullable=False)
+    name: Mapped[str] = mapped_column(String(200), nullable=False)
+    domain: Mapped[str] = mapped_column(String(48), nullable=False)  # cre | support | dataset_qa | compute | general
+    lane: Mapped[str] = mapped_column(String(16), nullable=False)  # which run lane it targets
+    description: Mapped[str] = mapped_column(Text, nullable=False)
+    pair_count: Mapped[int] = mapped_column(BigInteger, default=0, nullable=False)
+    tier: Mapped[str] = mapped_column(String(16), default="honey", nullable=False)  # royal_jelly | honey | jelly
+    targets: Mapped[str | None] = mapped_column(Text, nullable=True)  # what failure mode it addresses
+    active: Mapped[bool] = mapped_column(default=True, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utc_now, nullable=False)
+
+
+class Cook(Base):
+    """A fine-tune job: tune one of our base models on a dataset, then re-eval to prove lift."""
+
+    __tablename__ = "cooks"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    org_id: Mapped[str] = mapped_column(String(36), ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False, index=True)
+    run_id: Mapped[str] = mapped_column(String(36), ForeignKey("runs.id", ondelete="CASCADE"), nullable=False, index=True)
+    dataset_id: Mapped[str] = mapped_column(String(36), ForeignKey("datasets.id", ondelete="RESTRICT"), nullable=False)
+    base_model: Mapped[str] = mapped_column(String(120), nullable=False)
+    # queued | claimed | running | succeeded | failed
+    status: Mapped[str] = mapped_column(String(16), default="queued", nullable=False, index=True)
+    eval_before: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
+    eval_after: Mapped[float | None] = mapped_column(Float, nullable=True)
+    lift: Mapped[float | None] = mapped_column(Float, nullable=True)
+    pairs: Mapped[int] = mapped_column(BigInteger, default=0, nullable=False)
+    adapter_ref: Mapped[str | None] = mapped_column(Text, nullable=True)
+    runner: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    metrics: Mapped[dict] = mapped_column(JSONB, default=dict, nullable=False)
+    error: Mapped[str | None] = mapped_column(Text, nullable=True)
+    receipt_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("receipts.id", ondelete="SET NULL"), nullable=True)
+    created_by: Mapped[str | None] = mapped_column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utc_now, nullable=False, index=True)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utc_now, onupdate=_utc_now, nullable=False)
+
+
 class Artifact(Base):
     """A generated, exportable file (JSON receipt, PDF, evidence bundle) in Tigris."""
 

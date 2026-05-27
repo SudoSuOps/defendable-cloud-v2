@@ -162,6 +162,9 @@ export function RunDetail() {
         )}
       </Card>
 
+      {/* Fine-tune cook — lift the eval, prove it */}
+      {hasVerdict && <CookSection run={run} reload={load} />}
+
       {/* Approval */}
       {hasVerdict && (
         <Card className="mt-6" title="Human approval">
@@ -335,5 +338,153 @@ function Row({ k, v }: { k: string; v: string }) {
       <dt className="w-32 shrink-0 text-paper/40">{k}</dt>
       <dd className="break-all text-paper/70">{v}</dd>
     </div>
+  );
+}
+
+interface Dataset {
+  id: string;
+  name: string;
+  lane: string;
+  pair_count: number;
+  tier: string;
+  targets: string | null;
+}
+interface Cook {
+  id: string;
+  status: string;
+  base_model: string;
+  eval_before: number;
+  eval_after: number | null;
+  lift: number | null;
+  pairs: number;
+  runner: string | null;
+  error: string | null;
+  share_token: string | null;
+}
+
+const BASE_MODELS = ["swarm/curator-9b", "swarm/curator-27b"];
+// Flat per-cook rate (tune + re-eval + proof). Placeholder — set your price here.
+const COOK_PRICE = "$49";
+const pct = (v: number | null) => (v == null ? "—" : `${(v * 100).toFixed(1)}%`);
+
+function CookSection({ run, reload }: { run: Run; reload: () => Promise<void> }) {
+  const [datasets, setDatasets] = useState<Dataset[]>([]);
+  const [cook, setCook] = useState<Cook | null>(null);
+  const [datasetId, setDatasetId] = useState("");
+  const [baseModel, setBaseModel] = useState(BASE_MODELS[0]);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  useEffect(() => {
+    api<{ datasets: Dataset[] }>("/datasets").then((r) => {
+      const lane = r.datasets.filter((d) => d.lane === run.lane);
+      const list = lane.length ? lane : r.datasets;
+      setDatasets(list);
+      if (list[0]) setDatasetId(list[0].id);
+    });
+    api<{ cooks: any[] }>("/cooks").then((r) => {
+      const mine = r.cooks.filter((c) => c.run_id === run.id);
+      if (mine[0]) setCook(mine[0]);
+    });
+  }, [run.id]);
+
+  // Poll while a cook is in flight.
+  useEffect(() => {
+    if (!cook || ["succeeded", "failed"].includes(cook.status)) return;
+    const t = setInterval(async () => {
+      try {
+        const c = await api<Cook>(`/cooks/${cook.id}`);
+        setCook(c);
+        if (["succeeded", "failed"].includes(c.status)) reload();
+      } catch {
+        /* keep polling */
+      }
+    }, 4000);
+    return () => clearInterval(t);
+  }, [cook?.id, cook?.status]);
+
+  async function start() {
+    setErr(null);
+    setBusy(true);
+    try {
+      const c = await api<Cook>(`/runs/${run.id}/cook`, { method: "POST", body: { dataset_id: datasetId, base_model: baseModel } });
+      setCook(c);
+    } catch (e: any) {
+      setErr(e.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const rec =
+    run.verdict?.outcome === "pass"
+      ? "Optional — the eval passed. Fine-tune only if you want to push the score higher."
+      : "Recommended — fine-tune one of our models on a matched dataset, then re-eval to prove the lift.";
+
+  return (
+    <Card className="mt-6" title="Fine-tune" subtitle="Lift the eval, then prove it">
+      {cook ? (
+        <div>
+          {cook.status === "succeeded" ? (
+            <>
+              <div className="flex flex-wrap items-center gap-3">
+                <span className="text-lg font-semibold text-paper">
+                  {pct(cook.eval_before)} <span className="text-paper/40">→</span> {pct(cook.eval_after)}
+                </span>
+                <span className={`rounded-md border px-2 py-0.5 font-mono text-xs ${(cook.lift ?? 0) >= 0 ? "border-emerald-400/30 bg-emerald-400/10 text-emerald-300" : "border-red-400/30 bg-red-400/10 text-red-300"}`}>
+                  {cook.lift != null ? `${cook.lift >= 0 ? "+" : ""}${(cook.lift * 100).toFixed(1)}%` : "—"}
+                </span>
+              </div>
+              <p className="mt-2 text-sm text-paper/55">
+                {cook.base_model} · {cook.pairs} pairs{cook.runner ? ` · ${cook.runner}` : ""}
+              </p>
+              {cook.share_token && (
+                <div className="mt-4 flex gap-3">
+                  <a href={`/r/${cook.share_token}`} target="_blank" rel="noreferrer"><Button variant="ghost">View lift proof</Button></a>
+                  <a href={`${apiBase}/share/${cook.share_token}/pdf`} target="_blank" rel="noreferrer"><Button variant="ghost">PDF</Button></a>
+                </div>
+              )}
+            </>
+          ) : cook.status === "failed" ? (
+            <div>
+              <ErrorNote>Cook failed: {cook.error}</ErrorNote>
+              <div className="mt-3"><Button variant="ghost" onClick={() => setCook(null)}>Try another cook</Button></div>
+            </div>
+          ) : (
+            <div className="flex items-center gap-3">
+              <Spinner label={`Cooking… (${cook.status})`} />
+              <span className="text-xs text-paper/40">on {cook.runner || "the rig"} · this can take a few minutes</span>
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="space-y-4">
+          <p className="text-sm text-paper/60">{rec}</p>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Field label="Dataset">
+              <select className={inputClass} value={datasetId} onChange={(e) => setDatasetId(e.target.value)}>
+                {datasets.map((d) => (
+                  <option key={d.id} value={d.id}>{d.name} · {d.pair_count} pairs</option>
+                ))}
+              </select>
+            </Field>
+            <Field label="Base model">
+              <select className={inputClass} value={baseModel} onChange={(e) => setBaseModel(e.target.value)}>
+                {BASE_MODELS.map((m) => (
+                  <option key={m} value={m}>{m}</option>
+                ))}
+              </select>
+            </Field>
+          </div>
+          <div className="flex flex-wrap items-center gap-4 border-t border-white/5 pt-4">
+            <Button disabled={busy || !datasetId} onClick={start}>
+              {busy ? "Starting…" : `Start fine-tune cook · ${COOK_PRICE}`}
+            </Button>
+            <span className="text-xs text-paper/40">Flat per cook — tune + re-eval + proof receipt. Compute shown on the receipt.</span>
+          </div>
+          {err && <ErrorNote>{err}</ErrorNote>}
+        </div>
+      )}
+    </Card>
   );
 }

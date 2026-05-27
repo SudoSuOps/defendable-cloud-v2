@@ -34,6 +34,11 @@ class Settings(BaseSettings):
     jwt_ttl_hours: int = Field(default=720, alias="JWT_TTL_HOURS")  # 30 days
     magic_ttl_minutes: int = Field(default=30, alias="MAGIC_TTL_MINUTES")
 
+    # Cook runner (the GPU rig) — shared bearer for the runner API
+    runner_token: Optional[str] = Field(default=None, alias="RUNNER_TOKEN")
+    # Compute transparency: amortized $/hr for the dedicated rig (shown on receipts)
+    rig_usd_per_hour: float = Field(default=0.80, alias="RIG_USD_PER_HOUR")
+
     # Email (Resend)
     resend_api_key: Optional[str] = Field(default=None, alias="RESEND_API_KEY")
     email_from: str = Field(default="DefendableCloud <build@defendableos.com>", alias="EMAIL_FROM")

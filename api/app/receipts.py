@@ -84,7 +84,48 @@ def _s(text: Any) -> str:
     return str(text).encode("latin-1", "replace").decode("latin-1")
 
 
+def build_cook_payload(
+    *,
+    receipt_id: str,
+    org_seq: int,
+    parent_hash: str,
+    created_at: str,
+    org: dict,
+    run: dict,
+    cook: dict,
+    share_url: str,
+) -> dict:
+    """Receipt body for a fine-tune cook — proves the before→after lift."""
+    return {
+        "schema": "defendablecloud.cook-receipt/v1",
+        "receipt_id": receipt_id,
+        "org_seq": org_seq,
+        "parent_hash": parent_hash,
+        "created_at": created_at,
+        "organization": {"id": org["id"], "name": org["name"]},
+        "run": {"id": run["id"], "lane": run["lane"], "title": run["title"]},
+        "cook": {
+            "base_model": cook["base_model"],
+            "dataset": cook["dataset"],
+            "pairs": cook["pairs"],
+            "eval_before": cook["eval_before"],
+            "eval_after": cook["eval_after"],
+            "lift": cook["lift"],
+            "runner": cook.get("runner"),
+            "metrics": cook.get("metrics", {}),
+            "compute_usd": cook.get("compute_usd"),
+        },
+        "share_url": share_url,
+    }
+
+
 def render_pdf(payload: dict, receipt_sha256: str) -> bytes:
+    if str(payload.get("schema", "")).startswith("defendablecloud.cook"):
+        return _render_cook(payload, receipt_sha256)
+    return _render_run(payload, receipt_sha256)
+
+
+def _render_run(payload: dict, receipt_sha256: str) -> bytes:
     pdf = FPDF(unit="mm", format="A4")
     pdf.set_auto_page_break(auto=True, margin=16)
     pdf.add_page()
@@ -180,3 +221,84 @@ def render_pdf(payload: dict, receipt_sha256: str) -> bytes:
 
     out = pdf.output()
     return bytes(out)
+
+
+def _render_cook(payload: dict, receipt_sha256: str) -> bytes:
+    pdf = FPDF(unit="mm", format="A4")
+    pdf.set_auto_page_break(auto=True, margin=16)
+    pdf.add_page()
+
+    def line(text: str, h: float = 6) -> None:
+        pdf.cell(0, h, _s(text), new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+
+    def wrap(text: str, h: float = 5) -> None:
+        pdf.multi_cell(0, h, _s(text), new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+
+    def section(title: str) -> None:
+        pdf.set_text_color(168, 127, 51)
+        pdf.set_font("Helvetica", "B", 8)
+        line(title.upper())
+        pdf.set_text_color(20, 20, 20)
+
+    def row(k: str, v: str) -> None:
+        pdf.set_text_color(110, 110, 110)
+        pdf.set_font("Helvetica", "B", 8)
+        line(k.upper(), h=4.5)
+        pdf.set_text_color(20, 20, 20)
+        pdf.set_font("Helvetica", "", 10)
+        wrap(v, h=5.5)
+        pdf.ln(1)
+
+    c = payload["cook"]
+    before = c["eval_before"]
+    after = c.get("eval_after")
+    lift = c.get("lift")
+
+    pdf.set_text_color(168, 127, 51)
+    pdf.set_font("Helvetica", "B", 9)
+    line("DEFENDABLECLOUD  ·  PROOF OF EXECUTION")
+    pdf.set_text_color(20, 20, 20)
+    pdf.set_font("Helvetica", "B", 18)
+    line("Fine-tune Receipt", h=10)
+    pdf.set_font("Courier", "", 9)
+    pdf.set_text_color(90, 90, 90)
+    line(payload["receipt_id"], h=5)
+    line(payload["created_at"], h=5)
+    pdf.ln(3)
+
+    # The lift — the whole point.
+    pdf.set_font("Helvetica", "B", 14)
+    pdf.set_text_color(20, 20, 20)
+    lift_str = f"{lift:+.1%}" if isinstance(lift, (int, float)) else "—"
+    b = f"{before:.1%}" if isinstance(before, (int, float)) else "—"
+    a = f"{after:.1%}" if isinstance(after, (int, float)) else "—"
+    line(f"Eval  {b}  ->  {a}   ({lift_str})", h=9)
+    pdf.ln(2)
+
+    section("Cook")
+    row("Run", payload["run"]["title"])
+    row("Base model", c["base_model"])
+    row("Dataset", f'{c["dataset"]}  ·  {c["pairs"]} pairs')
+    if c.get("runner"):
+        row("Runner", c["runner"])
+    if c.get("compute_usd") is not None:
+        row("Compute (transparency)", f'${c["compute_usd"]}')
+    row("Organization", payload["organization"]["name"])
+    pdf.ln(2)
+
+    section("Integrity")
+    pdf.set_font("Courier", "", 8)
+    pdf.set_text_color(90, 90, 90)
+    wrap(f"receipt_sha256: {receipt_sha256}", h=4.5)
+    wrap(f'parent_hash:    {payload["parent_hash"]}', h=4.5)
+    wrap(f'org_seq:        {payload["org_seq"]}', h=4.5)
+    wrap(f'verify:         {payload["share_url"]}', h=4.5)
+    pdf.ln(4)
+    pdf.set_font("Helvetica", "I", 8)
+    pdf.set_text_color(120, 120, 120)
+    wrap(
+        "This receipt records a fine-tune cook and the measured change on the same eval, before "
+        "and after. The lift is proven against the eval, not asserted. Verify the hash chain above.",
+        h=4.5,
+    )
+    return bytes(pdf.output())

@@ -5,6 +5,7 @@ from typing import Optional
 
 from fastapi import Header, HTTPException
 
+from app.config import settings
 from app.security import decode_jwt
 
 
@@ -29,3 +30,12 @@ async def get_current_user(authorization: Optional[str] = Header(default=None)) 
     if not uid or not org:
         raise HTTPException(status_code=401, detail="malformed token")
     return Principal(id=uid, org_id=org, email=email or "")
+
+
+async def require_runner(authorization: Optional[str] = Header(default=None)) -> None:
+    """Bearer auth for the GPU rig's cook runner (shared RUNNER_TOKEN)."""
+    expected = settings().runner_token
+    if not expected:
+        raise HTTPException(status_code=503, detail="runner not configured")
+    if not authorization or authorization.removeprefix("Bearer ").strip() != expected:
+        raise HTTPException(status_code=401, detail="invalid runner token")

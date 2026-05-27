@@ -46,3 +46,27 @@ class EvidenceIn(BaseModel):
 class ApprovalIn(BaseModel):
     decision: Literal["approved", "rejected", "escalated"]
     note: Optional[str] = None
+
+
+class CookRequestIn(BaseModel):
+    dataset_id: str
+    base_model: str = "swarm/curator-9b"
+
+
+class RunnerClaimIn(BaseModel):
+    runner: str = "rig"
+
+
+class RunnerStatusIn(BaseModel):
+    status: Literal["running", "claimed"] = "running"
+    metrics: Dict[str, Any] = Field(default_factory=dict)
+
+
+class RunnerCompleteIn(BaseModel):
+    eval_after: float
+    adapter_ref: Optional[str] = None
+    metrics: Dict[str, Any] = Field(default_factory=dict)
+
+
+class RunnerFailIn(BaseModel):
+    error: str
