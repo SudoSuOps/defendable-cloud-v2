@@ -64,9 +64,26 @@ def _verdict_out(v: Verdict | None) -> dict | None:
         "outcome": v.outcome,
         "summary": v.summary,
         "score": v.score,
+        "score_100": v.score_100,
+        "severity": v.severity,
+        "client_ready": v.client_ready,
+        "recommended_action": v.recommended_action,
         "checks_passed": v.checks_passed,
         "checks_failed": v.checks_failed,
         "created_at": iso(v.created_at),
+    }
+
+
+def _check_out_full(c: CheckResult) -> dict:
+    return {
+        "id": c.id,
+        "check_key": c.check_key,
+        "label": c.label,
+        "category": c.category,
+        "status": c.status,
+        "severity": c.severity,
+        "source": c.source,
+        "detail": c.detail,
     }
 
 
@@ -123,31 +140,44 @@ async def _get_run(db, run_id: str, org_id: str) -> Run:
 
 @router.post("/runs")
 async def create_run(body: RunIn, current: Principal = Depends(get_current_user)):
+    from app import eval as eval_engine
+    from app.models import FlightSheet
+    from app.routes.eval import flight_sheet_out
+
     async with session_scope() as db:
         project = await db.get(Project, body.project_id)
         if project is None or project.org_id != current.org_id:
             raise HTTPException(status_code=404, detail="project not found")
+
+        lane = body.lane or "agent"
+        title = (body.title or "").strip()
+        assignment_text = None
+        fs_id = None
+        if body.flight_sheet_id:
+            fs = await db.get(FlightSheet, body.flight_sheet_id)
+            if fs is None or not fs.active:
+                raise HTTPException(status_code=404, detail="flight sheet not found")
+            fs_id = fs.id
+            lane = fs.lane
+            if not title:
+                title = fs.name
+            assignment_text = eval_engine.build_assignment(flight_sheet_out(fs))
+        if not title:
+            raise HTTPException(status_code=400, detail="title required")
+
         rid = new_id()
         run = Run(
-            id=rid,
-            org_id=current.org_id,
-            project_id=body.project_id,
-            lane=body.lane,
-            title=body.title.strip(),
-            status="draft",
-            inputs=body.inputs or {},
-            created_by=current.id,
+            id=rid, org_id=current.org_id, project_id=body.project_id,
+            flight_sheet_id=fs_id, lane=lane, title=title,
+            status="assignment_issued" if assignment_text else "draft",
+            inputs=body.inputs or {}, assignment_text=assignment_text, created_by=current.id,
         )
         db.add(run)
         await db.flush()
         return {
-            "id": run.id,
-            "project_id": run.project_id,
-            "lane": run.lane,
-            "title": run.title,
-            "status": run.status,
-            "inputs": run.inputs,
-            "created_at": iso(run.created_at),
+            "id": run.id, "project_id": run.project_id, "flight_sheet_id": run.flight_sheet_id,
+            "lane": run.lane, "title": run.title, "status": run.status, "inputs": run.inputs,
+            "assignment_text": run.assignment_text, "created_at": iso(run.created_at),
         }
 
 
@@ -176,6 +206,8 @@ async def list_runs(current: Principal = Depends(get_current_user), limit: int =
 
 @router.get("/runs/{run_id}")
 async def get_run(run_id: str, current: Principal = Depends(get_current_user)):
+    from app.models import AgentSubmission, FlightSheet
+
     async with session_scope() as db:
         run = await _get_run(db, run_id, current.org_id)
         v = await _latest_verdict(db, run_id)
@@ -185,6 +217,12 @@ async def get_run(run_id: str, current: Principal = Depends(get_current_user)):
                 select(Receipt).where(Receipt.run_id == run_id).order_by(Receipt.created_at.desc()).limit(1)
             )
         ).scalar_one_or_none()
+        fs = await db.get(FlightSheet, run.flight_sheet_id) if run.flight_sheet_id else None
+        sub = (
+            await db.execute(select(AgentSubmission).where(AgentSubmission.run_id == run_id).order_by(AgentSubmission.submitted_at.desc()).limit(1))
+        ).scalar_one_or_none()
+
+        approved = a.decision == "approved" if a else False
         return {
             "id": run.id,
             "project_id": run.project_id,
@@ -192,13 +230,35 @@ async def get_run(run_id: str, current: Principal = Depends(get_current_user)):
             "title": run.title,
             "status": run.status,
             "inputs": run.inputs,
+            "assignment_text": run.assignment_text,
+            "agent_name": run.agent_name,
+            "model_name": run.model_name,
+            "provider": run.provider,
             "created_at": iso(run.created_at),
             "updated_at": iso(run.updated_at),
+            "flight_sheet": {
+                "id": fs.id, "name": fs.name, "version": fs.version, "lane": fs.lane,
+                "summary": fs.summary, "expected_outputs": fs.expected_outputs,
+                "pass_threshold": fs.pass_threshold, "fail_threshold": fs.fail_threshold,
+            } if fs else None,
+            "submission": {
+                "agent_name": sub.agent_name, "model_name": sub.model_name, "provider": sub.provider,
+                "output_text": sub.output_text, "tool_logs": sub.tool_logs, "notes": sub.notes,
+                "sha256": sub.sha256, "submitted_at": iso(sub.submitted_at),
+            } if sub else None,
             "evidence": [_evidence_out(e) for e in sorted(run.evidence, key=lambda x: x.created_at)],
-            "checks": [_check_out(c) for c in sorted(run.checks, key=lambda x: x.created_at)],
+            "checks": [_check_out_full(c) for c in sorted(run.checks, key=lambda x: x.created_at)],
             "verdict": _verdict_out(v),
             "approval": _approval_out(a),
             "receipt": _receipt_out(receipt) if receipt else None,
+            "ownership": {
+                "agent_created": run.agent_name or (sub.agent_name if sub else None),
+                "audited_by": "DefendableCloud Eval",
+                "referee_logic": f"{fs.name} v{fs.version}" if fs else "deterministic checks",
+                "final_authority": a.approver_email if a else current.email,
+                "approval_status": a.decision if a else "pending",
+                "receipt_status": "issued" if receipt else "draft",
+            },
         }
 
 
@@ -323,6 +383,9 @@ async def approve_run(run_id: str, body: ApprovalIn, current: Principal = Depend
 
 @router.post("/runs/{run_id}/receipt")
 async def generate_receipt(run_id: str, current: Principal = Depends(get_current_user)):
+    from app.ledger import mint_receipt
+    from app.models import AgentSubmission, FlightSheet
+
     async with session_scope() as db:
         run = await _get_run(db, run_id, current.org_id)
         project = await db.get(Project, run.project_id)
@@ -330,72 +393,46 @@ async def generate_receipt(run_id: str, current: Principal = Depends(get_current
         v = await _latest_verdict(db, run_id)
         a = await _latest_approval(db, run_id)
         if v is None:
-            raise HTTPException(status_code=409, detail="run a verification first")
+            raise HTTPException(status_code=409, detail="run the audit / findings first")
         if a is None or a.decision != "approved":
-            raise HTTPException(status_code=409, detail="a human must approve the run before a receipt is issued")
+            raise HTTPException(status_code=409, detail="a human must approve before a receipt is issued")
 
-        # Hash chain: next org_seq + previous receipt hash.
-        last = (
-            await db.execute(
-                select(Receipt).where(Receipt.org_id == current.org_id).order_by(Receipt.org_seq.desc()).limit(1)
-            )
+        fs = await db.get(FlightSheet, run.flight_sheet_id) if run.flight_sheet_id else None
+        sub = (
+            await db.execute(select(AgentSubmission).where(AgentSubmission.run_id == run_id).order_by(AgentSubmission.submitted_at.desc()).limit(1))
         ).scalar_one_or_none()
-        org_seq = (last.org_seq + 1) if last else 0
-        parent_hash = last.receipt_sha256 if last else ZERO_HASH
 
-        receipt_id = f"DCR-{org_seq:06d}-{new_id()[:8]}"
-        share_token = make_share_token()
-        base = settings().api_base_url.rstrip("/")
-        share_url = f"{base}/share/{share_token}"
-        created_at = iso_now()
+        def build(receipt_id, org_seq, parent_hash, created_at, share_url):
+            if fs is not None:
+                return receipt_builder.build_eval_payload(
+                    receipt_id=receipt_id, org_seq=org_seq, parent_hash=parent_hash, created_at=created_at,
+                    org={"id": org.id, "name": org.name},
+                    run={"id": run.id, "lane": run.lane, "title": run.title},
+                    flight_sheet={"name": fs.name, "version": fs.version},
+                    assignment_sha256=sha256_hex((run.assignment_text or "").encode("utf-8")),
+                    submission={
+                        "agent_name": sub.agent_name, "model_name": sub.model_name,
+                        "provider": sub.provider, "sha256": sub.sha256,
+                    } if sub else {},
+                    evidence=[_evidence_out(e) for e in run.evidence],
+                    findings=[_check_out_full(c) for c in run.checks],
+                    verdict=_verdict_out(v),
+                    approval=_approval_out(a),
+                    share_url=share_url,
+                )
+            return receipt_builder.build_payload(
+                receipt_id=receipt_id, org_seq=org_seq, parent_hash=parent_hash, created_at=created_at,
+                org={"id": org.id, "name": org.name},
+                project={"id": project.id, "name": project.name},
+                run={"id": run.id, "lane": run.lane, "title": run.title, "inputs": run.inputs or {}},
+                evidence=[_evidence_out(e) for e in run.evidence],
+                checks=[_check_out(c) for c in run.checks],
+                verdict=_verdict_out(v),
+                approval=_approval_out(a),
+                share_url=share_url,
+            )
 
-        payload = receipt_builder.build_payload(
-            receipt_id=receipt_id,
-            org_seq=org_seq,
-            parent_hash=parent_hash,
-            created_at=created_at,
-            org={"id": org.id, "name": org.name},
-            project={"id": project.id, "name": project.name},
-            run={"id": run.id, "lane": run.lane, "title": run.title, "inputs": run.inputs or {}},
-            evidence=[_evidence_out(e) for e in run.evidence],
-            checks=[_check_out(c) for c in run.checks],
-            verdict=_verdict_out(v),
-            approval=_approval_out(a),
-            share_url=share_url,
-        )
-        receipt_sha256 = sha256_hex(canonical(payload))
-
-        rid = new_id()
-        json_key = f"orgs/{current.org_id}/receipts/{receipt_id}.json"
-        pdf_key = f"orgs/{current.org_id}/receipts/{receipt_id}.pdf"
-        stored_json: Optional[str] = None
-        stored_pdf: Optional[str] = None
-
-        # Render PDF + best-effort durable upload to Tigris (serving regenerates if absent).
-        pdf_bytes = receipt_builder.render_pdf(payload, receipt_sha256)
-        json_bytes = canonical({**payload, "receipt_sha256": receipt_sha256})
-        try:
-            put_object(json_key, json_bytes, content_type="application/json")
-            stored_json = json_key
-            put_object(pdf_key, pdf_bytes, content_type="application/pdf")
-            stored_pdf = pdf_key
-        except Exception:
-            pass
-
-        receipt = Receipt(
-            id=rid, org_id=current.org_id, run_id=run_id, receipt_id=receipt_id,
-            org_seq=org_seq, parent_hash=parent_hash, receipt_sha256=receipt_sha256,
-            share_token=share_token, payload=payload, json_key=stored_json, pdf_key=stored_pdf,
-        )
-        db.add(receipt)
-        if stored_json:
-            db.add(Artifact(id=new_id(), run_id=run_id, receipt_id=rid, kind="receipt_json",
-                            tigris_key=json_key, sha256=sha256_hex(json_bytes), byte_size=len(json_bytes),
-                            content_type="application/json"))
-        if stored_pdf:
-            db.add(Artifact(id=new_id(), run_id=run_id, receipt_id=rid, kind="receipt_pdf",
-                            tigris_key=pdf_key, sha256=sha256_hex(pdf_bytes), byte_size=len(pdf_bytes),
-                            content_type="application/pdf"))
+        receipt = await mint_receipt(db, org_id=current.org_id, run_id=run_id, build=build)
         run.status = "receipted"
         await db.flush()
         return _receipt_out(receipt)

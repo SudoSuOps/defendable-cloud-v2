@@ -119,9 +119,69 @@ def build_cook_payload(
     }
 
 
+def build_eval_payload(
+    *,
+    receipt_id: str,
+    org_seq: int,
+    parent_hash: str,
+    created_at: str,
+    org: dict,
+    run: dict,
+    flight_sheet: dict,
+    assignment_sha256: str,
+    submission: dict,
+    evidence: list[dict],
+    findings: list[dict],
+    verdict: dict,
+    approval: dict,
+    share_url: str,
+) -> dict:
+    """The Client Results Package — flight sheet, submission, findings, verdict, ownership."""
+    return {
+        "schema": "defendablecloud.eval-receipt/v1",
+        "receipt_id": receipt_id,
+        "org_seq": org_seq,
+        "parent_hash": parent_hash,
+        "created_at": created_at,
+        "organization": {"id": org["id"], "name": org["name"]},
+        "flight_sheet": {"name": flight_sheet["name"], "version": flight_sheet["version"]},
+        "assignment": {"title": run["title"], "sha256": assignment_sha256},
+        "submission": {
+            "agent_name": submission.get("agent_name"),
+            "model_name": submission.get("model_name"),
+            "provider": submission.get("provider"),
+            "sha256": submission.get("sha256"),
+        },
+        "evidence": [{"kind": e["kind"], "label": e["label"], "sha256": e.get("sha256")} for e in evidence],
+        "findings": [
+            {"label": f["label"], "category": f["category"], "status": f["status"], "severity": f.get("severity"), "detail": f.get("detail")}
+            for f in findings
+        ],
+        "verdict": {
+            "outcome": verdict["outcome"],
+            "score_100": verdict["score_100"],
+            "severity": verdict["severity"],
+            "client_ready": verdict["client_ready"],
+            "recommended_action": verdict["recommended_action"],
+            "summary": verdict["summary"],
+        },
+        "ownership": {
+            "agent_created": submission.get("agent_name") or submission.get("model_name"),
+            "audited_by": "DefendableCloud Eval",
+            "referee_logic": f'{flight_sheet["name"]} v{flight_sheet["version"]}',
+            "final_authority": approval.get("approver_email"),
+            "approval": approval.get("decision"),
+        },
+        "share_url": share_url,
+    }
+
+
 def render_pdf(payload: dict, receipt_sha256: str) -> bytes:
-    if str(payload.get("schema", "")).startswith("defendablecloud.cook"):
+    schema = str(payload.get("schema", ""))
+    if schema.startswith("defendablecloud.cook"):
         return _render_cook(payload, receipt_sha256)
+    if schema.startswith("defendablecloud.eval"):
+        return _render_eval(payload, receipt_sha256)
     return _render_run(payload, receipt_sha256)
 
 
@@ -299,6 +359,98 @@ def _render_cook(payload: dict, receipt_sha256: str) -> bytes:
     wrap(
         "This receipt records a fine-tune cook and the measured change on the same eval, before "
         "and after. The lift is proven against the eval, not asserted. Verify the hash chain above.",
+        h=4.5,
+    )
+    return bytes(pdf.output())
+
+
+def _render_eval(payload: dict, receipt_sha256: str) -> bytes:
+    pdf = FPDF(unit="mm", format="A4")
+    pdf.set_auto_page_break(auto=True, margin=16)
+    pdf.add_page()
+
+    def line(text: str, h: float = 6) -> None:
+        pdf.cell(0, h, _s(text), new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+
+    def wrap(text: str, h: float = 5) -> None:
+        pdf.multi_cell(0, h, _s(text), new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+
+    def section(title: str) -> None:
+        pdf.set_text_color(168, 127, 51)
+        pdf.set_font("Helvetica", "B", 8)
+        line(title.upper())
+        pdf.set_text_color(20, 20, 20)
+
+    def row(k: str, v: str) -> None:
+        pdf.set_text_color(110, 110, 110)
+        pdf.set_font("Helvetica", "B", 8)
+        line(k.upper(), h=4.5)
+        pdf.set_text_color(20, 20, 20)
+        pdf.set_font("Helvetica", "", 10)
+        wrap(v, h=5.5)
+        pdf.ln(1)
+
+    v = payload["verdict"]
+    sub = payload["submission"]
+
+    pdf.set_text_color(168, 127, 51)
+    pdf.set_font("Helvetica", "B", 9)
+    line("DEFENDABLECLOUD  ·  CLOUD-VAULT EVAL")
+    pdf.set_text_color(20, 20, 20)
+    pdf.set_font("Helvetica", "B", 18)
+    line("Eval Receipt", h=10)
+    pdf.set_font("Courier", "", 9)
+    pdf.set_text_color(90, 90, 90)
+    line(payload["receipt_id"], h=5)
+    line(payload["created_at"], h=5)
+    pdf.ln(3)
+
+    pdf.set_font("Helvetica", "B", 14)
+    pdf.set_text_color(20, 20, 20)
+    line(f'Verdict: {v["outcome"].upper()}  ·  {v["score_100"]}/100  ·  {(v["severity"] or "").upper()}', h=9)
+    pdf.set_font("Helvetica", "", 10)
+    wrap(f'Client ready: {v["client_ready"]}', h=6)
+    pdf.ln(2)
+
+    section("Eval")
+    row("Assignment", payload["assignment"]["title"])
+    row("Flight sheet", f'{payload["flight_sheet"]["name"]} v{payload["flight_sheet"]["version"]}')
+    row("Agent / model", f'{sub.get("agent_name") or "—"} · {sub.get("model_name") or "—"} ({sub.get("provider") or "—"})')
+    pdf.ln(1)
+
+    section("Referee findings")
+    pdf.set_font("Courier", "", 9)
+    for f in payload["findings"]:
+        mark = {"pass": "[PASS]", "fail": "[FAIL]", "risk": "[RISK]", "skip": "[skip]", "review": "[????]"}.get(f["status"], "[ ?? ]")
+        wrap(f'{mark} {f["label"]} ({f["category"]}) - {f.get("detail") or ""}')
+    pdf.ln(1)
+    pdf.set_font("Helvetica", "B", 10)
+    wrap(f'Recommended action: {v["recommended_action"]}', h=5.5)
+    pdf.ln(2)
+
+    section("Ownership / authority")
+    o = payload["ownership"]
+    row("Agent created the work", o.get("agent_created") or "—")
+    row("Audited by", o.get("audited_by"))
+    row("Referee logic", o.get("referee_logic"))
+    row("Final authority", o.get("final_authority") or "—")
+    row("Approval", (o.get("approval") or "pending").upper())
+    pdf.ln(1)
+
+    section("Integrity")
+    pdf.set_font("Courier", "", 8)
+    pdf.set_text_color(90, 90, 90)
+    wrap(f"receipt_sha256:    {receipt_sha256}", h=4.5)
+    wrap(f'parent_hash:       {payload["parent_hash"]}', h=4.5)
+    wrap(f'assignment_sha256: {payload["assignment"]["sha256"]}', h=4.5)
+    wrap(f'submission_sha256: {sub.get("sha256")}', h=4.5)
+    wrap(f'verify:            {payload["share_url"]}', h=4.5)
+    pdf.ln(3)
+    pdf.set_font("Helvetica", "I", 8)
+    pdf.set_text_color(120, 120, 120)
+    wrap(
+        "The agent did the work. DefendableCloud audited it against the flight sheet. The referee "
+        "issued findings. A human held final authority. This receipt is the proof.",
         h=4.5,
     )
     return bytes(pdf.output())

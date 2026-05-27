@@ -32,8 +32,9 @@ class ProjectIn(BaseModel):
 
 class RunIn(BaseModel):
     project_id: str
-    lane: Lane = "agent"
-    title: str = Field(min_length=1, max_length=300)
+    flight_sheet_id: Optional[str] = None
+    lane: Optional[Lane] = None
+    title: Optional[str] = Field(default=None, max_length=300)
     inputs: Dict[str, Any] = Field(default_factory=dict)
 
 

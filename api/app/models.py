@@ -73,17 +73,44 @@ class Project(Base):
     __table_args__ = (UniqueConstraint("org_id", "slug", name="uq_projects_org_slug"),)
 
 
+class FlightSheet(Base):
+    """A reusable, versioned eval template — the game plan a client picks."""
+
+    __tablename__ = "flight_sheets"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    slug: Mapped[str] = mapped_column(String(80), unique=True, nullable=False)
+    name: Mapped[str] = mapped_column(String(200), nullable=False)
+    version: Mapped[str] = mapped_column(String(16), default="1.0", nullable=False)
+    lane: Mapped[str] = mapped_column(String(16), nullable=False)  # eval type
+    summary: Mapped[str] = mapped_column(Text, nullable=False)
+    purpose: Mapped[str] = mapped_column(Text, nullable=False)
+    assignment_instructions: Mapped[str] = mapped_column(Text, nullable=False)
+    required_inputs: Mapped[list] = mapped_column(JSONB, default=list, nullable=False)
+    expected_outputs: Mapped[list] = mapped_column(JSONB, default=list, nullable=False)
+    audit_checks: Mapped[list] = mapped_column(JSONB, default=list, nullable=False)  # [{key,label,category,kind}]
+    pass_threshold: Mapped[int] = mapped_column(BigInteger, default=80, nullable=False)
+    fail_threshold: Mapped[int] = mapped_column(BigInteger, default=60, nullable=False)
+    active: Mapped[bool] = mapped_column(default=True, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utc_now, nullable=False)
+
+
 class Run(Base):
     __tablename__ = "runs"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True)
     org_id: Mapped[str] = mapped_column(String(36), ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False, index=True)
     project_id: Mapped[str] = mapped_column(String(36), ForeignKey("projects.id", ondelete="CASCADE"), nullable=False, index=True)
+    flight_sheet_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("flight_sheets.id", ondelete="SET NULL"), nullable=True)
     lane: Mapped[str] = mapped_column(String(16), nullable=False, index=True)  # agent | dataset | compute | other
     title: Mapped[str] = mapped_column(String(300), nullable=False)
-    # draft | checked | approved | rejected | receipted
-    status: Mapped[str] = mapped_column(String(16), default="draft", nullable=False, index=True)
+    # draft | assignment_issued | submitted | audited | findings_ready | approved | rejected | receipted
+    status: Mapped[str] = mapped_column(String(20), default="draft", nullable=False, index=True)
     inputs: Mapped[dict] = mapped_column(JSONB, default=dict, nullable=False)
+    assignment_text: Mapped[str | None] = mapped_column(Text, nullable=True)
+    agent_name: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    model_name: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    provider: Mapped[str | None] = mapped_column(String(120), nullable=True)
     created_by: Mapped[str | None] = mapped_column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utc_now, nullable=False, index=True)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utc_now, onupdate=_utc_now, nullable=False)
@@ -109,6 +136,23 @@ class EvidenceItem(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utc_now, nullable=False)
 
 
+class AgentSubmission(Base):
+    """What the agent returned — first-class, hashed, with model identity."""
+
+    __tablename__ = "agent_submissions"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    run_id: Mapped[str] = mapped_column(String(36), ForeignKey("runs.id", ondelete="CASCADE"), nullable=False, index=True)
+    agent_name: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    model_name: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    provider: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    output_text: Mapped[str] = mapped_column(Text, nullable=False)
+    tool_logs: Mapped[str | None] = mapped_column(Text, nullable=True)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    submitted_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utc_now, nullable=False)
+
+
 class CheckResult(Base):
     __tablename__ = "check_results"
 
@@ -116,8 +160,11 @@ class CheckResult(Base):
     run_id: Mapped[str] = mapped_column(String(36), ForeignKey("runs.id", ondelete="CASCADE"), nullable=False, index=True)
     check_key: Mapped[str] = mapped_column(String(64), nullable=False)
     label: Mapped[str] = mapped_column(String(300), nullable=False)
-    category: Mapped[str] = mapped_column(String(16), nullable=False)  # schema | math | evidence | policy
-    status: Mapped[str] = mapped_column(String(8), nullable=False)  # pass | fail | risk | skip
+    category: Mapped[str] = mapped_column(String(16), nullable=False)  # structure | evidence | math | policy | readiness
+    # pass | fail | risk | skip | review  (review = awaiting operator judgment)
+    status: Mapped[str] = mapped_column(String(8), nullable=False)
+    severity: Mapped[str | None] = mapped_column(String(12), nullable=True)  # honey | jelly | propolis
+    source: Mapped[str] = mapped_column(String(10), default="auto", nullable=False)  # auto | operator
     detail: Mapped[str | None] = mapped_column(Text, nullable=True)
     score: Mapped[float | None] = mapped_column(Float, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utc_now, nullable=False)
@@ -130,7 +177,11 @@ class Verdict(Base):
     run_id: Mapped[str] = mapped_column(String(36), ForeignKey("runs.id", ondelete="CASCADE"), nullable=False, index=True)
     outcome: Mapped[str] = mapped_column(String(8), nullable=False)  # pass | fail | risk | repair
     summary: Mapped[str] = mapped_column(Text, nullable=False)
-    score: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
+    score: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)  # 0..1
+    score_100: Mapped[int] = mapped_column(BigInteger, default=0, nullable=False)
+    severity: Mapped[str | None] = mapped_column(String(12), nullable=True)  # honey | jelly | propolis
+    client_ready: Mapped[str | None] = mapped_column(String(40), nullable=True)  # yes | after edits | no
+    recommended_action: Mapped[str | None] = mapped_column(Text, nullable=True)
     checks_passed: Mapped[int] = mapped_column(BigInteger, default=0, nullable=False)
     checks_failed: Mapped[int] = mapped_column(BigInteger, default=0, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utc_now, nullable=False)
