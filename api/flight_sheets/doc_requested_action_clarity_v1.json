@@ -321,6 +321,7 @@
         "severity": "propolis",
         "message": "final_output is PASS but action clarity requirements not met"
       }
-    ]
+    ],
+    "rules": []
   }
 }

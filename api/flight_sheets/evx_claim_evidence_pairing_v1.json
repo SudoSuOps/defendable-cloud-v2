@@ -259,6 +259,7 @@
         "condition": "any self_check boolean is false",
         "severity": "jelly"
       }
-    ]
+    ],
+    "rules": []
   }
 }

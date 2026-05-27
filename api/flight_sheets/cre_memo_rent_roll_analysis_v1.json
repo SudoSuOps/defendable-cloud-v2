@@ -199,6 +199,7 @@
         "severity": "propolis",
         "condition": "Any math check result deviates beyond tolerance"
       }
-    ]
+    ],
+    "rules": []
   }
 }

@@ -200,6 +200,7 @@
         "severity": "high",
         "description": "Unsafe material flags detected"
       }
-    ]
+    ],
+    "rules": []
   }
 }

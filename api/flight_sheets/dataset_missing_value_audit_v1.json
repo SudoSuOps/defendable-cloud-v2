@@ -141,6 +141,7 @@
         "severity": "low",
         "description": "No missing values detected"
       }
-    ]
+    ],
+    "rules": []
   }
 }

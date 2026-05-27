@@ -140,6 +140,7 @@
         "severity": "low",
         "description": "No duplicate rows found"
       }
-    ]
+    ],
+    "rules": []
   }
 }

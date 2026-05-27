@@ -191,6 +191,7 @@
         "severity": "propolis",
         "condition": "confidence or severity value does not match allowed enum"
       }
-    ]
+    ],
+    "rules": []
   }
 }

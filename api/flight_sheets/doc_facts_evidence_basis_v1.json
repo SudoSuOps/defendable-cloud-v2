@@ -401,6 +401,7 @@
         "severity": "propolis",
         "message": "Claim count arithmetic does not match"
       }
-    ]
+    ],
+    "rules": []
   }
 }

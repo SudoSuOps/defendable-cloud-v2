@@ -199,6 +199,21 @@
         "severity": "propolis",
         "condition": "Any math check result deviates beyond tolerance"
       }
+    ],
+    "rules": [
+      {
+        "id": "coc_nonneg",
+        "label": "Cash-on-cash return is non-negative",
+        "category": "policy",
+        "severity": "noncritical",
+        "expr": {
+          "op": ">=",
+          "left": {
+            "calc": "Cash-on-Cash Return"
+          },
+          "right": 0
+        }
+      }
     ]
   }
 }

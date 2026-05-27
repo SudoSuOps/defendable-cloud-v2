@@ -141,6 +141,7 @@
         "severity": "low",
         "description": "Reasonably balanced class distribution"
       }
-    ]
+    ],
+    "rules": []
   }
 }

@@ -212,6 +212,7 @@
         "severity": "propolis",
         "condition": "NOI calculation incorrectly subtracts an estimated property tax amount"
       }
-    ]
+    ],
+    "rules": []
   }
 }

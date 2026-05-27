@@ -163,6 +163,7 @@
         "severity": "medium",
         "description": "Creation date is missing"
       }
-    ]
+    ],
+    "rules": []
   }
 }

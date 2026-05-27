@@ -197,6 +197,7 @@
         "severity": "jelly",
         "condition": "Any value in self_check is not true"
       }
-    ]
+    ],
+    "rules": []
   }
 }

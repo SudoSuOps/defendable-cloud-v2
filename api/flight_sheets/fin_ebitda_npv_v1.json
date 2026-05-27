@@ -413,6 +413,7 @@
         "severity": "propolis",
         "message": "NPV result does not match sum of discounted cash flows"
       }
-    ]
+    ],
+    "rules": []
   }
 }

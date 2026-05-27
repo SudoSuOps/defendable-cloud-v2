@@ -379,6 +379,7 @@
         "severity": "propolis",
         "message": "final_output is PASS but one or more header fields are missing or invalid \u2014 critical scoring error"
       }
-    ]
+    ],
+    "rules": []
   }
 }

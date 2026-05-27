@@ -200,6 +200,7 @@
         "severity": "propolis",
         "condition": "Any calculation result does not match expected value"
       }
-    ]
+    ],
+    "rules": []
   }
 }

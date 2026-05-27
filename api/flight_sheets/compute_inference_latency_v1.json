@@ -170,6 +170,7 @@
         "severity": "low",
         "description": "P99 is 2-5x the P50 latency"
       }
-    ]
+    ],
+    "rules": []
   }
 }

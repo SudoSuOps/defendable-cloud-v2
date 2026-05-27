@@ -383,6 +383,7 @@
         "severity": "propolis",
         "message": "final_output is PASS but not all policy items are addressed"
       }
-    ]
+    ],
+    "rules": []
   }
 }

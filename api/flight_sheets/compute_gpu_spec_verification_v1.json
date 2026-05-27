@@ -153,6 +153,7 @@
         "severity": "medium",
         "description": "CUDA version does not meet requirement"
       }
-    ]
+    ],
+    "rules": []
   }
 }

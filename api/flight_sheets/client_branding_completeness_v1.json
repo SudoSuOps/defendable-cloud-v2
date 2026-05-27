@@ -209,6 +209,7 @@
         "severity": "high",
         "message": "Agent failed to complete all required self-check sections"
       }
-    ]
+    ],
+    "rules": []
   }
 }

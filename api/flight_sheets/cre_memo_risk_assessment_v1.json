@@ -251,6 +251,7 @@
         "severity": "jelly",
         "condition": "Any math check result deviates beyond tolerance"
       }
-    ]
+    ],
+    "rules": []
   }
 }

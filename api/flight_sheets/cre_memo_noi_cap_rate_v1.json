@@ -216,6 +216,21 @@
         "severity": "jelly",
         "condition": "Any of the 6 expense line items is absent from calculations"
       }
+    ],
+    "rules": [
+      {
+        "id": "noi_positive",
+        "label": "NOI is positive",
+        "category": "math",
+        "severity": "critical",
+        "expr": {
+          "op": ">",
+          "left": {
+            "calc": "Net Operating Income"
+          },
+          "right": 0
+        }
+      }
     ]
   }
 }

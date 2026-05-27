@@ -376,6 +376,7 @@
         "severity": "jelly",
         "message": "Referenced exhibit lacks body reference location"
       }
-    ]
+    ],
+    "rules": []
   }
 }

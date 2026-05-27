@@ -155,6 +155,7 @@
         "severity": "high",
         "description": "One or both efficiency metrics could not be computed"
       }
-    ]
+    ],
+    "rules": []
   }
 }

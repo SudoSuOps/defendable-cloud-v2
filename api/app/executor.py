@@ -72,6 +72,75 @@ def safe_eval(expr: str, names: dict) -> float:
     return float(eval(compile(tree, "<formula>", "eval"), {"__builtins__": {}}, names))
 
 
+_MISS_EXPR = object()
+
+
+def _calc(sub: dict, name: str):
+    for c in sub.get("calculations") or []:
+        if isinstance(c, dict) and c.get("name") == name:
+            return _num(c.get("result"))
+    return _MISS_EXPR
+
+
+def _operand(node: Any, sub: dict):
+    """Resolve an operand: literal | {field} | {calc} | {len}."""
+    if isinstance(node, dict):
+        if "field" in node:
+            v = _resolve(sub, node["field"])
+            return _MISS_EXPR if v is _MISSING else v
+        if "calc" in node:
+            return _calc(sub, node["calc"])
+        if "len" in node:
+            v = _resolve(sub, node["len"])
+            return len(v) if isinstance(v, (list, str, dict)) else _MISS_EXPR
+    return node  # literal
+
+
+_CMP = {
+    "==": lambda a, b: a == b, "!=": lambda a, b: a != b,
+    ">=": lambda a, b: a >= b, "<=": lambda a, b: a <= b,
+    ">": lambda a, b: a > b, "<": lambda a, b: a < b,
+}
+
+
+def eval_expr(expr: Any, sub: dict):
+    """Evaluate a structured rule expression → True | False | None (unknown→skip)."""
+    if not isinstance(expr, dict) or "op" not in expr:
+        return None
+    op = expr["op"]
+    if op in _CMP:
+        a, b = _operand(expr.get("left"), sub), _operand(expr.get("right"), sub)
+        if a is _MISS_EXPR or b is _MISS_EXPR:
+            return None
+        try:
+            return bool(_CMP[op](a, b))
+        except TypeError:
+            return None
+    if op == "in":
+        a = _operand(expr.get("left"), sub)
+        return None if a is _MISS_EXPR else (a in (expr.get("right") or []))
+    if op == "all_nonempty":
+        arr = _resolve(sub, expr.get("array", ""))
+        field = expr.get("field")
+        if not isinstance(arr, list) or not field:
+            return None
+        return all(isinstance(it, dict) and str(it.get(field, "")).strip() for it in arr)
+    if op in ("and", "or"):
+        vals = [eval_expr(t, sub) for t in (expr.get("terms") or [])]
+        if any(v is None for v in vals):
+            return None
+        return all(vals) if op == "and" else any(vals)
+    if op == "not":
+        v = eval_expr(expr.get("term"), sub)
+        return None if v is None else (not v)
+    if op == "if":
+        cond = eval_expr(expr.get("cond"), sub)
+        if cond is None:
+            return None
+        return True if not cond else eval_expr(expr.get("then"), sub)
+    return None
+
+
 def _r(key, label, category, status, severity, detail):
     return {"check_key": key, "label": label, "category": category, "kind": "auto",
             "source": "auto", "status": status, "severity": severity, "detail": detail}
@@ -179,5 +248,22 @@ def run_structured_audit(eval_spec: dict, submission_text: str) -> tuple[list[di
             ok = abs(got - result) <= tol
             results.append(_r(f"math_{name}", f"Math: {name}", "math", "pass" if ok else "flag", "critical",
                               f"{name}: stated {result}, recomputed {round(got, 6)}" + ("" if ok else " — MISMATCH")))
+
+    # 5 · structured rule DSL — machine-precise yes/no expressions (thresholds,
+    # cross-field, conditionals). No English parsing: the rulebook declares the
+    # expression, the executor evaluates it. Unknown operand → skip (honest).
+    for i, rule in enumerate(eval_spec.get("rules") or []):
+        if not isinstance(rule, dict):
+            continue
+        key = str(rule.get("id") or f"rule_{i+1}")
+        label = str(rule.get("label") or key)[:300]
+        sev = "critical" if str(rule.get("severity", "")).lower() in ("critical", "high", "propolis") else "noncritical"
+        cat = rule.get("category", "policy")
+        res = eval_expr(rule.get("expr"), sub)
+        if res is None:
+            results.append(_r(key, label, cat, "skip", sev, "Operand missing in submission; not evaluable."))
+        else:
+            results.append(_r(key, label, cat, "pass" if res else "flag", sev,
+                              "Rule satisfied." if res else "Rule violated."))
 
     return results, compute_verdict({}, results)

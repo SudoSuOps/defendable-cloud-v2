@@ -127,6 +127,7 @@
         "severity": "low",
         "description": "Undeclared fields detected in dataset"
       }
-    ]
+    ],
+    "rules": []
   }
 }

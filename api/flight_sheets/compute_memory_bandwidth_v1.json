@@ -158,6 +158,7 @@
         "severity": "low",
         "description": "Memory bandwidth utilization is 70% or above"
       }
-    ]
+    ],
+    "rules": []
   }
 }
