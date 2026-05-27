@@ -25,6 +25,7 @@ export function RunDetail() {
   const [run, setRun] = useState<Run | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
+  const [resub, setResub] = useState(false);
 
   async function load() {
     try { setRun(await api<Run>(`/runs/${id}`)); } catch (e: any) { setErr(e.message); }
@@ -65,10 +66,13 @@ export function RunDetail() {
       <div className="mt-6"><EvidenceSection run={run} busy={busy} act={act} /></div>
 
       {/* 3 · Agent submission */}
-      <div className="mt-6"><SubmissionSection run={run} busy={busy} act={act} /></div>
+      <div id="submission" className="mt-6"><SubmissionSection run={run} busy={busy} act={act} resub={resub} setResub={setResub} /></div>
 
       {/* 4 · Audit + Referee Findings */}
       <div className="mt-6"><AuditSection run={run} busy={busy} act={act} /></div>
+
+      {/* 4.5 · Repair plan — "it failed, now what?" */}
+      <RepairPlan run={run} setResub={setResub} />
 
       {/* 5 · Ownership / authority */}
       <OwnershipPanel o={run.ownership} />
@@ -163,16 +167,17 @@ function EvidenceSection({ run, busy, act }: { run: Run; busy: string | null; ac
   );
 }
 
-function SubmissionSection({ run, busy, act }: { run: Run; busy: string | null; act: Act }) {
-  const [agent, setAgent] = useState("");
-  const [model, setModel] = useState("");
-  const [provider, setProvider] = useState("");
+function SubmissionSection({ run, busy, act, resub, setResub }: { run: Run; busy: string | null; act: Act; resub: boolean; setResub: (v: boolean) => void }) {
+  const [agent, setAgent] = useState(run.submission?.agent_name || "");
+  const [model, setModel] = useState(run.submission?.model_name || "");
+  const [provider, setProvider] = useState(run.submission?.provider || "");
   const [output, setOutput] = useState("");
 
-  if (run.submission) {
+  if (run.submission && !resub) {
     const s = run.submission;
     return (
-      <Card title="Agent submission" subtitle="What the agent returned">
+      <Card title="Agent submission" subtitle="What the agent returned"
+        actions={!run.receipt && <Button variant="ghost" onClick={() => setResub(true)}>Submit corrected version</Button>}>
         <div className="flex flex-wrap items-center gap-2 text-sm">
           <span className="font-semibold text-paper">{s.agent_name || "Agent"}</span>
           <span className="text-paper/50">· {s.model_name || "—"} ({s.provider || "—"})</span>
@@ -182,17 +187,72 @@ function SubmissionSection({ run, busy, act }: { run: Run; busy: string | null; 
       </Card>
     );
   }
+  const correcting = !!run.submission;
   return (
-    <Card title="Agent submission" subtitle="Paste the agent's output">
+    <Card title="Agent submission" subtitle={correcting ? "Paste the corrected output — the referee re-checks the same rules" : "Paste the agent's output"}
+      actions={correcting && <Button variant="ghost" onClick={() => setResub(false)}>Cancel</Button>}>
       <div className="grid gap-3 sm:grid-cols-3">
         <input className={inputClass} placeholder="Agent (e.g. Kimi)" value={agent} onChange={(e) => setAgent(e.target.value)} />
         <input className={inputClass} placeholder="Model (e.g. K2.6)" value={model} onChange={(e) => setModel(e.target.value)} />
         <input className={inputClass} placeholder="Provider (e.g. Moonshot)" value={provider} onChange={(e) => setProvider(e.target.value)} />
       </div>
-      <textarea className={`mt-3 ${inputClass}`} rows={6} placeholder="Paste the agent output here…" value={output} onChange={(e) => setOutput(e.target.value)} />
+      <textarea className={`mt-3 ${inputClass}`} rows={6} placeholder={correcting ? "Paste the corrected agent output…" : "Paste the agent output here…"} value={output} onChange={(e) => setOutput(e.target.value)} />
       <div className="mt-4">
-        <Button disabled={busy === "sub" || !output.trim()} onClick={() => act("sub", () => api(`/runs/${run.id}/submission`, { method: "POST", body: { agent_name: agent, model_name: model, provider, output_text: output } }))}>{busy === "sub" ? "Saving…" : "Save submission"}</Button>
+        <Button disabled={busy === "sub" || !output.trim()} onClick={() => act("sub", async () => { await api(`/runs/${run.id}/submission`, { method: "POST", body: { agent_name: agent, model_name: model, provider, output_text: output } }); setResub(false); setOutput(""); })}>{busy === "sub" ? "Saving…" : correcting ? "Submit correction" : "Save submission"}</Button>
+        {correcting && <span className="ml-3 text-xs text-paper/40">Then re-run the ruleset audit to re-verify.</span>}
       </div>
+    </Card>
+  );
+}
+
+// "It failed — now what?" Every flag is a located defect, so fixability is a
+// real answer, not an opinion. Two kinds of flag, told apart by category:
+//   defects in the WORK (math/schema/structure/evidence) → fixable: correct & resubmit
+//   findings about the DEAL (policy gates) → not a rework: the work is right, the rule says no
+const DEFECT_CATS = new Set(["math", "schema", "structure", "evidence"]);
+
+function RepairPlan({ run, setResub }: { run: Run; setResub: (v: boolean) => void }) {
+  const v = run.verdict;
+  if (!v || v.outcome === "pass" || run.receipt) return null;
+  const flags = run.checks.filter((c) => c.status === "flag");
+  if (!flags.length) return null;
+  const byTier = (a: Check, b: Check) => TIER_RANK[tierOf(a.severity)] - TIER_RANK[tierOf(b.severity)];
+  const defects = flags.filter((c) => DEFECT_CATS.has(c.category)).sort(byTier);
+  const findings = flags.filter((c) => !DEFECT_CATS.has(c.category)).sort(byTier);
+
+  const headline = !findings.length
+    ? `Fixable. ${defects.length} defect${defects.length > 1 ? "s" : ""} in the work — correct and resubmit; the referee re-checks the same rules.`
+    : !defects.length
+      ? "Not a rework. These are true findings about the deal — the work is correct, the rule returns no."
+      : `Partly fixable. Correct ${defects.length} work-defect${defects.length > 1 ? "s" : ""}; ${findings.length} finding${findings.length > 1 ? "s are" : " is a"} real result about the deal, not an error to redo.`;
+
+  const Group = ({ title, note, items }: { title: string; note: string; items: Check[] }) => (
+    <div className="mt-4">
+      <p className="text-xs font-semibold uppercase tracking-widest text-paper/45">{title}</p>
+      <p className="mt-0.5 text-xs text-paper/40">{note}</p>
+      <ul className="mt-2 space-y-2">
+        {items.map((c) => (
+          <li key={c.id} className="flex flex-wrap items-center gap-2 text-sm">
+            <span className={`rounded border px-1.5 py-0.5 font-mono text-[10px] uppercase ${TIER_TONE[tierOf(c.severity)]}`}>{TIER_LABEL[tierOf(c.severity)]}</span>
+            <span className="text-paper/80">{c.label}</span>
+            {c.detail && <span className="w-full pl-1 text-xs text-paper/45">{c.detail}</span>}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+
+  return (
+    <Card className="mt-6" title="It failed — now what?" subtitle="We don't judge. Every flag is a located defect; fix it and the referee re-verifies.">
+      <p className="text-sm font-medium text-paper/85">{headline}</p>
+      {defects.length > 0 && <Group title="Fix the work" note="Correct these in the agent's output, then resubmit." items={defects} />}
+      {findings.length > 0 && <Group title="Findings about the deal / output" note="The work is correct — the rule says no. Not fixed by redoing the work." items={findings} />}
+      {defects.length > 0 && !run.receipt && (
+        <div className="mt-5 flex flex-wrap items-center gap-3 border-t border-white/5 pt-4">
+          <Button onClick={() => { setResub(true); document.getElementById("submission")?.scrollIntoView({ behavior: "smooth" }); }}>Submit corrected version</Button>
+          <span className="text-xs text-paper/40">Resubmit → re-run audit. When the flags clear, it passes — deterministic, not a second opinion.</span>
+        </div>
+      )}
     </Card>
   );
 }

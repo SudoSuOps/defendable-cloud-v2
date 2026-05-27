@@ -34,6 +34,8 @@ const TIER_LABEL: Record<string, string> = { high: "HIGH-RISK", mid: "mid-risk",
 const TIER_RANK: Record<string, number> = { high: 0, mid: 1, low: 2 };
 const STATUS_RANK: Record<string, number> = { flag: 0, fail: 0, open: 1, pass: 2, risk: 2, review: 3, skip: 4 };
 const isFlag = (s: string) => s === "flag" || s === "fail";
+// defects in the WORK are fixable; findings about the DEAL (policy gates) are not a rework.
+const DEFECT_CATS = new Set(["math", "schema", "structure", "evidence"]);
 
 export function ShareView() {
   const { token } = useParams();
@@ -93,6 +95,12 @@ export function ShareView() {
               );
               const flags = items.filter((c: any) => isFlag(c.status));
               const tierCount = (t: string) => flags.filter((c: any) => tierOf(c.severity) === t).length;
+              const defects = flags.filter((c: any) => DEFECT_CATS.has(c.category)).length;
+              const findings = flags.length - defects;
+              const fixability = flags.length === 0 ? "" :
+                findings === 0 ? `Fixable — ${defects} defect${defects > 1 ? "s" : ""} in the work. Correct and resubmit; the same rules re-run.`
+                : defects === 0 ? "Not a rework — these are true findings about the deal. The work is correct; the rule returns no."
+                : `Partly fixable — ${defects} work-defect${defects > 1 ? "s" : ""} to correct; ${findings} finding${findings > 1 ? "s" : ""} about the deal itself.`;
               return (
                 <>
                   <Card className="mt-6" title="Verdict">
@@ -112,6 +120,7 @@ export function ShareView() {
                       </div>
                     )}
                     {v.summary && <p className="mt-3 text-sm text-paper/70">{v.summary}</p>}
+                    {fixability && <p className="mt-2 text-sm text-paper/75"><span className="uppercase tracking-widest text-paper/35 text-xs">Is it fixable</span> · {fixability}</p>}
                     {v.recommended_action && <p className="mt-2 text-sm text-paper/60"><span className="uppercase tracking-widest text-paper/35 text-xs">Recommended</span> · {v.recommended_action}</p>}
                   </Card>
 
