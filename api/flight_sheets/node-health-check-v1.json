@@ -1,0 +1,48 @@
+{
+  "slug": "node-health-check-v1",
+  "name": "Node Health Check Eval",
+  "version": "1.0",
+  "lane": "compute",
+  "summary": "Are health metrics within range and anomalies flagged?",
+  "purpose": "Evaluate node health: metrics within range, anomalies flagged.",
+  "assignment_instructions": "Assess the node's health metrics and flag anomalies. Use only the provided evidence unless explicitly allowed to assume; label every assumption; if a required input is missing, say so; do not fabricate facts or cite evidence that was not provided.",
+  "required_inputs": [
+    "health_metrics"
+  ],
+  "expected_outputs": [
+    "health summary",
+    "anomalies"
+  ],
+  "audit_checks": [
+    {
+      "key": "sections_present",
+      "label": "Required sections present",
+      "category": "structure",
+      "kind": "auto",
+      "severity": "critical"
+    },
+    {
+      "key": "specs_present",
+      "label": "Specs quantified",
+      "category": "structure",
+      "kind": "auto",
+      "severity": "noncritical"
+    },
+    {
+      "key": "metrics_in_range",
+      "label": "Health metrics within range",
+      "category": "math",
+      "kind": "checklist",
+      "severity": "critical"
+    },
+    {
+      "key": "anomalies_flagged",
+      "label": "Anomalies flagged",
+      "category": "policy",
+      "kind": "checklist",
+      "severity": "noncritical"
+    }
+  ],
+  "pass_threshold": 80,
+  "fail_threshold": 60
+}

@@ -20,9 +20,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY requirements.txt /app/requirements.txt
 RUN pip install --upgrade pip wheel && pip install -r /app/requirements.txt
 
-# App source
+# App source + flight-sheet library (content, synced at boot)
 COPY app /app/app
 COPY alembic.ini /app/alembic.ini
+COPY flight_sheets /app/flight_sheets
 
 # Healthcheck (used by Fly httpz check too)
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
@@ -30,4 +31,4 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
 
 EXPOSE 8080
 
-CMD ["sh", "-c", "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port ${PORT} --workers ${UVICORN_WORKERS} --proxy-headers"]
+CMD ["sh", "-c", "alembic upgrade head && python -m app.load_flight_sheets && uvicorn app.main:app --host 0.0.0.0 --port ${PORT} --workers ${UVICORN_WORKERS} --proxy-headers"]

@@ -1,0 +1,56 @@
+{
+  "slug": "payoff-reconciliation-v1",
+  "name": "Payoff Reconciliation Eval",
+  "version": "1.0",
+  "lane": "agent",
+  "summary": "Does the payoff math reconcile to the statement?",
+  "purpose": "Evaluate payoff reconciliation: reconciled payoff math, checked per-diem, sourced.",
+  "assignment_instructions": "Reconcile the payoff figure including per-diem interest. Use only the provided evidence unless explicitly allowed to assume; label every assumption; if a required input is missing, say so; do not fabricate facts or cite evidence that was not provided.",
+  "required_inputs": [
+    "payoff_statement"
+  ],
+  "expected_outputs": [
+    "payoff math",
+    "per-diem",
+    "reconciliation"
+  ],
+  "audit_checks": [
+    {
+      "key": "sections_present",
+      "label": "Required sections present",
+      "category": "structure",
+      "kind": "auto",
+      "severity": "critical"
+    },
+    {
+      "key": "citations_present",
+      "label": "Evidence is referenced",
+      "category": "evidence",
+      "kind": "auto",
+      "severity": "noncritical"
+    },
+    {
+      "key": "payoff_math",
+      "label": "Payoff math reconciles",
+      "category": "math",
+      "kind": "checklist",
+      "severity": "critical"
+    },
+    {
+      "key": "per_diem_checked",
+      "label": "Per-diem checked",
+      "category": "math",
+      "kind": "checklist",
+      "severity": "noncritical"
+    },
+    {
+      "key": "sourced",
+      "label": "Sourced to the statement",
+      "category": "evidence",
+      "kind": "checklist",
+      "severity": "critical"
+    }
+  ],
+  "pass_threshold": 80,
+  "fail_threshold": 60
+}

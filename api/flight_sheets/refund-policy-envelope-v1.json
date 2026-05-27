@@ -1,0 +1,50 @@
+{
+  "slug": "refund-policy-envelope-v1",
+  "name": "Refund Policy Envelope Eval",
+  "version": "1.0",
+  "lane": "agent",
+  "summary": "Stayed within refund authority, escalation correct.",
+  "purpose": "Evaluate refund handling: stayed within refund authority, correct escalation.",
+  "assignment_instructions": "Review the agent's refund decision against the refund authority policy. Use only the provided evidence unless explicitly allowed to assume; label every assumption; if a required input is missing, say so; do not fabricate facts or cite evidence that was not provided.",
+  "required_inputs": [
+    "decision",
+    "refund_policy"
+  ],
+  "expected_outputs": [
+    "decision review",
+    "authority check",
+    "escalation"
+  ],
+  "audit_checks": [
+    {
+      "key": "sections_present",
+      "label": "Required sections present",
+      "category": "structure",
+      "kind": "auto",
+      "severity": "critical"
+    },
+    {
+      "key": "citations_present",
+      "label": "Evidence is referenced",
+      "category": "evidence",
+      "kind": "auto",
+      "severity": "noncritical"
+    },
+    {
+      "key": "within_authority",
+      "label": "Stayed within refund authority",
+      "category": "policy",
+      "kind": "checklist",
+      "severity": "critical"
+    },
+    {
+      "key": "escalation_correct",
+      "label": "Escalation handled correctly",
+      "category": "authority",
+      "kind": "checklist",
+      "severity": "critical"
+    }
+  ],
+  "pass_threshold": 80,
+  "fail_threshold": 60
+}

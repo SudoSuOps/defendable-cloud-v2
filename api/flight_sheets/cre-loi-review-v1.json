@@ -1,0 +1,56 @@
+{
+  "slug": "cre-loi-review-v1",
+  "name": "CRE LOI Review Eval",
+  "version": "1.0",
+  "lane": "agent",
+  "summary": "Did the agent summarize the LOI and flag non-standard terms?",
+  "purpose": "Evaluate LOI review: economic terms summarized, non-standard terms flagged, nothing fabricated.",
+  "assignment_instructions": "Review the LOI, summarize the deal terms, and flag anything non-standard. Use only the provided evidence unless explicitly allowed to assume; label every assumption; if a required input is missing, say so; do not fabricate facts or cite evidence that was not provided.",
+  "required_inputs": [
+    "loi_pdf"
+  ],
+  "expected_outputs": [
+    "deal terms",
+    "non-standard terms",
+    "questions"
+  ],
+  "audit_checks": [
+    {
+      "key": "sections_present",
+      "label": "Required sections present",
+      "category": "structure",
+      "kind": "auto",
+      "severity": "critical"
+    },
+    {
+      "key": "citations_present",
+      "label": "Evidence is referenced",
+      "category": "evidence",
+      "kind": "auto",
+      "severity": "noncritical"
+    },
+    {
+      "key": "terms_summarized",
+      "label": "Economic terms summarized",
+      "category": "policy",
+      "kind": "checklist",
+      "severity": "critical"
+    },
+    {
+      "key": "nonstandard_flagged",
+      "label": "Non-standard terms flagged",
+      "category": "policy",
+      "kind": "checklist",
+      "severity": "critical"
+    },
+    {
+      "key": "no_fabrication",
+      "label": "Nothing fabricated",
+      "category": "evidence",
+      "kind": "checklist",
+      "severity": "critical"
+    }
+  ],
+  "pass_threshold": 80,
+  "fail_threshold": 60
+}

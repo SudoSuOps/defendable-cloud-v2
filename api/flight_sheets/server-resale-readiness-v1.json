@@ -1,0 +1,57 @@
+{
+  "slug": "server-resale-readiness-v1",
+  "name": "Server Resale Readiness Eval",
+  "version": "1.0",
+  "lane": "compute",
+  "summary": "Specs verified, condition noted, resale verdict.",
+  "purpose": "Evaluate resale readiness: verified specs, noted condition, resale verdict.",
+  "assignment_instructions": "Assess the server for resale and issue a readiness verdict. Use only the provided evidence unless explicitly allowed to assume; label every assumption; if a required input is missing, say so; do not fabricate facts or cite evidence that was not provided.",
+  "required_inputs": [
+    "spec_sheet",
+    "condition_notes"
+  ],
+  "expected_outputs": [
+    "specs",
+    "condition",
+    "resale verdict"
+  ],
+  "audit_checks": [
+    {
+      "key": "sections_present",
+      "label": "Required sections present",
+      "category": "structure",
+      "kind": "auto",
+      "severity": "critical"
+    },
+    {
+      "key": "specs_present",
+      "label": "Specs quantified",
+      "category": "structure",
+      "kind": "auto",
+      "severity": "noncritical"
+    },
+    {
+      "key": "specs_verified",
+      "label": "Specs verified against evidence",
+      "category": "evidence",
+      "kind": "checklist",
+      "severity": "critical"
+    },
+    {
+      "key": "condition_noted",
+      "label": "Wear / condition noted",
+      "category": "policy",
+      "kind": "checklist",
+      "severity": "noncritical"
+    },
+    {
+      "key": "resale_verdict",
+      "label": "Resale verdict supported",
+      "category": "readiness",
+      "kind": "checklist",
+      "severity": "critical"
+    }
+  ],
+  "pass_threshold": 80,
+  "fail_threshold": 60
+}

@@ -1,0 +1,58 @@
+{
+  "slug": "gpu-bench-readout-v1",
+  "name": "GPU Benchmark Readout Eval",
+  "version": "1.0",
+  "lane": "compute",
+  "summary": "Do bench numbers reconcile and GPU identity confirm?",
+  "purpose": "Evaluate benchmark interpretation: reconciled numbers, confirmed GPU identity, readiness verdict.",
+  "assignment_instructions": "Interpret the benchmark logs and issue a compute-readiness finding. Use only the provided evidence unless explicitly allowed to assume; label every assumption; if a required input is missing, say so; do not fabricate facts or cite evidence that was not provided.",
+  "required_inputs": [
+    "benchmark_log",
+    "hardware_info"
+  ],
+  "expected_outputs": [
+    "hardware identity",
+    "specs",
+    "benchmark results",
+    "readiness verdict"
+  ],
+  "audit_checks": [
+    {
+      "key": "sections_present",
+      "label": "Required sections present",
+      "category": "structure",
+      "kind": "auto",
+      "severity": "critical"
+    },
+    {
+      "key": "specs_present",
+      "label": "Specs quantified",
+      "category": "structure",
+      "kind": "auto",
+      "severity": "noncritical"
+    },
+    {
+      "key": "bench_math",
+      "label": "Benchmark numbers reconcile",
+      "category": "math",
+      "kind": "checklist",
+      "severity": "critical"
+    },
+    {
+      "key": "gpu_identity",
+      "label": "GPU identity confirmed",
+      "category": "evidence",
+      "kind": "checklist",
+      "severity": "critical"
+    },
+    {
+      "key": "readiness_verdict",
+      "label": "Readiness verdict supported",
+      "category": "readiness",
+      "kind": "checklist",
+      "severity": "noncritical"
+    }
+  ],
+  "pass_threshold": 80,
+  "fail_threshold": 60
+}

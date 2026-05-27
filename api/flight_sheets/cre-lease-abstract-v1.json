@@ -1,0 +1,65 @@
+{
+  "slug": "cre-lease-abstract-v1",
+  "name": "CRE Lease Abstraction Eval",
+  "version": "1.0",
+  "lane": "agent",
+  "summary": "Did the agent abstract a lease completely and accurately?",
+  "purpose": "Evaluate lease abstraction: all economic terms captured, dates/rent reconciled, no invented clauses.",
+  "assignment_instructions": "Abstract the provided lease into its key economic and legal terms. Use only the provided evidence unless explicitly allowed to assume; label every assumption; if a required input is missing, say so; do not fabricate facts or cite evidence that was not provided.",
+  "required_inputs": [
+    "lease_pdf"
+  ],
+  "expected_outputs": [
+    "parties",
+    "term and dates",
+    "base rent and escalations",
+    "options",
+    "exceptions"
+  ],
+  "audit_checks": [
+    {
+      "key": "sections_present",
+      "label": "Required sections present",
+      "category": "structure",
+      "kind": "auto",
+      "severity": "critical"
+    },
+    {
+      "key": "citations_present",
+      "label": "Evidence is referenced",
+      "category": "evidence",
+      "kind": "auto",
+      "severity": "noncritical"
+    },
+    {
+      "key": "economic_terms_complete",
+      "label": "All economic terms captured",
+      "category": "policy",
+      "kind": "checklist",
+      "severity": "critical"
+    },
+    {
+      "key": "dates_rent_reconcile",
+      "label": "Dates and rent reconcile to the lease",
+      "category": "math",
+      "kind": "checklist",
+      "severity": "critical"
+    },
+    {
+      "key": "no_invented_clauses",
+      "label": "No fabricated clauses",
+      "category": "evidence",
+      "kind": "checklist",
+      "severity": "critical"
+    },
+    {
+      "key": "exceptions_flagged",
+      "label": "Non-standard terms flagged",
+      "category": "policy",
+      "kind": "checklist",
+      "severity": "noncritical"
+    }
+  ],
+  "pass_threshold": 80,
+  "fail_threshold": 60
+}

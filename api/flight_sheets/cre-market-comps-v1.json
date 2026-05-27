@@ -1,0 +1,57 @@
+{
+  "slug": "cre-market-comps-v1",
+  "name": "CRE Market Comp Analysis Eval",
+  "version": "1.0",
+  "lane": "agent",
+  "summary": "Are the comps comparable and the adjustments justified?",
+  "purpose": "Evaluate comp analysis: comparability, justified adjustments, cited sources.",
+  "assignment_instructions": "Build a comparable-sales analysis and conclude a value indication. Use only the provided evidence unless explicitly allowed to assume; label every assumption; if a required input is missing, say so; do not fabricate facts or cite evidence that was not provided.",
+  "required_inputs": [
+    "comp_set",
+    "subject_details"
+  ],
+  "expected_outputs": [
+    "comp set",
+    "adjustments",
+    "value indication"
+  ],
+  "audit_checks": [
+    {
+      "key": "sections_present",
+      "label": "Required sections present",
+      "category": "structure",
+      "kind": "auto",
+      "severity": "critical"
+    },
+    {
+      "key": "citations_present",
+      "label": "Evidence is referenced",
+      "category": "evidence",
+      "kind": "auto",
+      "severity": "noncritical"
+    },
+    {
+      "key": "comps_comparable",
+      "label": "Comps are genuinely comparable",
+      "category": "policy",
+      "kind": "checklist",
+      "severity": "critical"
+    },
+    {
+      "key": "adjustments_justified",
+      "label": "Adjustments justified",
+      "category": "math",
+      "kind": "checklist",
+      "severity": "noncritical"
+    },
+    {
+      "key": "sources_cited",
+      "label": "Comp sources cited",
+      "category": "evidence",
+      "kind": "checklist",
+      "severity": "critical"
+    }
+  ],
+  "pass_threshold": 80,
+  "fail_threshold": 60
+}
