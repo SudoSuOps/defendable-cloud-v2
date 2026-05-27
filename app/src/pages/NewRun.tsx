@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { api } from "../lib/api";
 import { Button, Card, ErrorNote, Field, inputClass, Spinner } from "../components/ui";
 
@@ -25,6 +25,7 @@ const emptyProfile = { name: "", harness: "", harness_version: "", model: "", mo
 
 export function NewRun() {
   const nav = useNavigate();
+  const [params] = useSearchParams();
   const [projects, setProjects] = useState<Project[] | null>(null);
   const [sheets, setSheets] = useState<FlightSheet[]>([]);
   const [profiles, setProfiles] = useState<AgentProfile[]>([]);
@@ -47,6 +48,8 @@ export function NewRun() {
         setProjectId(p.projects[0]?.id ?? "__new__");
         setSheets(f.flight_sheets);
         setProfiles(ap.agent_profiles);
+        const pre = params.get("profile");
+        if (pre && ap.agent_profiles.some((x) => x.id === pre)) setProfileId(pre);
       })
       .catch((e) => setErr(e.message));
   }, []);
