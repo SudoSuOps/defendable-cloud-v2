@@ -31,7 +31,7 @@ const links = [
       <span class="text-base font-semibold tracking-tight text-paper">DefendableCloud</span>
     </a>
 
-    <div class="flex items-center gap-6">
+    <div class="flex items-center gap-4 sm:gap-6">
       <ul class="hidden items-center gap-6 text-sm text-paper/70 md:flex">
         {
           links.map((link) => (
@@ -44,8 +44,20 @@ const links = [
         }
       </ul>
       <a
+        href="https://app.defendablecloud.com"
+        class="text-sm font-medium text-paper/70 transition-colors hover:text-paper"
+      >
+        Sign in
+      </a>
+      <a
+        href="https://app.defendablecloud.com"
+        class="rounded-md border border-honey-400/40 bg-honey-300/10 px-3.5 py-2 text-sm font-medium text-honey-200 transition-colors hover:bg-honey-300/20 sm:px-4"
+      >
+        Open the Vault
+      </a>
+      <a
         href="/contact"
-        class="rounded-md border border-honey-400/40 bg-honey-300/10 px-4 py-2 text-sm font-medium text-honey-200 transition-colors hover:bg-honey-300/20"
+        class="hidden rounded-md border border-white/10 px-4 py-2 text-sm font-medium text-paper/80 transition-colors hover:border-white/25 hover:text-paper sm:inline-block"
       >
         Request access
       </a>
