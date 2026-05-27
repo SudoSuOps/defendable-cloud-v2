@@ -18,12 +18,27 @@ _SessionLocal: Optional[async_sessionmaker[AsyncSession]] = None
 
 
 def _coerce_async_url(url: str) -> str:
-    """Ensure the URL uses the asyncpg driver."""
+    """Use the asyncpg driver and drop libpq-only query params asyncpg rejects."""
+    from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
+
     if url.startswith("postgres://"):
         url = "postgresql+asyncpg://" + url[len("postgres://"):]
-    elif url.startswith("postgresql://"):
+    elif url.startswith("postgresql://") and "+asyncpg" not in url:
         url = "postgresql+asyncpg://" + url[len("postgresql://"):]
-    return url
+
+    parts = urlsplit(url)
+    drop = {"sslmode", "channel_binding", "gssencmode"}
+    q = [(k, v) for k, v in parse_qsl(parts.query) if k not in drop]
+    return urlunsplit((parts.scheme, parts.netloc, parts.path, urlencode(q), parts.fragment))
+
+
+def connect_args_for(raw_url: str) -> dict:
+    """asyncpg doesn't read libpq's sslmode; translate sslmode=disable → ssl off.
+    Internal Fly flycast Postgres speaks plaintext on the private network."""
+    low = (raw_url or "").lower()
+    if "sslmode=disable" in low or "ssl=false" in low:
+        return {"ssl": False}
+    return {}
 
 
 def get_engine() -> AsyncEngine:
@@ -33,7 +48,13 @@ def get_engine() -> AsyncEngine:
     url = settings().database_url
     if not url:
         raise RuntimeError("DATABASE_URL is not set")
-    _engine = create_async_engine(_coerce_async_url(url), pool_pre_ping=True, pool_size=5, max_overflow=5)
+    _engine = create_async_engine(
+        _coerce_async_url(url),
+        pool_pre_ping=True,
+        pool_size=5,
+        max_overflow=5,
+        connect_args=connect_args_for(url),
+    )
     _SessionLocal = async_sessionmaker(_engine, expire_on_commit=False)
     return _engine
 

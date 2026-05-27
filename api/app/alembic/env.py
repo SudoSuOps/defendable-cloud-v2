@@ -20,12 +20,7 @@ if config.config_file_name is not None:
 target_metadata = Base.metadata
 
 
-def _coerce_async_url(url: str) -> str:
-    if url.startswith("postgres://"):
-        return "postgresql+asyncpg://" + url[len("postgres://"):]
-    if url.startswith("postgresql://") and "+asyncpg" not in url:
-        return "postgresql+asyncpg://" + url[len("postgresql://"):]
-    return url
+from app.db import _coerce_async_url  # noqa: E402  (shared URL coercion)
 
 
 def _get_url() -> str:
@@ -53,10 +48,13 @@ def _do_run(connection: Connection) -> None:
 
 
 async def run_migrations_online_async() -> None:
+    from app.db import connect_args_for
+
     connectable = async_engine_from_config(
         {"sqlalchemy.url": _get_url()},
         prefix="sqlalchemy.",
         poolclass=pool.NullPool,
+        connect_args=connect_args_for(settings().database_url or ""),
     )
     async with connectable.connect() as connection:
         await connection.run_sync(_do_run)

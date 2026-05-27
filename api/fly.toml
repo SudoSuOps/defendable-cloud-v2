@@ -19,7 +19,7 @@ kill_timeout = "30s"
   UVICORN_WORKERS = "2"
   AWS_ENDPOINT_URL_S3 = "https://fly.storage.tigris.dev"
   AWS_REGION = "auto"
-  TIGRIS_BUCKET = "defendable-cloud"
+  TIGRIS_BUCKET = "defendable-cloud-v2"
   APP_BASE_URL = "https://app.defendablecloud.com"
   API_BASE_URL = "https://api.defendablecloud.com"
 
