@@ -154,6 +154,53 @@ async def apply_for_membership(
         return _membership_payload(org, cap=s.membership_cap, active_count=active, queue=queue)
 
 
+async def _approve_org_by_slug(db, slug: str) -> dict:
+    """Shared approval logic · used by both the X-Internal-Key admin endpoint
+    (/membership/approve) and the in-app Admin UI (/admin/applications/{slug}/approve).
+
+    Re-checks the cap inside the transaction. Cap full = back to waitlist.
+    No-op for already-active orgs (just returns the current state).
+    """
+    s = settings()
+    org = (
+        await db.execute(
+            select(Organization).where(Organization.slug == slug)
+        )
+    ).scalar_one_or_none()
+    if org is None:
+        raise HTTPException(status_code=404, detail=f"org not found: {slug}")
+
+    if org.membership_status == "active":
+        active = await _active_count(db)
+        queue = await _waitlist_position(db, org.id)
+        return _membership_payload(
+            org, cap=s.membership_cap, active_count=active, queue=queue,
+        )
+    if org.membership_status not in ("pending", "waitlisted"):
+        raise HTTPException(
+            status_code=409,
+            detail=f"can't approve from state: {org.membership_status}",
+        )
+
+    active = await _active_count(db)
+    if active >= s.membership_cap:
+        # Cap filled between application and approval. Hold them on the
+        # waitlist; admin can re-run approve when a seat opens.
+        org.membership_status = "waitlisted"
+        await db.flush()
+        queue = await _waitlist_position(db, org.id)
+        return _membership_payload(
+            org, cap=s.membership_cap, active_count=active, queue=queue,
+        )
+
+    org.membership_status = "approved"
+    await db.flush()
+    queue = await _waitlist_position(db, org.id)
+    return _membership_payload(
+        org, cap=s.membership_cap, active_count=active, queue=queue,
+    )
+
+
 @router.post("/approve", response_model=Membership, dependencies=[Depends(require_internal)])
 async def approve_membership(body: MembershipApproveIn):
     """Admin endpoint · flip a pending application to `approved`.
@@ -163,51 +210,13 @@ async def approve_membership(body: MembershipApproveIn):
     Once approved, the member can hit /membership/checkout to pay the
     annual $100 and land on `active`.
 
-    Re-applies the cap check before approving — if the cap has filled
-    between application and approval, the org goes to `waitlisted`.
+    The in-app Admin Approval UI uses /admin/applications/{slug}/approve
+    instead, which is gated by ADMIN_EMAILS rather than X-Internal-Key.
+    Both paths share the same _approve_org_by_slug helper so the cap-race
+    behavior stays identical.
     """
-    s = settings()
     async with session_scope() as db:
-        # Look up by slug for operator convenience (the email template
-        # already pastes the slug into the approval SQL).
-        org = (
-            await db.execute(
-                select(Organization).where(Organization.slug == body.org_slug)
-            )
-        ).scalar_one_or_none()
-        if org is None:
-            raise HTTPException(status_code=404, detail=f"org not found: {body.org_slug}")
-
-        if org.membership_status == "active":
-            # Re-approving an active org is a no-op; surface the current state.
-            active = await _active_count(db)
-            queue = await _waitlist_position(db, org.id)
-            return _membership_payload(
-                org, cap=s.membership_cap, active_count=active, queue=queue,
-            )
-        if org.membership_status not in ("pending", "waitlisted"):
-            raise HTTPException(
-                status_code=409,
-                detail=f"can't approve from state: {org.membership_status}",
-            )
-
-        active = await _active_count(db)
-        if active >= s.membership_cap:
-            # Cap filled between application and approval. Hold them on the
-            # waitlist; admin can re-run approve when a seat opens.
-            org.membership_status = "waitlisted"
-            await db.flush()
-            queue = await _waitlist_position(db, org.id)
-            return _membership_payload(
-                org, cap=s.membership_cap, active_count=active, queue=queue,
-            )
-
-        org.membership_status = "approved"
-        await db.flush()
-        queue = await _waitlist_position(db, org.id)
-        return _membership_payload(
-            org, cap=s.membership_cap, active_count=active, queue=queue,
-        )
+        return await _approve_org_by_slug(db, body.org_slug)
 
 
 @router.post(

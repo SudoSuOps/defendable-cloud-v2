@@ -7,6 +7,7 @@ export interface Me {
   name: string | null;
   org_id: string;
   org_name: string | null;
+  is_admin?: boolean;
 }
 
 interface AuthCtx {

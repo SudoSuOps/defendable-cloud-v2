@@ -54,6 +54,22 @@ class Settings(BaseSettings):
         default="build@defendableos.com", alias="MEMBERSHIP_REVIEW_EMAIL"
     )
 
+    # Comma-separated emails (lowercase) allowed to hit /admin/*. Used by
+    # the in-app Admin Approval UI; the X-Internal-Key path on
+    # /membership/approve remains for scripts and CLI.
+    admin_emails_raw: str = Field(default="", alias="ADMIN_EMAILS")
+
+    @property
+    def admin_emails(self) -> List[str]:
+        if not self.admin_emails_raw:
+            return []
+        return [e.strip().lower() for e in self.admin_emails_raw.split(",") if e.strip()]
+
+    def is_admin_email(self, email: str | None) -> bool:
+        if not email:
+            return False
+        return email.strip().lower() in self.admin_emails
+
     # The rails-side dataset stager calls /internal/staging-tasks +
     # /internal/stage-complete with this shared key in the X-Internal-Key
     # header. Set via `flyctl secrets set INTERNAL_API_KEY=...`. The same

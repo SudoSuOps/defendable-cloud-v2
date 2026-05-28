@@ -28,6 +28,9 @@ export function Shell({ children }: { children: ReactNode }) {
               <Link to="/datasets" className="text-paper/60 transition-colors hover:text-paper">Datasets</Link>
               <Link to="/models" className="text-paper/60 transition-colors hover:text-paper">Models</Link>
               <Link to="/org" className="text-paper/60 transition-colors hover:text-paper">Org</Link>
+              {me.is_admin && (
+                <Link to="/admin" className="text-honey-300/80 transition-colors hover:text-honey-200">Admin</Link>
+              )}
               <span className="hidden text-paper/40 sm:inline">{me.email}</span>
               <button
                 onClick={() => {

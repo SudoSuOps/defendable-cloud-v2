@@ -74,6 +74,8 @@ async def magic_verify(body: MagicVerifyIn):
 
 @router.get("/me")
 async def me(current: Principal = Depends(get_current_user)):
+    from app.config import settings as _settings_fn
+
     async with session_scope() as db:
         user = await db.get(User, current.id)
         if user is None:
@@ -87,4 +89,9 @@ async def me(current: Principal = Depends(get_current_user)):
             "org_id": user.org_id,
             "org_name": org.name if org else None,
             "created_at": iso(user.created_at),
+            # The frontend uses this to conditionally show the Admin nav link.
+            # Source of truth is the ADMIN_EMAILS config; the JWT itself is
+            # email-bearing but does NOT carry the admin flag (so revoking
+            # admin = removing the email from the list, no token rotation).
+            "is_admin": _settings_fn().is_admin_email(user.email),
         }
