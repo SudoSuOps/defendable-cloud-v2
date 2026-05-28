@@ -49,8 +49,10 @@ def test_version_flag():
         "audit",
         "approval",
         "receipt",
+        "receipts",
         "ledger",
         "datasets",
+        "models",
         "policy",
         "verify",
     ],
@@ -93,6 +95,64 @@ def test_extract_token_from_raw_token():
 def test_extract_token_rejects_garbage():
     with pytest.raises(CLIError):
         _extract_token("this is not a token nor a url")
+
+
+def test_extract_token_from_api_share_url():
+    """Sprint 15 · /share/{token} URLs (the API-side form sealed into cook
+    receipts as pin_share_url) must extract the same way as /r/{token}."""
+    t = _extract_token("https://api.defendablecloud.com/share/shr_api_xyz")
+    assert t == "shr_api_xyz"
+
+
+def test_receipts_recent_command_registered():
+    """The /receipts/recent CLI mirror must surface via `defendable receipts recent`."""
+    r = runner.invoke(app, ["receipts", "recent", "--help"])
+    assert r.exit_code == 0, f"`receipts recent --help` failed:\n{r.output}"
+    out = r.output.lower()
+    assert "schema" in out
+    assert "limit" in out
+
+
+def test_receipt_show_command_registered():
+    """`defendable receipt show <token>` must surface as a sibling of `generate`."""
+    r = runner.invoke(app, ["receipt", "show", "--help"])
+    assert r.exit_code == 0, f"`receipt show --help` failed:\n{r.output}"
+    assert "share" in r.output.lower() or "token" in r.output.lower()
+
+
+def test_receipt_renderer_dispatches_on_schema():
+    """The shared renderer must cover all 5 known schema prefixes (eval, cook,
+    incident, dataset-download, model-pin). If a schema's prefix is missing
+    its case here, this test surfaces the gap."""
+    from defendablecloud_cli.commands._receipt_render import SCHEMA_LABELS
+
+    required = {
+        "defendablecloud.eval",
+        "defendablecloud.cook",
+        "defendablecloud.incident",
+        "defendablecloud.dataset-download",
+        "defendablecloud.model-pin",
+    }
+    missing = required - set(SCHEMA_LABELS.keys())
+    assert not missing, (
+        f"receipt renderer dispatch missing schema prefixes: {sorted(missing)}. "
+        "Add to SCHEMA_LABELS + the dispatch chain in render_public_receipt."
+    )
+
+
+def test_receipts_recent_schema_shortcuts_cover_known_lanes():
+    """`defendable receipts recent --schema <shortcut>` must accept all 5
+    canonical lane shortcuts so members don't have to type the full URN."""
+    from defendablecloud_cli.commands.receipts import SCHEMA_SHORTCUTS
+
+    required = {"eval", "cook", "incident", "download", "pin"}
+    missing = required - set(SCHEMA_SHORTCUTS.keys())
+    assert not missing, f"receipts recent shortcuts missing: {sorted(missing)}"
+    # Each shortcut must map to a full schema URI.
+    for short, full in SCHEMA_SHORTCUTS.items():
+        assert full.startswith("defendablecloud."), (
+            f"shortcut {short!r} maps to non-canonical schema: {full!r}"
+        )
 
 
 def test_locked_doctrine_in_main_module():

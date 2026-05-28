@@ -11,19 +11,22 @@ import typer
 
 from ..client import Client
 from ..errors import CLIError
-from ..output import console, emit_json, emit_kv
+from ..output import emit_json
+from ._receipt_render import render_public_receipt
 
 app = typer.Typer(help="Public receipt verification (no auth).")
 
 
 def _extract_token(raw: str) -> str:
     s = raw.strip()
-    m = re.search(r"/r/([A-Za-z0-9_-]+)", s)
+    m = re.search(r"/(?:r|share)/([A-Za-z0-9_-]+)", s)
     if m:
         return m.group(1)
     if re.fullmatch(r"[A-Za-z0-9_-]+", s):
         return s
-    raise CLIError("not a valid share URL or token — expected /r/<token> or the token itself")
+    raise CLIError(
+        "not a valid share URL or token — expected /r/<token>, /share/<token>, or the token itself"
+    )
 
 
 @app.command()
@@ -33,7 +36,9 @@ def verify(
 ):
     """Fetch a public receipt + confirm the server-side hash recompute matches.
 
-    Works without auth — anyone holding a share URL can verify.
+    Works without auth — anyone holding a share URL can verify. Schema-aware
+    rendering covers eval / cook / model-pin / dataset-download / incident;
+    cook receipts surface the pinned_model block when one was sealed in.
     """
     token = _extract_token(token_or_url)
     c = Client(token="")  # public endpoint
@@ -41,16 +46,4 @@ def verify(
     if output_json:
         emit_json(r)
         return
-    badge = "[green]✓ hash verified[/green]" if r.get("verified") else "[red]✗ hash MISMATCH[/red]"
-    console.print(badge)
-    emit_kv(
-        {
-            "receipt_id": r.get("receipt_id"),
-            "org_seq": r.get("org_seq"),
-            "parent_hash": r.get("parent_hash"),
-            "receipt_sha256": r.get("receipt_sha256"),
-            "created_at": r.get("created_at"),
-            "verified": r.get("verified"),
-        },
-        title="public receipt",
-    )
+    render_public_receipt(r)

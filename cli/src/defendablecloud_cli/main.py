@@ -33,6 +33,7 @@ from .commands import (
     projects,
     public,
     receipt,
+    receipts,
     runs,
     submission,
 )
@@ -59,6 +60,7 @@ app.add_typer(submission.app, name="submission")
 app.add_typer(audit.app, name="audit")
 app.add_typer(approval.app, name="approval")
 app.add_typer(receipt.app, name="receipt")
+app.add_typer(receipts.app, name="receipts")
 app.add_typer(ledger.app, name="ledger")
 app.add_typer(datasets.app, name="datasets")
 app.add_typer(models.app, name="models")
