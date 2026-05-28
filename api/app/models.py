@@ -265,6 +265,26 @@ class Receipt(Base):
     __table_args__ = (UniqueConstraint("org_id", "org_seq", name="uq_receipts_org_seq"),)
 
 
+class DownloadNotification(Base):
+    """Idempotency lock for the dataset-staging-ready notifier.
+
+    One row per receipt whose member has been emailed. We never email the
+    same member twice for the same grant if the cron retries. Receipts stay
+    immutable (books-and-records); notification state lives here.
+    """
+
+    __tablename__ = "download_notifications"
+
+    receipt_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("receipts.id", ondelete="CASCADE"), primary_key=True
+    )
+    notified_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=_utc_now, nullable=False
+    )
+    notified_email: Mapped[str] = mapped_column(String(320), nullable=False)
+    tigris_key: Mapped[str] = mapped_column(Text, nullable=False, index=True)
+
+
 class Dataset(Base):
     """A pre-baked, eval-aligned dataset available in the vault to fine-tune with."""
 

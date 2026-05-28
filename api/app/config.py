@@ -54,6 +54,13 @@ class Settings(BaseSettings):
         default="build@defendableos.com", alias="MEMBERSHIP_REVIEW_EMAIL"
     )
 
+    # The rails-side dataset stager calls /internal/staging-tasks +
+    # /internal/stage-complete with this shared key in the X-Internal-Key
+    # header. Set via `flyctl secrets set INTERNAL_API_KEY=...`. The same
+    # value lives in the rails-side worker's .env. If unset, /internal/*
+    # refuses all calls — fail-closed.
+    internal_api_key: Optional[str] = Field(default=None, alias="INTERNAL_API_KEY")
+
     @property
     def cors_origins(self) -> List[str]:
         if not self.cors_origins_raw:

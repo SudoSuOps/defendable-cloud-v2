@@ -1,0 +1,16 @@
+[Unit]
+Description=Run the DefendableCloud dataset stager every 2 minutes
+Documentation=https://github.com/SudoSuOps/defendable-cloud-v2/tree/main/dataset-stager
+
+[Timer]
+# Two minutes after boot, then every two minutes after the previous run
+# *finished*. OnUnitInactiveSec avoids overlapping runs even if a previous
+# upload is slow.
+OnBootSec=2min
+OnUnitInactiveSec=2min
+AccuracySec=15s
+Unit=defendable-stage.service
+Persistent=true
+
+[Install]
+WantedBy=timers.target
