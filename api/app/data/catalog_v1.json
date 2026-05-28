@@ -1,0 +1,1170 @@
+{
+  "header": {
+    "anchor_hash": "9ff608f092d91a911df04cd6b847a27d004a2aa64b91a56dab82635585acb43b",
+    "anchor_label": ".grand_root_v2",
+    "catalog_sha256": "5822f146a14c537c7f8c96600414bb0bb59dde0b57e8a2c9df381e29ff116251",
+    "filter_version": "strict_v1",
+    "generated_at": "2026-05-01T23:02:15.801237+00:00"
+  },
+  "packages": [
+    {
+      "deed": "none",
+      "internal_usd": 23492.81,
+      "name": "Cre Honey",
+      "pairs": 810097,
+      "path": "/mnt/swarm/swarm-and-bee-datasets/cre/cre_honey_stamped.jsonl",
+      "pkg_class": "Premium",
+      "slug": "cre_cre_honey",
+      "tier": "honey",
+      "vertical": "cre"
+    },
+    {
+      "deed": "none",
+      "internal_usd": 18892.78,
+      "name": "Cre Canonical",
+      "pairs": 651475,
+      "path": "/mnt/swarm/swarm-and-bee-datasets/cre/swarmcre_canonical_dedup.jsonl",
+      "pkg_class": "Premium",
+      "slug": "cre_cre_canonical",
+      "tier": "canonical",
+      "vertical": "cre"
+    },
+    {
+      "deed": "none",
+      "internal_usd": 2924.5,
+      "name": "Medical Master",
+      "pairs": 406181,
+      "path": "/mnt/swarm/swarm-and-bee-datasets/medical/MASTER_PLATINUM.jsonl",
+      "pkg_class": "Premium",
+      "slug": "medical_medical_master",
+      "tier": "master",
+      "vertical": "medical"
+    },
+    {
+      "deed": "none",
+      "internal_usd": 2776.51,
+      "name": "Medical Master",
+      "pairs": 385626,
+      "path": "/mnt/swarm/swarm-and-bee-datasets/medical/MASTER_GOLD.jsonl",
+      "pkg_class": "Premium",
+      "slug": "medical_medical_master_2",
+      "tier": "master",
+      "vertical": "medical"
+    },
+    {
+      "deed": "anchored_local",
+      "internal_usd": 429.4,
+      "name": "Grants Royal Jelly",
+      "pairs": 70394,
+      "path": "/mnt/swarm/swarm-and-bee-datasets/grants/royal-jelly.jsonl",
+      "pkg_class": "Premium",
+      "slug": "grants_grants_royal_jelly",
+      "tier": "royal_jelly",
+      "vertical": "grants"
+    },
+    {
+      "deed": "anchored_local",
+      "internal_usd": 266.52,
+      "name": "Grants Mixed",
+      "pairs": 43691,
+      "path": "/mnt/swarm/swarm-and-bee-datasets/grants/judged.jsonl",
+      "pkg_class": "Premium",
+      "slug": "grants_grants_mixed",
+      "tier": "mixed",
+      "vertical": "grants"
+    },
+    {
+      "deed": "anchored_local",
+      "internal_usd": 266.5,
+      "name": "Grants Train",
+      "pairs": 43689,
+      "path": "/mnt/swarm/swarm-and-bee-datasets/grants/swarmgrant_train.jsonl",
+      "pkg_class": "Premium",
+      "slug": "grants_grants_train",
+      "tier": "train",
+      "vertical": "grants"
+    },
+    {
+      "deed": "anchored_local",
+      "internal_usd": 204.26,
+      "name": "Grants Royal Jelly",
+      "pairs": 33485,
+      "path": "/mnt/swarm/swarm-and-bee-datasets/grants/royal_jelly.jsonl",
+      "pkg_class": "Premium",
+      "slug": "grants_grants_royal_jelly_2",
+      "tier": "royal_jelly",
+      "vertical": "grants"
+    },
+    {
+      "deed": "anchored_local",
+      "internal_usd": 123.79,
+      "name": "Grants Honey",
+      "pairs": 20294,
+      "path": "/mnt/swarm/swarm-and-bee-datasets/grants/swarmgrant_honey.jsonl",
+      "pkg_class": "Expert",
+      "slug": "grants_grants_honey",
+      "tier": "honey",
+      "vertical": "grants"
+    },
+    {
+      "deed": "anchored_local",
+      "internal_usd": 120.19,
+      "name": "Grants Train",
+      "pairs": 19703,
+      "path": "/mnt/swarm/swarm-and-bee-datasets/grants/train.jsonl",
+      "pkg_class": "Expert",
+      "slug": "grants_grants_train_2",
+      "tier": "train",
+      "vertical": "grants"
+    },
+    {
+      "deed": "anchored_local",
+      "internal_usd": 102.55,
+      "name": "Grants Mixed",
+      "pairs": 16811,
+      "path": "/mnt/swarm/swarm-and-bee-datasets/grants/wax.jsonl",
+      "pkg_class": "Expert",
+      "slug": "grants_grants_mixed_2",
+      "tier": "mixed",
+      "vertical": "grants"
+    },
+    {
+      "deed": "anchored_local",
+      "internal_usd": 32.29,
+      "name": "Grants Propolis",
+      "pairs": 5294,
+      "path": "/mnt/swarm/swarm-and-bee-datasets/grants/propolis.jsonl",
+      "pkg_class": "Specialist",
+      "slug": "grants_grants_propolis",
+      "tier": "propolis",
+      "vertical": "grants"
+    },
+    {
+      "deed": "anchored_local",
+      "internal_usd": 30.68,
+      "name": "Grants Mixed",
+      "pairs": 5029,
+      "path": "/mnt/swarm/swarm-and-bee-datasets/grants/swarmgrant_loans_paid.jsonl",
+      "pkg_class": "Specialist",
+      "slug": "grants_grants_mixed_3",
+      "tier": "mixed",
+      "vertical": "grants"
+    },
+    {
+      "deed": "anchored_local",
+      "internal_usd": 30.68,
+      "name": "Grants Mixed",
+      "pairs": 5029,
+      "path": "/mnt/swarm/swarm-and-bee-datasets/grants/swarmgrant_verticals_paid.jsonl",
+      "pkg_class": "Specialist",
+      "slug": "grants_grants_mixed_4",
+      "tier": "mixed",
+      "vertical": "grants"
+    },
+    {
+      "deed": "anchored_local",
+      "internal_usd": 30.65,
+      "name": "Grants Mixed",
+      "pairs": 5024,
+      "path": "/mnt/swarm/swarm-and-bee-datasets/grants/swarmgrant_deepseek.jsonl",
+      "pkg_class": "Specialist",
+      "slug": "grants_grants_mixed_5",
+      "tier": "mixed",
+      "vertical": "grants"
+    },
+    {
+      "deed": "anchored_local",
+      "internal_usd": 24.85,
+      "name": "Grants Mixed",
+      "pairs": 4073,
+      "path": "/mnt/swarm/swarm-and-bee-datasets/grants/swarmgrant_missing_streams.jsonl",
+      "pkg_class": "Specialist",
+      "slug": "grants_grants_mixed_6",
+      "tier": "mixed",
+      "vertical": "grants"
+    },
+    {
+      "deed": "anchored_local",
+      "internal_usd": 14.85,
+      "name": "Grants Mixed",
+      "pairs": 2434,
+      "path": "/mnt/swarm/swarm-and-bee-datasets/grants/swarmgrant_rare_free.jsonl",
+      "pkg_class": "Specialist",
+      "slug": "grants_grants_mixed_7",
+      "tier": "mixed",
+      "vertical": "grants"
+    },
+    {
+      "deed": "anchored_local",
+      "internal_usd": 9.89,
+      "name": "Grants Honey",
+      "pairs": 1621,
+      "path": "/mnt/swarm/swarm-and-bee-datasets/grants/grants_validated__honey.jsonl",
+      "pkg_class": "Taste",
+      "slug": "grants_grants_honey_2",
+      "tier": "honey",
+      "vertical": "grants"
+    },
+    {
+      "deed": "anchored_local",
+      "internal_usd": 6.33,
+      "name": "Grants Eval",
+      "pairs": 1037,
+      "path": "/mnt/swarm/swarm-and-bee-datasets/grants/eval.jsonl",
+      "pkg_class": "Taste",
+      "slug": "grants_grants_eval",
+      "tier": "eval",
+      "vertical": "grants"
+    },
+    {
+      "deed": "anchored_local",
+      "internal_usd": 5.58,
+      "name": "Grants Mixed",
+      "pairs": 914,
+      "path": "/mnt/swarm/swarm-and-bee-datasets/grants/swarmgrant_loans.jsonl",
+      "pkg_class": "Taste",
+      "slug": "grants_grants_mixed_8",
+      "tier": "mixed",
+      "vertical": "grants"
+    },
+    {
+      "deed": "anchored_local",
+      "internal_usd": 5.45,
+      "name": "Grants Mixed",
+      "pairs": 894,
+      "path": "/mnt/swarm/swarm-and-bee-datasets/grants/swarmgrant_verticals.jsonl",
+      "pkg_class": "Taste",
+      "slug": "grants_grants_mixed_9",
+      "tier": "mixed",
+      "vertical": "grants"
+    },
+    {
+      "deed": "anchored_local",
+      "internal_usd": 4.0,
+      "name": "Grants Honey",
+      "pairs": 656,
+      "path": "/mnt/swarm/swarm-and-bee-datasets/grants/swarm-honey_grants-honey__honey.jsonl",
+      "pkg_class": "Taste",
+      "slug": "grants_grants_honey_3",
+      "tier": "honey",
+      "vertical": "grants"
+    },
+    {
+      "deed": "anchored_local",
+      "internal_usd": 3.05,
+      "name": "Grants Mixed",
+      "pairs": 500,
+      "path": "/mnt/swarm/swarm-and-bee-datasets/grants/board_member_500.jsonl",
+      "pkg_class": "Taste",
+      "slug": "grants_grants_mixed_10",
+      "tier": "mixed",
+      "vertical": "grants"
+    },
+    {
+      "deed": "none",
+      "internal_usd": null,
+      "name": "Jelly Train",
+      "pairs": 186876,
+      "path": "/mnt/swarm/swarm-and-bee-datasets/jelly/train.jsonl",
+      "pkg_class": "Premium",
+      "slug": "jelly_jelly_train",
+      "tier": "train",
+      "vertical": "jelly"
+    },
+    {
+      "deed": "none",
+      "internal_usd": null,
+      "name": "Jelly Eval",
+      "pairs": 20764,
+      "path": "/mnt/swarm/swarm-and-bee-datasets/jelly/eval.jsonl",
+      "pkg_class": "Expert",
+      "slug": "jelly_jelly_eval",
+      "tier": "eval",
+      "vertical": "jelly"
+    },
+    {
+      "deed": "none",
+      "internal_usd": null,
+      "name": "Signal Canonical",
+      "pairs": 47538,
+      "path": "/mnt/swarm/swarm-and-bee-datasets/signal/swarmsignal_canonical.jsonl",
+      "pkg_class": "Premium",
+      "slug": "signal_signal_canonical",
+      "tier": "canonical",
+      "vertical": "signal"
+    },
+    {
+      "deed": "none",
+      "internal_usd": null,
+      "name": "Signal Train",
+      "pairs": 47038,
+      "path": "/mnt/swarm/swarm-and-bee-datasets/signal/swarmsignal_9b_v3_train.jsonl",
+      "pkg_class": "Premium",
+      "slug": "signal_signal_train",
+      "tier": "train",
+      "vertical": "signal"
+    },
+    {
+      "deed": "none",
+      "internal_usd": null,
+      "name": "Signal Mixed",
+      "pairs": 30000,
+      "path": "/mnt/swarm/swarm-and-bee-datasets/signal/swarmsignal_v1_30k.jsonl",
+      "pkg_class": "Premium",
+      "slug": "signal_signal_mixed",
+      "tier": "mixed",
+      "vertical": "signal"
+    },
+    {
+      "deed": "none",
+      "internal_usd": null,
+      "name": "Signal Mixed",
+      "pairs": 30000,
+      "path": "/mnt/swarm/swarm-and-bee-datasets/signal/swarmsignal_v2_30k.jsonl",
+      "pkg_class": "Premium",
+      "slug": "signal_signal_mixed_2",
+      "tier": "mixed",
+      "vertical": "signal"
+    },
+    {
+      "deed": "none",
+      "internal_usd": null,
+      "name": "Signal Mixed",
+      "pairs": 555,
+      "path": "/mnt/swarm/swarm-and-bee-datasets/signal/swarmsignal_bin__bin_2026-03-06.jsonl",
+      "pkg_class": "Taste",
+      "slug": "signal_signal_mixed_3",
+      "tier": "mixed",
+      "vertical": "signal"
+    },
+    {
+      "deed": "none",
+      "internal_usd": null,
+      "name": "Signal Mixed",
+      "pairs": 548,
+      "path": "/mnt/swarm/swarm-and-bee-datasets/signal/signals_2026-03-06.jsonl",
+      "pkg_class": "Taste",
+      "slug": "signal_signal_mixed_4",
+      "tier": "mixed",
+      "vertical": "signal"
+    },
+    {
+      "deed": "none",
+      "internal_usd": null,
+      "name": "Signal Mixed",
+      "pairs": 504,
+      "path": "/mnt/swarm/swarm-and-bee-datasets/signal/swarmsignal_bin__bin_2026-03-09.jsonl",
+      "pkg_class": "Taste",
+      "slug": "signal_signal_mixed_5",
+      "tier": "mixed",
+      "vertical": "signal"
+    },
+    {
+      "deed": "none",
+      "internal_usd": null,
+      "name": "Signal Eval",
+      "pairs": 500,
+      "path": "/mnt/swarm/swarm-and-bee-datasets/signal/swarmsignal_9b_v3_eval.jsonl",
+      "pkg_class": "Taste",
+      "slug": "signal_signal_eval",
+      "tier": "eval",
+      "vertical": "signal"
+    },
+    {
+      "deed": "none",
+      "internal_usd": null,
+      "name": "Signal Mixed",
+      "pairs": 477,
+      "path": "/mnt/swarm/swarm-and-bee-datasets/signal/swarmsignal_bin__bin_2026-03-12.jsonl",
+      "pkg_class": "Taste",
+      "slug": "signal_signal_mixed_6",
+      "tier": "mixed",
+      "vertical": "signal"
+    },
+    {
+      "deed": "none",
+      "internal_usd": null,
+      "name": "Signal Mixed",
+      "pairs": 455,
+      "path": "/mnt/swarm/swarm-and-bee-datasets/signal/swarmsignal_bin__bin_2026-03-18.jsonl",
+      "pkg_class": "Taste",
+      "slug": "signal_signal_mixed_7",
+      "tier": "mixed",
+      "vertical": "signal"
+    },
+    {
+      "deed": "none",
+      "internal_usd": null,
+      "name": "Signal Mixed",
+      "pairs": 454,
+      "path": "/mnt/swarm/swarm-and-bee-datasets/signal/swarmsignal_bin__bin_2026-03-24.jsonl",
+      "pkg_class": "Taste",
+      "slug": "signal_signal_mixed_8",
+      "tier": "mixed",
+      "vertical": "signal"
+    },
+    {
+      "deed": "none",
+      "internal_usd": null,
+      "name": "Signal Mixed",
+      "pairs": 352,
+      "path": "/mnt/swarm/swarm-and-bee-datasets/signal/swarmsignal_bin__bin_2026-03-10.jsonl",
+      "pkg_class": "Taste",
+      "slug": "signal_signal_mixed_9",
+      "tier": "mixed",
+      "vertical": "signal"
+    },
+    {
+      "deed": "none",
+      "internal_usd": null,
+      "name": "Signal Mixed",
+      "pairs": 337,
+      "path": "/mnt/swarm/swarm-and-bee-datasets/signal/swarmsignal_bin__bin_2026-03-16.jsonl",
+      "pkg_class": "Taste",
+      "slug": "signal_signal_mixed_10",
+      "tier": "mixed",
+      "vertical": "signal"
+    },
+    {
+      "deed": "none",
+      "internal_usd": null,
+      "name": "Signal Mixed",
+      "pairs": 323,
+      "path": "/mnt/swarm/swarm-and-bee-datasets/signal/swarmsignal_bin__bin_2026-03-23.jsonl",
+      "pkg_class": "Taste",
+      "slug": "signal_signal_mixed_11",
+      "tier": "mixed",
+      "vertical": "signal"
+    },
+    {
+      "deed": "none",
+      "internal_usd": null,
+      "name": "Signal Mixed",
+      "pairs": 317,
+      "path": "/mnt/swarm/swarm-and-bee-datasets/signal/swarmsignal_bin__bin_2026-03-17.jsonl",
+      "pkg_class": "Taste",
+      "slug": "signal_signal_mixed_12",
+      "tier": "mixed",
+      "vertical": "signal"
+    },
+    {
+      "deed": "none",
+      "internal_usd": null,
+      "name": "Signal Mixed",
+      "pairs": 302,
+      "path": "/mnt/swarm/swarm-and-bee-datasets/signal/swarmsignal_bin__bin_2026-03-15.jsonl",
+      "pkg_class": "Taste",
+      "slug": "signal_signal_mixed_13",
+      "tier": "mixed",
+      "vertical": "signal"
+    },
+    {
+      "deed": "none",
+      "internal_usd": null,
+      "name": "Signal Mixed",
+      "pairs": 289,
+      "path": "/mnt/swarm/swarm-and-bee-datasets/signal/swarmsignal_bin__bin_2026-03-19.jsonl",
+      "pkg_class": "Taste",
+      "slug": "signal_signal_mixed_14",
+      "tier": "mixed",
+      "vertical": "signal"
+    },
+    {
+      "deed": "none",
+      "internal_usd": null,
+      "name": "Signal Mixed",
+      "pairs": 285,
+      "path": "/mnt/swarm/swarm-and-bee-datasets/signal/swarmsignal_bin__bin_2026-03-20.jsonl",
+      "pkg_class": "Taste",
+      "slug": "signal_signal_mixed_15",
+      "tier": "mixed",
+      "vertical": "signal"
+    },
+    {
+      "deed": "none",
+      "internal_usd": null,
+      "name": "Signal Mixed",
+      "pairs": 263,
+      "path": "/mnt/swarm/swarm-and-bee-datasets/signal/swarmsignal_bin__bin_2026-03-11.jsonl",
+      "pkg_class": "Taste",
+      "slug": "signal_signal_mixed_16",
+      "tier": "mixed",
+      "vertical": "signal"
+    },
+    {
+      "deed": "none",
+      "internal_usd": null,
+      "name": "Signal Mixed",
+      "pairs": 247,
+      "path": "/mnt/swarm/swarm-and-bee-datasets/signal/swarmsignal_bin__bin_2026-03-13.jsonl",
+      "pkg_class": "Taste",
+      "slug": "signal_signal_mixed_17",
+      "tier": "mixed",
+      "vertical": "signal"
+    },
+    {
+      "deed": "none",
+      "internal_usd": null,
+      "name": "Signal Mixed",
+      "pairs": 245,
+      "path": "/mnt/swarm/swarm-and-bee-datasets/signal/swarmsignal_bin__bin_2026-03-25.jsonl",
+      "pkg_class": "Taste",
+      "slug": "signal_signal_mixed_18",
+      "tier": "mixed",
+      "vertical": "signal"
+    },
+    {
+      "deed": "none",
+      "internal_usd": null,
+      "name": "Signal Mixed",
+      "pairs": 241,
+      "path": "/mnt/swarm/swarm-and-bee-datasets/signal/swarmsignal_bin__bin_2026-03-21.jsonl",
+      "pkg_class": "Taste",
+      "slug": "signal_signal_mixed_19",
+      "tier": "mixed",
+      "vertical": "signal"
+    },
+    {
+      "deed": "none",
+      "internal_usd": null,
+      "name": "Signal Mixed",
+      "pairs": 189,
+      "path": "/mnt/swarm/swarm-and-bee-datasets/signal/swarmsignal_bin__bin_2026-03-07.jsonl",
+      "pkg_class": "Taste",
+      "slug": "signal_signal_mixed_20",
+      "tier": "mixed",
+      "vertical": "signal"
+    },
+    {
+      "deed": "none",
+      "internal_usd": null,
+      "name": "Signal Royal Jelly",
+      "pairs": 142,
+      "path": "/mnt/swarm/swarm-and-bee-datasets/signal/signal_platinum_20260309.jsonl",
+      "pkg_class": "Taste",
+      "slug": "signal_signal_royal_jelly",
+      "tier": "royal_jelly",
+      "vertical": "signal"
+    },
+    {
+      "deed": "none",
+      "internal_usd": null,
+      "name": "Capital-Markets Train",
+      "pairs": 45039,
+      "path": "/mnt/swarm/swarm-and-bee-datasets/capital-markets/swarmcapitalmarkets_train.jsonl",
+      "pkg_class": "Premium",
+      "slug": "capital-markets_capital_markets_train",
+      "tier": "train",
+      "vertical": "capital-markets"
+    },
+    {
+      "deed": "none",
+      "internal_usd": null,
+      "name": "Capital-Markets Mixed",
+      "pairs": 19911,
+      "path": "/mnt/swarm/swarm-and-bee-datasets/capital-markets/r2_neweconomy_stamped.jsonl",
+      "pkg_class": "Expert",
+      "slug": "capital-markets_capital_markets_mixed",
+      "tier": "mixed",
+      "vertical": "capital-markets"
+    },
+    {
+      "deed": "none",
+      "internal_usd": null,
+      "name": "Capital-Markets Mixed",
+      "pairs": 19911,
+      "path": "/mnt/swarm/swarm-and-bee-datasets/capital-markets/r2_neweconomy_unique.jsonl",
+      "pkg_class": "Expert",
+      "slug": "capital-markets_capital_markets_mixed_2",
+      "tier": "mixed",
+      "vertical": "capital-markets"
+    },
+    {
+      "deed": "none",
+      "internal_usd": null,
+      "name": "Capital-Markets Mixed",
+      "pairs": 14865,
+      "path": "/mnt/swarm/swarm-and-bee-datasets/capital-markets/stream_energy.jsonl",
+      "pkg_class": "Expert",
+      "slug": "capital-markets_capital_markets_mixed_3",
+      "tier": "mixed",
+      "vertical": "capital-markets"
+    },
+    {
+      "deed": "none",
+      "internal_usd": null,
+      "name": "Capital-Markets Mixed",
+      "pairs": 8945,
+      "path": "/mnt/swarm/swarm-and-bee-datasets/capital-markets/r2_capital_stamped.jsonl",
+      "pkg_class": "Expert",
+      "slug": "capital-markets_capital_markets_mixed_4",
+      "tier": "mixed",
+      "vertical": "capital-markets"
+    },
+    {
+      "deed": "none",
+      "internal_usd": null,
+      "name": "Capital-Markets Mixed",
+      "pairs": 8945,
+      "path": "/mnt/swarm/swarm-and-bee-datasets/capital-markets/r2_capital_unique.jsonl",
+      "pkg_class": "Expert",
+      "slug": "capital-markets_capital_markets_mixed_5",
+      "tier": "mixed",
+      "vertical": "capital-markets"
+    },
+    {
+      "deed": "none",
+      "internal_usd": null,
+      "name": "Capital-Markets Mixed",
+      "pairs": 5613,
+      "path": "/mnt/swarm/swarm-and-bee-datasets/capital-markets/stream_debt_maturity.jsonl",
+      "pkg_class": "Specialist",
+      "slug": "capital-markets_capital_markets_mixed_6",
+      "tier": "mixed",
+      "vertical": "capital-markets"
+    },
+    {
+      "deed": "none",
+      "internal_usd": null,
+      "name": "Capital-Markets Mixed",
+      "pairs": 5046,
+      "path": "/mnt/swarm/swarm-and-bee-datasets/capital-markets/stream_blockchain.jsonl",
+      "pkg_class": "Specialist",
+      "slug": "capital-markets_capital_markets_mixed_7",
+      "tier": "mixed",
+      "vertical": "capital-markets"
+    },
+    {
+      "deed": "none",
+      "internal_usd": null,
+      "name": "Bee-Hive Mixed",
+      "pairs": 94768,
+      "path": "/mnt/swarm/swarm-and-bee-datasets/bee-hive/train_data.jsonl",
+      "pkg_class": "Premium",
+      "slug": "bee-hive_bee_hive_mixed",
+      "tier": "mixed",
+      "vertical": "bee-hive"
+    },
+    {
+      "deed": "none",
+      "internal_usd": null,
+      "name": "Bee-Hive Train",
+      "pairs": 4371,
+      "path": "/mnt/swarm/swarm-and-bee-datasets/bee-hive/scout_train_v1.jsonl",
+      "pkg_class": "Specialist",
+      "slug": "bee-hive_bee_hive_train",
+      "tier": "train",
+      "vertical": "bee-hive"
+    },
+    {
+      "deed": "none",
+      "internal_usd": null,
+      "name": "Bee-Hive Train",
+      "pairs": 3811,
+      "path": "/mnt/swarm/swarm-and-bee-datasets/bee-hive/agent_train_v1.jsonl",
+      "pkg_class": "Specialist",
+      "slug": "bee-hive_bee_hive_train_2",
+      "tier": "train",
+      "vertical": "bee-hive"
+    },
+    {
+      "deed": "none",
+      "internal_usd": null,
+      "name": "Bee-Hive Train",
+      "pairs": 3126,
+      "path": "/mnt/swarm/swarm-and-bee-datasets/bee-hive/peeta_train_v1.jsonl",
+      "pkg_class": "Specialist",
+      "slug": "bee-hive_bee_hive_train_3",
+      "tier": "train",
+      "vertical": "bee-hive"
+    },
+    {
+      "deed": "none",
+      "internal_usd": null,
+      "name": "Bee-Hive Train",
+      "pairs": 1621,
+      "path": "/mnt/swarm/swarm-and-bee-datasets/bee-hive/router_train_v1.jsonl",
+      "pkg_class": "Taste",
+      "slug": "bee-hive_bee_hive_train_4",
+      "tier": "train",
+      "vertical": "bee-hive"
+    },
+    {
+      "deed": "none",
+      "internal_usd": null,
+      "name": "Bee-Hive Train",
+      "pairs": 1316,
+      "path": "/mnt/swarm/swarm-and-bee-datasets/bee-hive/critic_train_v1.jsonl",
+      "pkg_class": "Taste",
+      "slug": "bee-hive_bee_hive_train_5",
+      "tier": "train",
+      "vertical": "bee-hive"
+    },
+    {
+      "deed": "none",
+      "internal_usd": null,
+      "name": "Bee-Hive Train",
+      "pairs": 955,
+      "path": "/mnt/swarm/swarm-and-bee-datasets/bee-hive/microscout_train_v1.jsonl",
+      "pkg_class": "Taste",
+      "slug": "bee-hive_bee_hive_train_6",
+      "tier": "train",
+      "vertical": "bee-hive"
+    },
+    {
+      "deed": "none",
+      "internal_usd": null,
+      "name": "Bee-Hive Train",
+      "pairs": 805,
+      "path": "/mnt/swarm/swarm-and-bee-datasets/bee-hive/filter_train_v1.jsonl",
+      "pkg_class": "Taste",
+      "slug": "bee-hive_bee_hive_train_7",
+      "tier": "train",
+      "vertical": "bee-hive"
+    },
+    {
+      "deed": "none",
+      "internal_usd": null,
+      "name": "Bee-Hive Train",
+      "pairs": 621,
+      "path": "/mnt/swarm/swarm-and-bee-datasets/bee-hive/repair_train_v1.jsonl",
+      "pkg_class": "Taste",
+      "slug": "bee-hive_bee_hive_train_8",
+      "tier": "train",
+      "vertical": "bee-hive"
+    },
+    {
+      "deed": "none",
+      "internal_usd": 175.8,
+      "name": "Legal Train",
+      "pairs": 79910,
+      "path": "/mnt/swarm/swarm-and-bee-datasets/legal/creditsniper_train.jsonl",
+      "pkg_class": "Premium",
+      "slug": "legal_legal_train",
+      "tier": "train",
+      "vertical": "legal"
+    },
+    {
+      "deed": "none",
+      "internal_usd": 20.15,
+      "name": "Legal Mixed",
+      "pairs": 9160,
+      "path": "/mnt/swarm/swarm-and-bee-datasets/legal/legal_consumer_all.jsonl",
+      "pkg_class": "Expert",
+      "slug": "legal_legal_mixed",
+      "tier": "mixed",
+      "vertical": "legal"
+    },
+    {
+      "deed": "none",
+      "internal_usd": 13.18,
+      "name": "Legal Mixed",
+      "pairs": 5989,
+      "path": "/mnt/swarm/swarm-and-bee-datasets/legal/legal_consumer_pipeline_baked_20260319_121600.jsonl",
+      "pkg_class": "Specialist",
+      "slug": "legal_legal_mixed_2",
+      "tier": "mixed",
+      "vertical": "legal"
+    },
+    {
+      "deed": "anchored_local",
+      "internal_usd": null,
+      "name": "Finance Honey",
+      "pairs": 14366,
+      "path": "/mnt/swarm/swarm-and-bee-datasets/finance/finance_honey.jsonl",
+      "pkg_class": "Expert",
+      "slug": "finance_finance_honey",
+      "tier": "honey",
+      "vertical": "finance"
+    },
+    {
+      "deed": "anchored_local",
+      "internal_usd": null,
+      "name": "Finance Mixed",
+      "pairs": 14276,
+      "path": "/mnt/swarm/swarm-and-bee-datasets/finance/judged.jsonl",
+      "pkg_class": "Expert",
+      "slug": "finance_finance_mixed",
+      "tier": "mixed",
+      "vertical": "finance"
+    },
+    {
+      "deed": "anchored_local",
+      "internal_usd": null,
+      "name": "Finance Mixed",
+      "pairs": 13044,
+      "path": "/mnt/swarm/swarm-and-bee-datasets/finance/jelly.jsonl",
+      "pkg_class": "Expert",
+      "slug": "finance_finance_mixed_2",
+      "tier": "mixed",
+      "vertical": "finance"
+    },
+    {
+      "deed": "anchored_local",
+      "internal_usd": null,
+      "name": "Finance Mixed",
+      "pairs": 7303,
+      "path": "/mnt/swarm/swarm-and-bee-datasets/finance/brain_pipeline_or.jsonl",
+      "pkg_class": "Specialist",
+      "slug": "finance_finance_mixed_3",
+      "tier": "mixed",
+      "vertical": "finance"
+    },
+    {
+      "deed": "anchored_local",
+      "internal_usd": null,
+      "name": "Finance Mixed",
+      "pairs": 4786,
+      "path": "/mnt/swarm/swarm-and-bee-datasets/finance/brain_pipeline.jsonl",
+      "pkg_class": "Specialist",
+      "slug": "finance_finance_mixed_4",
+      "tier": "mixed",
+      "vertical": "finance"
+    },
+    {
+      "deed": "anchored_local",
+      "internal_usd": null,
+      "name": "Finance Eval",
+      "pairs": 4205,
+      "path": "/mnt/swarm/swarm-and-bee-datasets/finance/creditsniper_eval.jsonl",
+      "pkg_class": "Specialist",
+      "slug": "finance_finance_eval",
+      "tier": "eval",
+      "vertical": "finance"
+    },
+    {
+      "deed": "anchored_local",
+      "internal_usd": null,
+      "name": "Finance Eval",
+      "pairs": 4205,
+      "path": "/mnt/swarm/swarm-and-bee-datasets/finance/creditsniper_eval_clean.jsonl",
+      "pkg_class": "Specialist",
+      "slug": "finance_finance_eval_2",
+      "tier": "eval",
+      "vertical": "finance"
+    },
+    {
+      "deed": "anchored_local",
+      "internal_usd": null,
+      "name": "Finance Honey",
+      "pairs": 4072,
+      "path": "/mnt/swarm/swarm-and-bee-datasets/finance/honey.jsonl",
+      "pkg_class": "Specialist",
+      "slug": "finance_finance_honey_2",
+      "tier": "honey",
+      "vertical": "finance"
+    },
+    {
+      "deed": "anchored_local",
+      "internal_usd": null,
+      "name": "Finance Mixed",
+      "pairs": 1351,
+      "path": "/mnt/swarm/swarm-and-bee-datasets/finance/creditsniper_pipeline.jsonl",
+      "pkg_class": "Taste",
+      "slug": "finance_finance_mixed_5",
+      "tier": "mixed",
+      "vertical": "finance"
+    },
+    {
+      "deed": "anchored_local",
+      "internal_usd": null,
+      "name": "Finance Royal Jelly",
+      "pairs": 1221,
+      "path": "/mnt/swarm/swarm-and-bee-datasets/finance/royal_jelly.jsonl",
+      "pkg_class": "Taste",
+      "slug": "finance_finance_royal_jelly",
+      "tier": "royal_jelly",
+      "vertical": "finance"
+    },
+    {
+      "deed": "anchored_local",
+      "internal_usd": null,
+      "name": "Finance Mixed",
+      "pairs": 954,
+      "path": "/mnt/swarm/swarm-and-bee-datasets/finance/approval_engineering.jsonl",
+      "pkg_class": "Taste",
+      "slug": "finance_finance_mixed_6",
+      "tier": "mixed",
+      "vertical": "finance"
+    },
+    {
+      "deed": "anchored_local",
+      "internal_usd": null,
+      "name": "Finance Mixed",
+      "pairs": 483,
+      "path": "/mnt/swarm/swarm-and-bee-datasets/finance/workflow_chains.jsonl",
+      "pkg_class": "Taste",
+      "slug": "finance_finance_mixed_7",
+      "tier": "mixed",
+      "vertical": "finance"
+    },
+    {
+      "deed": "anchored_local",
+      "internal_usd": null,
+      "name": "Finance Mixed",
+      "pairs": 426,
+      "path": "/mnt/swarm/swarm-and-bee-datasets/finance/escalation_ladders.jsonl",
+      "pkg_class": "Taste",
+      "slug": "finance_finance_mixed_8",
+      "tier": "mixed",
+      "vertical": "finance"
+    },
+    {
+      "deed": "anchored_local",
+      "internal_usd": null,
+      "name": "Finance Mixed",
+      "pairs": 362,
+      "path": "/mnt/swarm/swarm-and-bee-datasets/finance/creditsniper_nemotron120b.jsonl",
+      "pkg_class": "Taste",
+      "slug": "finance_finance_mixed_9",
+      "tier": "mixed",
+      "vertical": "finance"
+    },
+    {
+      "deed": "anchored_local",
+      "internal_usd": null,
+      "name": "Finance Mixed",
+      "pairs": 208,
+      "path": "/mnt/swarm/swarm-and-bee-datasets/finance/creditor_collector_branching.jsonl",
+      "pkg_class": "Taste",
+      "slug": "finance_finance_mixed_10",
+      "tier": "mixed",
+      "vertical": "finance"
+    },
+    {
+      "deed": "anchored_local",
+      "internal_usd": null,
+      "name": "Finance Mixed",
+      "pairs": 148,
+      "path": "/mnt/swarm/swarm-and-bee-datasets/finance/cfpb_complaint_flows.jsonl",
+      "pkg_class": "Taste",
+      "slug": "finance_finance_mixed_11",
+      "tier": "mixed",
+      "vertical": "finance"
+    },
+    {
+      "deed": "none",
+      "internal_usd": 64.02,
+      "name": "Aviation Mixed",
+      "pairs": 8536,
+      "path": "/mnt/swarm/swarm-and-bee-datasets/aviation/aviation_merged_8662.jsonl",
+      "pkg_class": "Expert",
+      "slug": "aviation_aviation_mixed",
+      "tier": "mixed",
+      "vertical": "aviation"
+    },
+    {
+      "deed": "none",
+      "internal_usd": 59.85,
+      "name": "Aviation Royal Jelly",
+      "pairs": 7980,
+      "path": "/mnt/swarm/swarm-and-bee-datasets/aviation/aviation_validated__royal-jelly.jsonl",
+      "pkg_class": "Specialist",
+      "slug": "aviation_aviation_royal_jelly",
+      "tier": "royal_jelly",
+      "vertical": "aviation"
+    },
+    {
+      "deed": "none",
+      "internal_usd": 30.61,
+      "name": "Aviation Master",
+      "pairs": 4081,
+      "path": "/mnt/swarm/swarm-and-bee-datasets/aviation/master.jsonl",
+      "pkg_class": "Specialist",
+      "slug": "aviation_aviation_master",
+      "tier": "master",
+      "vertical": "aviation"
+    },
+    {
+      "deed": "none",
+      "internal_usd": 5.64,
+      "name": "Aviation Mixed",
+      "pairs": 752,
+      "path": "/mnt/swarm/swarm-and-bee-datasets/aviation/aviation_live_cook.jsonl",
+      "pkg_class": "Taste",
+      "slug": "aviation_aviation_mixed_2",
+      "tier": "mixed",
+      "vertical": "aviation"
+    },
+    {
+      "deed": "none",
+      "internal_usd": 1.06,
+      "name": "Aviation Royal Jelly",
+      "pairs": 141,
+      "path": "/mnt/swarm/swarm-and-bee-datasets/aviation/aviation_cook1-discovery__royal-jelly.jsonl",
+      "pkg_class": "Taste",
+      "slug": "aviation_aviation_royal_jelly_2",
+      "tier": "royal_jelly",
+      "vertical": "aviation"
+    },
+    {
+      "deed": "none",
+      "internal_usd": 0.75,
+      "name": "Aviation Mixed",
+      "pairs": 100,
+      "path": "/mnt/swarm/swarm-and-bee-datasets/aviation/cooked_test_batch.jsonl",
+      "pkg_class": "Taste",
+      "slug": "aviation_aviation_mixed_3",
+      "tier": "mixed",
+      "vertical": "aviation"
+    },
+    {
+      "deed": "none",
+      "internal_usd": 0.75,
+      "name": "Aviation Mixed",
+      "pairs": 100,
+      "path": "/mnt/swarm/swarm-and-bee-datasets/aviation/hivecells_batch.jsonl",
+      "pkg_class": "Taste",
+      "slug": "aviation_aviation_mixed_4",
+      "tier": "mixed",
+      "vertical": "aviation"
+    },
+    {
+      "deed": "none",
+      "internal_usd": null,
+      "name": "Openalex Mixed",
+      "pairs": 10777,
+      "path": "/mnt/swarm/swarm-and-bee-datasets/openalex/openalex_cook_worthy_nemotron.jsonl",
+      "pkg_class": "Expert",
+      "slug": "openalex_openalex_mixed",
+      "tier": "mixed",
+      "vertical": "openalex"
+    },
+    {
+      "deed": "none",
+      "internal_usd": null,
+      "name": "Openalex Mixed",
+      "pairs": 2156,
+      "path": "/mnt/swarm/swarm-and-bee-datasets/openalex/asrs_clean_whale_4b.jsonl",
+      "pkg_class": "Specialist",
+      "slug": "openalex_openalex_mixed_2",
+      "tier": "mixed",
+      "vertical": "openalex"
+    },
+    {
+      "deed": "none",
+      "internal_usd": null,
+      "name": "Openalex Mixed",
+      "pairs": 1451,
+      "path": "/mnt/swarm/swarm-and-bee-datasets/openalex/openalex_cook_worthy_27b.jsonl",
+      "pkg_class": "Taste",
+      "slug": "openalex_openalex_mixed_3",
+      "tier": "mixed",
+      "vertical": "openalex"
+    },
+    {
+      "deed": "anchored_local",
+      "internal_usd": null,
+      "name": "Failure Mixed",
+      "pairs": 5278,
+      "path": "/mnt/swarm/swarm-and-bee-datasets/failure/failure_intelligence_stamped.jsonl",
+      "pkg_class": "Specialist",
+      "slug": "failure_failure_mixed",
+      "tier": "mixed",
+      "vertical": "failure"
+    },
+    {
+      "deed": "anchored_local",
+      "internal_usd": null,
+      "name": "Failure Mixed",
+      "pairs": 3408,
+      "path": "/mnt/swarm/swarm-and-bee-datasets/failure/jelly.jsonl",
+      "pkg_class": "Specialist",
+      "slug": "failure_failure_mixed_2",
+      "tier": "mixed",
+      "vertical": "failure"
+    },
+    {
+      "deed": "anchored_local",
+      "internal_usd": null,
+      "name": "Failure Honey",
+      "pairs": 1265,
+      "path": "/mnt/swarm/swarm-and-bee-datasets/failure/honey.jsonl",
+      "pkg_class": "Taste",
+      "slug": "failure_failure_honey",
+      "tier": "honey",
+      "vertical": "failure"
+    },
+    {
+      "deed": "anchored_local",
+      "internal_usd": null,
+      "name": "Failure Royal Jelly",
+      "pairs": 551,
+      "path": "/mnt/swarm/swarm-and-bee-datasets/failure/royal_jelly.jsonl",
+      "pkg_class": "Taste",
+      "slug": "failure_failure_royal_jelly",
+      "tier": "royal_jelly",
+      "vertical": "failure"
+    }
+  ],
+  "packages_sha256": "e6d68073507fcc962570ba5715a651de21b3a4406cea5bf1f115a1bd48c4d1b9",
+  "scorecard": {
+    "deed_anchored": 39,
+    "priced_packages": 33,
+    "total_packages": 99,
+    "total_pairs": 3355906,
+    "total_usd": 50169.92
+  },
+  "verticals": {
+    "aviation": {
+      "packages": 7,
+      "pairs": 21690,
+      "usd": 162.68
+    },
+    "bee-hive": {
+      "packages": 9,
+      "pairs": 111394,
+      "usd": 0.0
+    },
+    "capital-markets": {
+      "packages": 8,
+      "pairs": 128275,
+      "usd": 0.0
+    },
+    "cre": {
+      "packages": 2,
+      "pairs": 1461572,
+      "usd": 42385.59
+    },
+    "failure": {
+      "packages": 4,
+      "pairs": 10502,
+      "usd": 0.0
+    },
+    "finance": {
+      "packages": 16,
+      "pairs": 71410,
+      "usd": 0.0
+    },
+    "grants": {
+      "packages": 19,
+      "pairs": 280572,
+      "usd": 1711.51
+    },
+    "jelly": {
+      "packages": 2,
+      "pairs": 207640,
+      "usd": 0.0
+    },
+    "legal": {
+      "packages": 3,
+      "pairs": 95059,
+      "usd": 209.13
+    },
+    "medical": {
+      "packages": 2,
+      "pairs": 791807,
+      "usd": 5701.01
+    },
+    "openalex": {
+      "packages": 3,
+      "pairs": 14384,
+      "usd": 0.0
+    },
+    "signal": {
+      "packages": 24,
+      "pairs": 161601,
+      "usd": 0.0
+    }
+  }
+}

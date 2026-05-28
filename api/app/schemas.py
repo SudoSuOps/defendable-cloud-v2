@@ -600,3 +600,91 @@ class TrainingDataPolicy(BaseModel):
     sha256: str = Field(
         description="SHA-256 over the canonical policy body (excluding this field). Anyone can recompute."
     )
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Dataset catalog schemas — the members-only library surface.
+#
+# The catalog mirrors /mnt/swarm/CATALOG.md (the books-and-records inventory).
+# 99 packages across 12 verticals · 3.35M training pairs · hash-anchored.
+# Datasets are FREE with membership; we surface package identity + pair counts
+# + deed status, never the internal NAS path or our internal $ valuation.
+# ──────────────────────────────────────────────────────────────────────────────
+
+
+class DatasetPackage(BaseModel):
+    """A single dataset package in the library. Identity + counts + provenance,
+    never the on-disk path or our internal valuation.
+    """
+
+    model_config = ConfigDict(extra="allow")
+    slug: str = Field(description="Stable identifier · `<vertical>_<name-slug>` form.")
+    name: str
+    vertical: str = Field(description="One of: cre · medical · grants · jelly · signal · capital-markets · bee-hive · legal · finance · aviation · openalex · failure")
+    tier: str = Field(description="Maturity tier · e.g. honey · canonical · master · royal_jelly · train · mixed · propolis · eval")
+    pkg_class: str = Field(description="Package class · e.g. Premium · Expert · Specialist · Taste")
+    pairs: int = Field(description="Count of training pairs in the package.")
+    deed_anchored: bool = Field(description="True when the package has a local Merkle deed-anchor on the NAS.")
+    deed: str = Field(description="Raw deed status · `none` or `anchored_local` or other.")
+
+
+class DatasetCatalogScorecard(BaseModel):
+    """Top-level totals from the catalog header — Total packages · Total pairs ·
+    Deed-anchored count. Mirrors what's in CATALOG.md's `Sale-Ready Scorecard`.
+    """
+
+    model_config = ConfigDict(extra="allow")
+    total_packages: int
+    total_pairs: int
+    priced_packages: Optional[int] = None
+    deed_anchored: int
+    total_usd: Optional[float] = Field(
+        default=None,
+        description=(
+            "Internal valuation only — surfaced for books-and-records transparency. "
+            "Datasets are FREE with membership; this isn't a customer-facing price."
+        ),
+    )
+
+
+class DatasetCatalogVertical(BaseModel):
+    """Per-vertical roll-up — packages + pairs + (internal) $ rollup."""
+
+    model_config = ConfigDict(extra="allow")
+    packages: int
+    pairs: int
+    usd: Optional[float] = None
+
+
+class DatasetCatalogAnchor(BaseModel):
+    """The catalog's anchor stamp — `grand_root_v2` label + hash from CATALOG.md."""
+
+    label: Optional[str] = None
+    hash: Optional[str] = None
+
+
+class DatasetCatalog(BaseModel):
+    """`GET /datasets/catalog` — the members-only library view of the corpus.
+
+    Carries the catalog's own SHA-256 (from the NAS source) plus the packages'
+    canonical-list SHA-256 (computed over the sorted package list). A member can
+    fetch this, recompute the packages hash from the response, and confirm the
+    API mirror matches the books-and-records source.
+    """
+
+    model_config = ConfigDict(extra="allow")
+    version: str = Field(description="Catalog snapshot version. Updates ship a new deploy.")
+    generated_at: Optional[str] = None
+    filter_version: Optional[str] = None
+    catalog_sha256: Optional[str] = Field(
+        default=None,
+        description="SHA-256 of the catalog as published on /mnt/swarm/CATALOG.md (source-of-truth header).",
+    )
+    packages_sha256: Optional[str] = Field(
+        default=None,
+        description="SHA-256 over the canonical sorted packages list. Recompute to verify.",
+    )
+    anchor: Optional[DatasetCatalogAnchor] = None
+    scorecard: DatasetCatalogScorecard
+    verticals: Dict[str, DatasetCatalogVertical]
+    packages: List[DatasetPackage]
