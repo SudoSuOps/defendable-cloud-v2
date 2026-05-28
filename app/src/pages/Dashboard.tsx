@@ -22,11 +22,24 @@ const LANE_LABEL: Record<string, string> = {
   other: "Other",
 };
 
+// Per-lane receipt filter chips · keep the order from highest-frequency to
+// most-occasional so the dashboard ramp feels natural · the v1 lineup is:
+// eval (runs) → cook (lifts) → pin (declarations) → incident → download.
+const RECEIPT_LANES: { value: string | null; label: string }[] = [
+  { value: null, label: "All" },
+  { value: "defendablecloud.eval-receipt/v1", label: "Eval" },
+  { value: "defendablecloud.cook-receipt/v1", label: "Cook" },
+  { value: "defendablecloud.model-pin-receipt/v1", label: "Pin" },
+  { value: "defendablecloud.incident-receipt/v1", label: "Incident" },
+  { value: "defendablecloud.dataset-download-receipt/v1", label: "Download" },
+];
+
 export function Dashboard() {
   const { me } = useAuth();
   const nav = useNavigate();
   const [runs, setRuns] = useState<RunRow[] | null>(null);
   const [err, setErr] = useState<string | null>(null);
+  const [schemaFilter, setSchemaFilter] = useState<string | null>(null);
 
   useEffect(() => {
     api<{ runs: RunRow[] }>("/runs")
@@ -49,11 +62,29 @@ export function Dashboard() {
       </div>
 
       <div className="mt-10">
-        <div className="mb-4 flex items-baseline justify-between gap-3">
+        <div className="mb-3 flex items-baseline justify-between gap-3">
           <h2 className="text-xs font-medium uppercase tracking-widest text-paper/40">Recent receipts</h2>
           <span className="font-mono text-[10px] text-paper/30">on your org chain · latest 5</span>
         </div>
-        <RecentReceipts limit={5} emptyHint="No receipts on chain yet · approve your first run, pin a model, or download a dataset to mint one." />
+        <div className="mb-3 flex flex-wrap gap-2">
+          {RECEIPT_LANES.map((opt) => (
+            <ChipButton
+              key={opt.label}
+              label={opt.label}
+              active={schemaFilter === opt.value}
+              onClick={() => setSchemaFilter(opt.value)}
+            />
+          ))}
+        </div>
+        <RecentReceipts
+          schema={schemaFilter || undefined}
+          limit={5}
+          emptyHint={
+            schemaFilter
+              ? `No ${RECEIPT_LANES.find((l) => l.value === schemaFilter)?.label.toLowerCase()} receipts yet on this chain.`
+              : "No receipts on chain yet · approve your first run, pin a model, or download a dataset to mint one."
+          }
+        />
       </div>
 
       <div className="mt-10">
@@ -105,5 +136,28 @@ export function Dashboard() {
         )}
       </div>
     </div>
+  );
+}
+
+function ChipButton({
+  label,
+  active,
+  onClick,
+}: {
+  label: string;
+  active: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={
+        active
+          ? "rounded-md border border-honey-400/50 bg-honey-300/[0.08] px-3 py-1 font-mono text-xs text-honey-200"
+          : "rounded-md border border-white/10 bg-white/[0.02] px-3 py-1 font-mono text-xs text-paper/55 hover:border-white/25 hover:text-paper"
+      }
+    >
+      {label}
+    </button>
   );
 }
