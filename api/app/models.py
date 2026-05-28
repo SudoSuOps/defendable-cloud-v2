@@ -173,6 +173,9 @@ class EvidenceItem(Base):
     byte_size: Mapped[int] = mapped_column(BigInteger, default=0, nullable=False)
     content_type: Mapped[str | None] = mapped_column(String(128), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utc_now, nullable=False)
+    # Customer data gate · TRUE = uploaded by a customer org, refused by curation.
+    # Default TRUE is fail-safe; only operator/synthetic pipelines flip it to FALSE.
+    customer_provided: Mapped[bool] = mapped_column(default=True, nullable=False, index=True)
 
 
 class AgentSubmission(Base):
@@ -190,6 +193,9 @@ class AgentSubmission(Base):
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     sha256: Mapped[str] = mapped_column(String(64), nullable=False)
     submitted_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utc_now, nullable=False)
+    # Customer data gate · TRUE = customer-uploaded agent output, refused by curation.
+    # Default TRUE is fail-safe; operator-side cooks set FALSE explicitly.
+    customer_provided: Mapped[bool] = mapped_column(default=True, nullable=False, index=True)
 
 
 class CheckResult(Base):

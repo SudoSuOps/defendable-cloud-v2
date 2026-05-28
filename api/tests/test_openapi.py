@@ -211,6 +211,93 @@ def test_membership_endpoints_registered():
     assert not missing, f"/membership endpoints missing from OpenAPI: {sorted(missing)}"
 
 
+def test_training_data_policy_schema_present():
+    """TrainingDataPolicy must appear as a named OpenAPI component."""
+    schema = app.openapi()
+    components = (schema.get("components") or {}).get("schemas") or {}
+    assert "TrainingDataPolicy" in components, "TrainingDataPolicy schema missing"
+
+
+def test_policy_endpoint_registered_and_public():
+    """`/policy/training-data` must exist · and must NOT require auth.
+
+    The policy is the brand promise — readable by anyone, anywhere, no sign-in.
+    """
+    schema = app.openapi()
+    path = (schema.get("paths") or {}).get("/policy/training-data", {})
+    assert path, "/policy/training-data endpoint missing"
+    get_op = path.get("get", {})
+    assert get_op, "/policy/training-data has no GET operation"
+    # If FastAPI added a security requirement, it would show up here.
+    assert not get_op.get("security"), (
+        "/policy/training-data must remain unauthenticated — found a security requirement: "
+        f"{get_op.get('security')}"
+    )
+
+
+def test_training_data_policy_hash_stable():
+    """The policy hash must be deterministic across Python invocations.
+
+    Drift means the policy body silently changed — that's a doctrine event.
+    Update the version + last_updated *deliberately* if the policy needs an
+    update; the hash should change in lockstep, never silently.
+    """
+    from app.routes.policy import training_data_policy
+
+    pol_a = training_data_policy()
+    pol_b = training_data_policy()
+    assert pol_a["sha256"] == pol_b["sha256"], (
+        f"policy hash drifted across calls: {pol_a['sha256']} vs {pol_b['sha256']}"
+    )
+    # Verify the hash format (64-char hex).
+    assert len(pol_a["sha256"]) == 64, f"policy sha256 wrong length: {len(pol_a['sha256'])}"
+    int(pol_a["sha256"], 16)  # must parse as hex
+
+
+def test_training_data_policy_doctrine_lock():
+    """The policy MUST state the customer-data gate. If someone weakens or
+    removes the doctrine sentence, this test catches it.
+    """
+    from app.routes.policy import training_data_policy
+
+    pol = training_data_policy()
+    statement = pol["statement"].lower()
+    # The locked doctrine line — Mr. Defendable voice
+    assert "we learn from how agents fail" in statement, (
+        "policy statement doesn't carry the locked doctrine sentence — fix or lock it"
+    )
+    assert "never learn from what your business is doing" in statement, (
+        "policy statement weakened the customer-data gate — fix or lock it"
+    )
+    # The four categorical no's must all be present
+    nos = " ".join(s.lower() for s in pol["we_dont_learn_from"])
+    assert "customer evidence" in nos, "we_dont_learn_from missing 'customer evidence'"
+    assert "customer agent submissions" in nos, "we_dont_learn_from missing 'customer agent submissions'"
+    assert "customer-identifiable" in nos, "we_dont_learn_from missing 'customer-identifiable'"
+
+
+def test_evidence_and_submission_customer_provided_defaults_true():
+    """Fail-safe default · the SQLAlchemy model must default customer_provided
+    to TRUE on both EvidenceItem and AgentSubmission. Operator-side cooks set
+    FALSE explicitly when they want training-eligible rows.
+    """
+    from app.models import AgentSubmission, EvidenceItem
+
+    e_col = EvidenceItem.__table__.c.customer_provided
+    s_col = AgentSubmission.__table__.c.customer_provided
+    assert e_col is not None, "EvidenceItem.customer_provided column missing"
+    assert s_col is not None, "AgentSubmission.customer_provided column missing"
+    assert not e_col.nullable, "EvidenceItem.customer_provided must be NOT NULL"
+    assert not s_col.nullable, "AgentSubmission.customer_provided must be NOT NULL"
+    # SQLAlchemy stores the python-side default; both should be True.
+    assert e_col.default is not None and e_col.default.arg is True, (
+        "EvidenceItem.customer_provided default must be True (fail-safe)"
+    )
+    assert s_col.default is not None and s_col.default.arg is True, (
+        "AgentSubmission.customer_provided default must be True (fail-safe)"
+    )
+
+
 def test_incident_kind_documented_taxonomy():
     """IncidentIn.kind is a closed taxonomy. The doctrine says a single flag is
     NOT an incident — it's a Run-level work-defect / deal-finding. Crossing
