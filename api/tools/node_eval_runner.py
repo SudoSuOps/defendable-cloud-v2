@@ -18,7 +18,23 @@ from __future__ import annotations
 import argparse, json, os, re, subprocess, time
 import httpx
 
-API = os.environ.get("DC_API", "https://api.defendablecloud.com")
+def _node_env():
+    """Load /opt/defendableos/node/node.env so the node self-authenticates."""
+    env, path = {}, os.environ.get("NODE_ENV_FILE", "/opt/defendableos/node/node.env")
+    try:
+        for line in open(path):
+            line = line.strip()
+            if "=" in line and not line.startswith("#"):
+                k, v = line.split("=", 1)
+                env[k] = v
+    except FileNotFoundError:
+        pass
+    return env
+
+
+_NODE = _node_env()
+API = os.environ.get("DC_API") or _NODE.get("DC_API", "https://api.defendablecloud.com")
+TOKEN = os.environ.get("JWT") or os.environ.get("DC_TOKEN") or _NODE.get("DC_TOKEN", "")
 RIG_KEY = os.path.expanduser(os.environ.get("RIG_KEY", "~/.ssh/defendable_5090"))
 RIG = os.environ.get("RIG", "swarm@192.168.0.99")
 
@@ -59,6 +75,15 @@ def _extract_json(text: str) -> str:
 def generate(prompt: str, model: str, backend: str, base: str, constrain: bool) -> tuple[str, float]:
     """Return (raw_text, tok_per_s). Constrained decoding when constrain=True."""
     t0 = time.time()
+    if backend == "ollama-local":
+        # run ON the node against local Ollama — no SSH (the node self-serves)
+        payload = {"model": model, "prompt": prompt, "stream": False,
+                   "options": {"temperature": 0.1, "num_predict": 1024}}
+        if constrain:
+            payload["format"] = SUBMISSION_SCHEMA
+        d = httpx.post("http://localhost:11434/api/generate", json=payload, timeout=280).json()
+        ec, ed = d.get("eval_count", 0), d.get("eval_duration", 1) / 1e9
+        return d["response"], (ec / ed if ed else 0.0)
     if backend == "ollama-ssh":
         payload = {"model": model, "prompt": prompt, "stream": False,
                    "options": {"temperature": 0.1, "num_predict": 1024}}
@@ -89,12 +114,14 @@ def main():
     ap.add_argument("--model", default="hermes3:8b")
     ap.add_argument("--tier", default="small")
     ap.add_argument("--profile", default=None)
-    ap.add_argument("--backend", default="ollama-ssh", choices=["ollama-ssh", "openai"])
+    ap.add_argument("--backend", default="ollama-local", choices=["ollama-local", "ollama-ssh", "openai"])
     ap.add_argument("--base", default="http://localhost:11434/v1")
     ap.add_argument("--no-constrain", dest="constrain", action="store_false")
     args = ap.parse_args()
 
-    c = httpx.Client(base_url=API, timeout=60, headers={"Authorization": f"Bearer {os.environ['JWT']}"})
+    if not TOKEN:
+        print("no token — set DC_TOKEN in /opt/defendableos/node/node.env (or JWT env)"); return
+    c = httpx.Client(base_url=API, timeout=60, headers={"Authorization": f"Bearer {TOKEN}"})
     name = args.profile or f"{args.model.split(':')[0]} (5090)"
     prof = next((p for p in c.get("/agent-profiles").json()["agent_profiles"] if p["name"] == name), None)
     if not prof:
