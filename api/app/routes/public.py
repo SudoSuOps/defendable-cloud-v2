@@ -8,11 +8,13 @@ from app.deps import Principal, get_current_user
 from app.hashing import ZERO_HASH, canonical, sha256_hex
 from app.models import Receipt
 from app import receipts as receipt_builder
+from app.schemas import LedgerList, LedgerVerifyResult, PublicReceipt
+from app.util import iso
 
 router = APIRouter(tags=["public"])
 
 
-@router.get("/share/{token}")
+@router.get("/share/{token}", response_model=PublicReceipt)
 async def public_receipt(token: str):
     async with session_scope() as db:
         r = (
@@ -48,7 +50,31 @@ async def public_receipt_pdf(token: str):
         )
 
 
-@router.get("/ledger/verify")
+@router.get("/ledger", response_model=LedgerList)
+async def list_ledger(current: Principal = Depends(get_current_user)):
+    """List the per-org hash chain in `org_seq` order — chain coordinates only,
+    no payload. The chain bytes for any single entry are at `/share/{token}`."""
+    async with session_scope() as db:
+        rows = (
+            await db.execute(
+                select(Receipt).where(Receipt.org_id == current.org_id).order_by(Receipt.org_seq.asc())
+            )
+        ).scalars().all()
+        return {
+            "entries": [
+                {
+                    "receipt_id": r.receipt_id,
+                    "org_seq": r.org_seq,
+                    "parent_hash": r.parent_hash,
+                    "receipt_sha256": r.receipt_sha256,
+                    "created_at": iso(r.created_at) if r.created_at else None,
+                }
+                for r in rows
+            ]
+        }
+
+
+@router.get("/ledger/verify", response_model=LedgerVerifyResult)
 async def verify_ledger(current: Principal = Depends(get_current_user)):
     async with session_scope() as db:
         rows = (

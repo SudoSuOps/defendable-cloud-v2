@@ -8,6 +8,7 @@ from app.db import session_scope
 from app.deps import Principal, get_current_user
 from app.hashing import sha256_hex
 from app.models import AgentSubmission, CheckResult, FlightSheet, Run, Verdict
+from app.schemas import FlightSheetList
 from app.util import iso, new_id
 
 router = APIRouter(tags=["eval"])
@@ -22,7 +23,7 @@ def flight_sheet_out(fs: FlightSheet) -> dict:
     }
 
 
-@router.get("/flight-sheets")
+@router.get("/flight-sheets", response_model=FlightSheetList)
 async def list_flight_sheets(_: Principal = Depends(get_current_user)):
     async with session_scope() as db:
         rows = (
