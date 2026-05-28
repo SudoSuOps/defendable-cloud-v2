@@ -134,6 +134,44 @@ def test_rule_severity_literal_used_on_finding():
     )
 
 
+def test_org_schemas_present_in_openapi():
+    """Phase 4 client-dashboard schemas — Org, ApiKey, ApiKeyCreated, ApiKeyList,
+    ApiKeyIn, UsageStats — must be named components.
+    """
+    schema = app.openapi()
+    components = (schema.get("components") or {}).get("schemas") or {}
+    required = {"Org", "ApiKey", "ApiKeyCreated", "ApiKeyIn", "ApiKeyList", "UsageStats"}
+    missing = required - set(components.keys())
+    assert not missing, (
+        f"Phase 4 client-dashboard schemas missing from OpenAPI: {sorted(missing)}"
+    )
+
+
+def test_org_plan_literal_locked():
+    """Org.plan must speak the canonical PlanTier literal — free/pro/enterprise.
+
+    Stripe (Phase 5) wires real billing onto these tier values; a typo here
+    means subscription state doesn't match plan state.
+    """
+    schema = app.openapi()
+    org = (schema.get("components") or {}).get("schemas", {}).get("Org")
+    assert org is not None, "Org schema missing"
+    plan = org.get("properties", {}).get("plan", {})
+    found = _enum_values(plan)
+    assert found == {"free", "pro", "enterprise"}, (
+        f"Org.plan literal drifted from PlanTier vocabulary: {sorted(found)}"
+    )
+
+
+def test_org_endpoints_registered():
+    """The four /org endpoints must be wired before the frontend can call them."""
+    schema = app.openapi()
+    paths = set(schema.get("paths", {}).keys())
+    required = {"/org", "/org/api-keys", "/org/api-keys/{key_id}", "/org/usage"}
+    missing = required - paths
+    assert not missing, f"/org endpoints missing from OpenAPI: {sorted(missing)}"
+
+
 def test_incident_kind_documented_taxonomy():
     """IncidentIn.kind is a closed taxonomy. The doctrine says a single flag is
     NOT an incident — it's a Run-level work-defect / deal-finding. Crossing

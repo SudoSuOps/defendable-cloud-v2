@@ -13,6 +13,7 @@ import { Datasets } from "./pages/Datasets";
 import { AgentProfiles, AgentProfileDetail } from "./pages/AgentProfiles";
 import { StackPlanner } from "./pages/StackPlanner";
 import { Incidents } from "./pages/Incidents";
+import { Org } from "./pages/Org";
 import { ShareView } from "./pages/ShareView";
 import { NotFound } from "./pages/NotFound";
 
@@ -63,6 +64,7 @@ export default function App() {
         <Route path="/agents/:id" element={<Protected><AgentProfileDetail /></Protected>} />
         <Route path="/incidents" element={<Protected><Incidents /></Protected>} />
         <Route path="/datasets" element={<Protected><Datasets /></Protected>} />
+        <Route path="/org" element={<Protected><Org /></Protected>} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </AuthProvider>

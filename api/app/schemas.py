@@ -437,3 +437,81 @@ class PublicReceipt(BaseModel):
     verified: bool
     created_at: Optional[str] = None
     payload: Dict[str, Any]
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Org / client-dashboard schemas (Phase 4 of the pre-finality sprint)
+# ──────────────────────────────────────────────────────────────────────────────
+
+
+# Plan tier — placeholder until Phase 5 (Stripe) wires real billing.
+PlanTier = Literal["free", "pro", "enterprise"]
+
+
+class Org(BaseModel):
+    """`GET /org` — the signed-in user's organization, with light stats."""
+
+    model_config = ConfigDict(extra="allow")
+    id: str
+    name: str
+    slug: str
+    member_count: int = 1
+    receipt_count: int = 0
+    plan: PlanTier = "free"
+    created_at: Optional[str] = None
+
+
+class ApiKey(BaseModel):
+    """A redacted view of an API key. NO secret — the secret only ships once,
+    inside `ApiKeyCreated` on the POST response. After that, only the short
+    `key_prefix` is shown for display.
+    """
+
+    id: str
+    name: str
+    key_prefix: str = Field(description="The first 12 characters of the key — safe to display.")
+    created_at: Optional[str] = None
+    last_used_at: Optional[str] = None
+    revoked: bool = False
+
+
+class ApiKeyList(BaseModel):
+    """`GET /org/api-keys`"""
+
+    api_keys: List[ApiKey]
+
+
+class ApiKeyCreated(BaseModel):
+    """`POST /org/api-keys` response — returned ONCE on creation. The plaintext
+    `secret` is never shown again; subsequent reads return `ApiKey` (no secret).
+    """
+
+    id: str
+    name: str
+    key_prefix: str
+    secret: str = Field(
+        description=(
+            "The full API key in plaintext. Format `dc_<random>`. SAVE IT NOW — "
+            "this is the only time the secret is returned. Lost keys must be revoked + recreated."
+        )
+    )
+    created_at: Optional[str] = None
+
+
+class ApiKeyIn(BaseModel):
+    """`POST /org/api-keys` body — name the key for human discovery."""
+
+    name: str = Field(min_length=1, max_length=200)
+
+
+class UsageStats(BaseModel):
+    """`GET /org/usage` — receipt minting + chain position. Placeholder for
+    metered billing in Phase 5; today reports raw counts so the dashboard can
+    show usage even before Stripe lands.
+    """
+
+    model_config = ConfigDict(extra="allow")
+    receipts_lifetime: int
+    receipts_this_month: int
+    org_seq: int = Field(description="The next org_seq the chain will assign — equals receipts_lifetime today.")
+    earned_lanes: int = Field(default=0, description="Count of agent profiles with ≥3 honey + 0 propolis on any lane.")
