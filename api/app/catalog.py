@@ -71,3 +71,14 @@ def package_by_slug(slug: str) -> dict[str, Any] | None:
         if p["slug"] == slug:
             return _package_out(p)
     return None
+
+
+def raw_package_by_slug(slug: str) -> dict[str, Any] | None:
+    """Internal use only — returns the raw package WITH the NAS path. Used by
+    the download endpoint to derive the Tigris staging key from the source
+    basename. Never returned over the API.
+    """
+    for p in _raw_catalog()["packages"]:
+        if p["slug"] == slug:
+            return p
+    return None

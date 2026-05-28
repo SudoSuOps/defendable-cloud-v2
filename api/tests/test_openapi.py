@@ -319,6 +319,61 @@ def test_catalog_loads_99_packages_12_verticals():
     int(cv["packages_sha256"], 16)  # must parse as hex
 
 
+def test_download_schemas_present():
+    """Sprint 8 download schemas — all 3 must be named OpenAPI components."""
+    schema = app.openapi()
+    components = (schema.get("components") or {}).get("schemas") or {}
+    required = {"DatasetDownloadRequest", "DatasetDownloadGrant", "DatasetDownloadPackage"}
+    missing = required - set(components.keys())
+    assert not missing, f"download schemas missing from OpenAPI: {sorted(missing)}"
+
+
+def test_download_endpoints_registered():
+    """The download POST + the public share-download GET must both be wired."""
+    schema = app.openapi()
+    paths = set(schema.get("paths", {}).keys())
+    required = {"/datasets/catalog/{slug}/download", "/share/{token}/download"}
+    missing = required - paths
+    assert not missing, f"download endpoints missing: {sorted(missing)}"
+
+
+def test_dataset_download_receipt_payload_shape():
+    """The receipt payload builder must seal the right schema id + package
+    identity + chain coordinates. The download_url is INTENTIONALLY absent
+    from the receipt body — URLs rotate; receipts don't.
+    """
+    from app.receipts import build_dataset_download_payload
+
+    payload = build_dataset_download_payload(
+        receipt_id="DCR-000000-aaaaaaaa",
+        org_seq=0,
+        parent_hash="0" * 64,
+        created_at="2026-05-28T20:00:00Z",
+        org={"id": "o1", "name": "Acme"},
+        package={
+            "slug": "cre_cre_honey",
+            "name": "Cre Honey",
+            "vertical": "cre",
+            "tier": "honey",
+            "pkg_class": "Premium",
+            "pairs": 810097,
+            "deed_anchored": False,
+        },
+        tigris_key="datasets/cre_cre_honey/cre_honey_stamped.jsonl",
+        ready_at_grant=False,
+        expires_at="2026-05-29T20:00:00Z",
+        granted_to_user_id="u_01",
+        share_url="https://api.defendablecloud.com/share/shr_abc",
+    )
+    assert payload["schema"] == "defendablecloud.dataset-download-receipt/v1"
+    assert payload["package"]["slug"] == "cre_cre_honey"
+    assert payload["tigris_key"].startswith("datasets/")
+    assert payload["expires_at"] == "2026-05-29T20:00:00Z"
+    # URL deliberately NOT in payload — only share_url is.
+    assert "download_url" not in payload
+    assert payload["share_url"].endswith("/share/shr_abc")
+
+
 def test_catalog_response_hides_internal_fields():
     """API mirror must hide the NAS path and the internal $ valuation per package.
 

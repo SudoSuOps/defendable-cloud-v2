@@ -68,3 +68,26 @@ def get_object(key: str) -> Optional[bytes]:
         return None
     except Exception:
         return None
+
+
+def head_object(key: str) -> bool:
+    """Return True if the object exists in Tigris. Used by the dataset-download
+    flow to surface a `ready` flag without streaming the file.
+    """
+    try:
+        _client().head_object(Bucket=bucket(), Key=key)
+        return True
+    except Exception:
+        return False
+
+
+def presigned_get_url(key: str, *, expires_in_seconds: int = 86400) -> str:
+    """Generate a time-limited signed URL for a GET against the bucket.
+    Used by /share/{token}/download to redirect to fresh URLs on each access.
+    """
+    return _client().generate_presigned_url(
+        "get_object",
+        Params={"Bucket": bucket(), "Key": key},
+        ExpiresIn=expires_in_seconds,
+        HttpMethod="GET",
+    )
