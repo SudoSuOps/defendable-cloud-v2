@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { api, apiBase } from "../lib/api";
 import { Badge, Button, Callout, Card, ErrorNote, ExampleList, Field, inputClass, Spinner } from "../components/ui";
+import { PinnedModelInline, type PinnedModel } from "../components/PinnedModelBlock";
 import { EVIDENCE_KIND_HELP, laneGuide } from "../lib/guidance";
 
 interface Evidence { id: string; kind: string; label: string; sha256: string | null; }
@@ -642,6 +643,7 @@ const pct = (v: number | null) => (v == null ? "—" : `${(v * 100).toFixed(1)}%
 function CookSection({ run, reload }: { run: Run; reload: () => Promise<void> }) {
   const [datasets, setDatasets] = useState<Dataset[]>([]);
   const [cook, setCook] = useState<Cook | null>(null);
+  const [pinned, setPinned] = useState<PinnedModel | null>(null);
   const [datasetId, setDatasetId] = useState("");
   const [baseModel, setBaseModel] = useState(BASE_MODELS[0]);
   const [busy, setBusy] = useState(false);
@@ -651,6 +653,18 @@ function CookSection({ run, reload }: { run: Run; reload: () => Promise<void> })
     api<{ datasets: Dataset[] }>("/datasets").then((r) => { const lane = r.datasets.filter((d) => d.lane === run.lane); const list = lane.length ? lane : r.datasets; setDatasets(list); if (list[0]) setDatasetId(list[0].id); });
     api<{ cooks: any[] }>("/cooks").then((r) => { const mine = r.cooks.filter((c) => c.run_id === run.id); if (mine[0]) setCook(mine[0]); });
   }, [run.id]);
+
+  // Once the cook has succeeded and has a share token, fetch its public
+  // receipt body to see whether a model-pin was sealed in. Cheap one-shot
+  // fetch · only runs when the share_token changes.
+  useEffect(() => {
+    if (!cook || cook.status !== "succeeded" || !cook.share_token) return;
+    let alive = true;
+    api<{ payload: any }>(`/share/${cook.share_token}`, { auth: false })
+      .then((r) => { if (alive && r?.payload?.pinned_model) setPinned(r.payload.pinned_model); })
+      .catch(() => { /* if the share lookup fails the cook still shows; pin is optional */ });
+    return () => { alive = false; };
+  }, [cook?.share_token, cook?.status]);
 
   useEffect(() => {
     if (!cook || ["succeeded", "failed"].includes(cook.status)) return;
@@ -676,6 +690,7 @@ function CookSection({ run, reload }: { run: Run; reload: () => Promise<void> })
               <span className={`rounded-md border px-2 py-0.5 font-mono text-xs ${(cook.lift ?? 0) >= 0 ? "border-emerald-400/30 bg-emerald-400/10 text-emerald-300" : "border-red-400/30 bg-red-400/10 text-red-300"}`}>{cook.lift != null ? `${cook.lift >= 0 ? "+" : ""}${(cook.lift * 100).toFixed(1)}%` : "—"}</span>
             </div>
             <p className="mt-2 text-sm text-paper/55">{cook.base_model} · {cook.pairs} pairs{cook.runner ? ` · ${cook.runner}` : ""}</p>
+            {pinned && <PinnedModelInline pin={pinned} />}
             {cook.share_token && <div className="mt-4 flex gap-3"><a href={`/r/${cook.share_token}`} target="_blank" rel="noreferrer"><Button variant="ghost">View lift proof</Button></a><a href={`${apiBase}/share/${cook.share_token}/pdf`} target="_blank" rel="noreferrer"><Button variant="ghost">PDF</Button></a></div>}
           </div>
         ) : cook.status === "failed" ? (
