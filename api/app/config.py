@@ -45,6 +45,15 @@ class Settings(BaseSettings):
 
     cors_origins_raw: str = Field(default="", alias="CORS_ORIGINS")
 
+    # Membership · members-only community cap. $100/year, trust-based monthly
+    # billing once active. Donovan's call: keep it ~100 at a time, real valued
+    # members, not open door every hack in the game.
+    membership_cap: int = Field(default=100, alias="MEMBERSHIP_CAP")
+    # Where membership applications get emailed for human review.
+    membership_review_email: str = Field(
+        default="build@defendableos.com", alias="MEMBERSHIP_REVIEW_EMAIL"
+    )
+
     @property
     def cors_origins(self) -> List[str]:
         if not self.cors_origins_raw:

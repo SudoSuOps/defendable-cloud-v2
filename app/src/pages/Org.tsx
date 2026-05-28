@@ -2,6 +2,25 @@ import { useEffect, useState } from "react";
 import { api } from "../lib/api";
 import { Badge, Button, Card, ErrorNote, Field, inputClass, Spinner } from "../components/ui";
 
+type MembershipStatus = "pending" | "active" | "waitlisted" | "inactive";
+
+interface MembershipApplicationView {
+  company_name?: string;
+  intended_use?: string;
+  referral_source?: string;
+}
+
+interface Membership {
+  status: MembershipStatus;
+  applied_at: string | null;
+  activated_at: string | null;
+  seat_number: number | null;
+  cap: number;
+  active_count: number;
+  waitlist_position: number | null;
+  application: MembershipApplicationView | null;
+}
+
 interface OrgInfo {
   id: string;
   name: string;
@@ -46,6 +65,7 @@ export function Org() {
   const [org, setOrg] = useState<OrgInfo | null>(null);
   const [keys, setKeys] = useState<ApiKeyRow[] | null>(null);
   const [usage, setUsage] = useState<UsageStats | null>(null);
+  const [membership, setMembership] = useState<Membership | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
 
@@ -55,18 +75,49 @@ export function Org() {
   const [createdKey, setCreatedKey] = useState<ApiKeyCreated | null>(null);
   const [copied, setCopied] = useState(false);
 
+  // Apply for membership form state
+  const [applyCompany, setApplyCompany] = useState("");
+  const [applyUse, setApplyUse] = useState("");
+  const [applyReferral, setApplyReferral] = useState("");
+
   async function load() {
     try {
-      const [o, k, u] = await Promise.all([
+      const [o, k, u, m] = await Promise.all([
         api<OrgInfo>("/org"),
         api<{ api_keys: ApiKeyRow[] }>("/org/api-keys"),
         api<UsageStats>("/org/usage"),
+        api<Membership>("/membership"),
       ]);
       setOrg(o);
       setKeys(k.api_keys);
       setUsage(u);
+      setMembership(m);
     } catch (e: any) {
       setErr(e.message || String(e));
+    }
+  }
+
+  async function applyForMembership() {
+    if (!applyCompany.trim()) return;
+    setErr(null);
+    setBusy("apply");
+    try {
+      const out = await api<Membership>("/membership/apply", {
+        method: "POST",
+        body: {
+          company_name: applyCompany.trim(),
+          intended_use: applyUse.trim() || undefined,
+          referral_source: applyReferral.trim() || undefined,
+        },
+      });
+      setMembership(out);
+      setApplyCompany("");
+      setApplyUse("");
+      setApplyReferral("");
+    } catch (e: any) {
+      setErr(e.message || String(e));
+    } finally {
+      setBusy(null);
     }
   }
 
@@ -108,13 +159,118 @@ export function Org() {
   }
 
   if (err && !org) return <ErrorNote>{err}</ErrorNote>;
-  if (!org || !keys || !usage) return <Spinner label="Loading workspace…" />;
+  if (!org || !keys || !usage || !membership) return <Spinner label="Loading workspace…" />;
+
+  const m = membership;
+  const hasApplied = !!m.applied_at;
+  const seatsLeft = Math.max(0, m.cap - m.active_count);
 
   return (
     <div className="mx-auto max-w-3xl">
       <p className="text-sm font-medium uppercase tracking-widest text-honey-300">Workspace</p>
       <h1 className="mt-2 text-3xl font-semibold tracking-tight text-paper">{org.name}</h1>
       {err && <div className="mt-4"><ErrorNote>{err}</ErrorNote></div>}
+
+      {/* Membership — the headline. */}
+      {m.status === "active" ? (
+        <Card
+          className="mt-6 border-honey-400/40"
+          title="Membership · active"
+          subtitle="DefendableCloud member · seat held"
+          actions={<Badge value="active" />}
+        >
+          <div className="grid gap-x-8 gap-y-2 text-sm sm:grid-cols-2">
+            <Row k="Seat number" v={`${m.seat_number ?? "—"} / ${m.cap}`} />
+            <Row k="Member since" v={m.activated_at ? new Date(m.activated_at).toLocaleDateString() : "—"} />
+            <Row k="Community" v={`${m.active_count}/${m.cap} active members`} />
+            <Row k="Annual fee" v="$100 · billed monthly relationship" />
+          </div>
+          <p className="mt-4 text-sm text-paper/65">
+            All datasets and the CLI are open to you. Compute billed monthly on the relationship — no checkouts, no surprises.
+          </p>
+        </Card>
+      ) : m.status === "waitlisted" ? (
+        <Card
+          className="mt-6 border-amber-400/40"
+          title="Membership · waitlisted"
+          subtitle={`You're ${m.waitlist_position ? `#${m.waitlist_position}` : ""} in line · cap is ${m.cap}`}
+          actions={<Badge value="waitlisted" />}
+        >
+          <p className="text-sm text-paper/70">
+            DefendableCloud is members-only and capped at <span className="font-semibold text-paper">{m.cap}</span> active seats at a time — real valued members, not an open door. You'll roll into active when a seat opens.
+          </p>
+          {m.application && (
+            <dl className="mt-4 grid gap-x-8 gap-y-2 text-sm sm:grid-cols-2">
+              <Row k="Company" v={m.application.company_name || "—"} />
+              <Row k="Applied" v={m.applied_at ? new Date(m.applied_at).toLocaleString() : "—"} />
+            </dl>
+          )}
+        </Card>
+      ) : hasApplied ? (
+        <Card
+          className="mt-6 border-honey-400/40"
+          title="Membership · application received"
+          subtitle="Reviewing personally · we'll reach out within 48 hours"
+          actions={<Badge value="pending" />}
+        >
+          <p className="text-sm text-paper/70">
+            Thanks for applying. DefendableCloud is members-only — we keep it ~{m.cap} at a time so every relationship is real. We'll reach out to <span className="text-paper">{org.name}</span> directly.
+          </p>
+          {m.application && (
+            <dl className="mt-4 grid gap-x-8 gap-y-2 text-sm sm:grid-cols-2">
+              <Row k="Company" v={m.application.company_name || "—"} />
+              <Row k="Applied" v={m.applied_at ? new Date(m.applied_at).toLocaleString() : "—"} />
+              <Row k="Referral" v={m.application.referral_source || "—"} />
+              <Row k="Seats" v={`${m.active_count}/${m.cap} active · ${seatsLeft} open`} />
+            </dl>
+          )}
+        </Card>
+      ) : (
+        <Card
+          className="mt-6 border-honey-400/40"
+          title="Apply for membership"
+          subtitle={`$100/year · capped at ${m.cap} active seats · ${seatsLeft} open`}
+        >
+          <p className="text-sm leading-relaxed text-paper/70">
+            DefendableCloud is a members-only community. Datasets are free, compute is billed monthly on the relationship — no nickel-and-dime, no checkouts. We cap seats at <span className="font-semibold text-paper">{m.cap}</span> so every member gets real value.
+          </p>
+          <div className="mt-5 space-y-4">
+            <Field label="Company / Organization" hint="What we'll refer to you as">
+              <input
+                className={inputClass}
+                value={applyCompany}
+                placeholder="Acme Capital Partners"
+                onChange={(e) => setApplyCompany(e.target.value)}
+              />
+            </Field>
+            <Field label="Intended use" hint="What you'd want to cook · what you'd want to prove">
+              <textarea
+                className={inputClass}
+                rows={3}
+                value={applyUse}
+                placeholder="e.g. underwriting an agent for CRE deal review, with audit-grade receipts for the IC"
+                onChange={(e) => setApplyUse(e.target.value)}
+              />
+            </Field>
+            <Field label="How did you hear about us?" hint="Optional · helps us understand how the community is growing">
+              <input
+                className={inputClass}
+                value={applyReferral}
+                placeholder="Mr. Defendable on X, Pain in the Shed, a member referral, …"
+                onChange={(e) => setApplyReferral(e.target.value)}
+              />
+            </Field>
+            <div className="flex flex-wrap items-center gap-3 border-t border-white/5 pt-4">
+              <Button disabled={busy === "apply" || !applyCompany.trim()} onClick={applyForMembership}>
+                {busy === "apply" ? "Submitting…" : "Apply for membership"}
+              </Button>
+              <span className="text-xs text-paper/45">
+                A human reads every application. We'll reach out within 48 hours.
+              </span>
+            </div>
+          </div>
+        </Card>
+      )}
 
       {/* Org info */}
       <Card className="mt-6" title="Org" subtitle="Books-and-records identity for the vault">

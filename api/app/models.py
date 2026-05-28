@@ -33,6 +33,15 @@ class Organization(Base):
     slug: Mapped[str] = mapped_column(String(80), unique=True, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utc_now, nullable=False)
 
+    # Membership · members-only community, capped seats, trust-based monthly billing.
+    # Status transitions: pending → active (admin) · pending → waitlisted (cap hit) ·
+    # active → inactive (lapse). Held off Stripe until the relationship is built.
+    membership_status: Mapped[str] = mapped_column(String(16), default="pending", nullable=False, index=True)
+    membership_applied_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    membership_activated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    membership_seat_number: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    membership_application: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+
 
 class User(Base):
     __tablename__ = "users"

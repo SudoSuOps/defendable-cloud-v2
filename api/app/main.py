@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app import __version__
 from app.config import settings
-from app.routes import agents, auth, cooks, datasets, eval, healthz, incidents, org, projects, public, runner, runs
+from app.routes import agents, auth, cooks, datasets, eval, healthz, incidents, membership, org, projects, public, runner, runs
 
 
 def create_app() -> FastAPI:
@@ -31,6 +31,7 @@ def create_app() -> FastAPI:
     app.include_router(healthz.router)
     app.include_router(auth.router)
     app.include_router(org.router)
+    app.include_router(membership.router)
     app.include_router(projects.router)
     app.include_router(agents.router)
     app.include_router(incidents.router)

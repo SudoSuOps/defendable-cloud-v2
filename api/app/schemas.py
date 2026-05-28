@@ -515,3 +515,68 @@ class UsageStats(BaseModel):
     receipts_this_month: int
     org_seq: int = Field(description="The next org_seq the chain will assign — equals receipts_lifetime today.")
     earned_lanes: int = Field(default=0, description="Count of agent profiles with ≥3 honey + 0 propolis on any lane.")
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Membership schemas — the members-only community gate.
+#
+# DefendableCloud is members-only. $100/year. Hard cap at MEMBERSHIP_CAP active
+# seats. Trust-based monthly billing once active (no Stripe checkout — bills
+# go out as part of the relationship). When the cap is hit, new applications
+# become `waitlisted` and surface their queue position.
+# ──────────────────────────────────────────────────────────────────────────────
+
+
+# MembershipStatus — closed taxonomy of an org's membership state.
+#   pending     · applied to join OR never applied; not yet a seat-holder
+#   active      · holds a seat in the cap · gets dataset + compute access
+#   waitlisted  · applied while the cap was full · will roll into active when a seat opens
+#   inactive    · was active, then lapsed (legacy/future state)
+MembershipStatus = Literal["pending", "active", "waitlisted", "inactive"]
+
+
+class MembershipApplicationView(BaseModel):
+    """What the applicant told us when they applied. Stored as JSONB on the
+    organization; surfaced read-only on `GET /membership` so the org can see
+    what they submitted (and admins can review).
+    """
+
+    model_config = ConfigDict(extra="allow")
+    company_name: Optional[str] = None
+    intended_use: Optional[str] = None
+    referral_source: Optional[str] = None
+
+
+class Membership(BaseModel):
+    """`GET /membership` — the org's membership state + community capacity.
+
+    `cap` is the hard ceiling on active members; `active_count` is the current
+    headcount. When `active_count >= cap`, new applications become
+    `waitlisted` and `waitlist_position` is the order they joined the queue.
+    """
+
+    status: MembershipStatus
+    applied_at: Optional[str] = None
+    activated_at: Optional[str] = None
+    seat_number: Optional[int] = Field(
+        default=None,
+        description="Filled when status='active'. The seat the org holds (1..cap).",
+    )
+    cap: int = Field(description="Hard cap on active seats. Defaults to 100.")
+    active_count: int = Field(description="Current active member count across the platform.")
+    waitlist_position: Optional[int] = Field(
+        default=None,
+        description="Filled when status='waitlisted'. 1 = next in line.",
+    )
+    application: Optional[MembershipApplicationView] = None
+
+
+class MembershipApplicationIn(BaseModel):
+    """`POST /membership/apply` body. All fields optional except company_name —
+    intended_use is the one we read most carefully; referral_source helps us
+    understand how the community is growing.
+    """
+
+    company_name: str = Field(min_length=1, max_length=200)
+    intended_use: Optional[str] = Field(default=None, max_length=1000)
+    referral_source: Optional[str] = Field(default=None, max_length=200)
