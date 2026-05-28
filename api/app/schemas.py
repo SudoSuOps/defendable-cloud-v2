@@ -51,6 +51,51 @@ CheckSource = Literal["auto", "operator"]
 # ApprovalDecision — what a human operator decides at the approval gate.
 ApprovalDecision = Literal["approved", "rejected", "escalated"]
 
+# RuleSeverity — the severity a *rule* declares on a Flight Sheet.
+#
+# This is distinct from `Severity` (the *verdict* rollup honey/jelly/propolis).
+# RuleSeverity is the rule's *pre-weight* — what the rulebook author said
+# about how bad it is when this rule is violated. `tier_of()` normalizes any
+# of these into a TierLevel (low/mid/high).
+#
+# The union below is the closed set of every value that has ever appeared in a
+# Flight Sheet author's hand:
+#   - new tier-shaped values:          high | mid | medium | low
+#   - Kimi Library V1 vocabulary:      critical | noncritical
+#   - verdict vocabulary leak (legacy): honey | jelly | propolis | minor
+#
+# Anything outside this union is a Flight Sheet authoring bug; the API
+# refuses to serialize it (Pydantic validation) so drift surfaces at the
+# contract boundary instead of being silently coerced.
+RuleSeverity = Literal[
+    "high", "mid", "medium", "low",
+    "critical", "noncritical",
+    "honey", "jelly", "propolis",
+    "minor",
+]
+
+# IncidentKind — operational-state incident classes (Agent Ops governance).
+#
+# These are *operational* incidents — events that cross out of "this Run had a
+# flag" into "this is an operational problem with the agent/lane itself."
+#
+#   rogue            = agent took unauthorized action (tool use outside its
+#                      declared grant, exfil attempt, declined-policy override)
+#   dark             = agent is unreachable / not heartbeating beyond SLO
+#   policy_violation = a declared governance gate breached (spend cap, blocked
+#                      lane, client_output-without-approval). A *single* critical
+#                      flag becomes an incident via this lane if the lane policy
+#                      declares it; otherwise a single flag stays a Run-level
+#                      work-defect or deal-finding handled by the repair plan.
+#   recurring_flag   = the same rule has flagged ≥N times → operational pattern,
+#                      not a one-off
+#
+# Note: there is intentionally NO `single_flag` member. A single flag is a
+# Run-level concern (the repair plan owns it). Crossing into incident-land
+# requires either a declared policy violation or a recurring pattern. See
+# `policy_violation` for the single-flag-becomes-incident path.
+IncidentKind = Literal["rogue", "dark", "policy_violation", "recurring_flag"]
+
 
 class HealthOut(BaseModel):
     ok: bool
@@ -111,10 +156,16 @@ class AgentProfileIn(BaseModel):
 
 
 class IncidentIn(BaseModel):
+    """Open an operational-state incident against an agent profile or Run.
+
+    See `IncidentKind` for the closed taxonomy (rogue | dark | policy_violation |
+    recurring_flag) and why a single flag is intentionally not its own member.
+    """
+
     agent_profile_id: Optional[str] = None
     run_id: Optional[str] = None
-    kind: Literal["rogue", "dark", "policy_violation", "recurring_flag"] = "policy_violation"
-    tier: Optional[Literal["low", "mid", "high"]] = "high"
+    kind: IncidentKind = "policy_violation"
+    tier: Optional[TierLevel] = "high"
     title: str = Field(min_length=1, max_length=300)
     detail: Optional[str] = Field(default=None, max_length=4000)
     lane: Optional[str] = Field(default=None, max_length=200)
@@ -175,12 +226,12 @@ class FlightSheetRule(BaseModel):
     label: str
     category: Optional[str] = None
     kind: Optional[CheckKind] = None
-    severity: Optional[str] = Field(
+    severity: Optional[RuleSeverity] = Field(
         default=None,
         description=(
-            "The rule's declared severity. New rulebooks use 'high' / 'mid' / 'low'. "
-            "Legacy rulebooks may use 'critical' / 'noncritical' (mapped to high/mid) "
-            "or 'honey' / 'jelly' / 'propolis'. tier_of() normalizes."
+            "The rule's pre-weight. `tier_of()` normalizes any RuleSeverity value to "
+            "a TierLevel (low/mid/high). Wire-locked to the RuleSeverity literal so "
+            "a Flight Sheet authoring drift surfaces at the contract boundary."
         ),
     )
 
@@ -232,6 +283,11 @@ class Check(BaseModel):
     Each rule passes or raises a flag. There is no opinion grade. `status` is
     the deterministic outcome; `severity` and `category` come from the rule's
     declaration on the Flight Sheet.
+
+    `severity` here is the *rule's* pre-weight (a `RuleSeverity`), NOT the
+    verdict severity (which is honey/jelly/propolis — see `Severity` and
+    `Verdict.severity`). The rolled-up verdict severity is computed by
+    `compute_verdict()` from all the flag-status checks on the Run.
     """
 
     model_config = ConfigDict(extra="allow")
@@ -243,9 +299,9 @@ class Check(BaseModel):
         description="structure | schema | math | evidence | policy (may be empty on legacy rows).",
     )
     status: CheckStatus
-    severity: Optional[str] = Field(
+    severity: Optional[RuleSeverity] = Field(
         default=None,
-        description="The rule's declared severity (raw string; tier_of() normalizes).",
+        description="The *rule's* declared pre-weight. tier_of() normalizes to TierLevel.",
     )
     source: Optional[CheckSource] = None
     detail: Optional[str] = None
