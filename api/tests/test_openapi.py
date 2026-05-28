@@ -276,6 +276,64 @@ def test_training_data_policy_doctrine_lock():
     assert "customer-identifiable" in nos, "we_dont_learn_from missing 'customer-identifiable'"
 
 
+def test_dataset_catalog_schemas_present():
+    """Sprint 7 catalog schemas — all 5 must be named OpenAPI components."""
+    schema = app.openapi()
+    components = (schema.get("components") or {}).get("schemas") or {}
+    required = {
+        "DatasetPackage",
+        "DatasetCatalog",
+        "DatasetCatalogScorecard",
+        "DatasetCatalogVertical",
+        "DatasetCatalogAnchor",
+    }
+    missing = required - set(components.keys())
+    assert not missing, f"catalog schemas missing from OpenAPI: {sorted(missing)}"
+
+
+def test_dataset_catalog_endpoints_registered():
+    """The two /datasets/catalog endpoints must be wired."""
+    schema = app.openapi()
+    paths = set(schema.get("paths", {}).keys())
+    required = {"/datasets/catalog", "/datasets/catalog/{slug}"}
+    missing = required - paths
+    assert not missing, f"catalog endpoints missing: {sorted(missing)}"
+
+
+def test_catalog_loads_99_packages_12_verticals():
+    """Books-and-records check — every package from the NAS catalog must
+    land in the API mirror. If the JSON snapshot drifts, this catches it.
+    """
+    from app.catalog import catalog_view
+
+    cv = catalog_view()
+    assert len(cv["packages"]) == 99, (
+        f"catalog mirror lost packages: have {len(cv['packages'])}, expected 99"
+    )
+    assert len(cv["verticals"]) == 12, (
+        f"catalog mirror lost verticals: have {len(cv['verticals'])}, expected 12"
+    )
+    assert cv["scorecard"]["total_packages"] == 99
+    assert cv["scorecard"]["total_pairs"] == 3_355_906
+    assert isinstance(cv["packages_sha256"], str) and len(cv["packages_sha256"]) == 64
+    int(cv["packages_sha256"], 16)  # must parse as hex
+
+
+def test_catalog_response_hides_internal_fields():
+    """API mirror must hide the NAS path and the internal $ valuation per package.
+
+    Datasets are FREE with membership; surfacing internal $ on a per-package
+    basis would imply a price, which we explicitly don't have.
+    """
+    from app.catalog import catalog_view
+
+    pkg = catalog_view()["packages"][0]
+    assert "path" not in pkg, "package leaked internal NAS path · books-and-records breach"
+    assert "internal_usd" not in pkg, (
+        "package leaked internal USD valuation · datasets are FREE with membership"
+    )
+
+
 def test_evidence_and_submission_customer_provided_defaults_true():
     """Fail-safe default · the SQLAlchemy model must default customer_provided
     to TRUE on both EvidenceItem and AgentSubmission. Operator-side cooks set

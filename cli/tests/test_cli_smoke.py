@@ -50,6 +50,7 @@ def test_version_flag():
         "approval",
         "receipt",
         "ledger",
+        "datasets",
         "policy",
         "verify",
     ],
