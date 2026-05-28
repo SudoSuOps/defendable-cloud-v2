@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app import __version__
 from app.config import settings
-from app.routes import agents, auth, cooks, datasets, eval, healthz, incidents, internal, library, membership, org, policy, projects, public, runner, runs
+from app.routes import agents, auth, cooks, datasets, eval, healthz, incidents, internal, library, membership, models as models_routes, org, policy, projects, public, runner, runs
 
 
 def create_app() -> FastAPI:
@@ -39,6 +39,7 @@ def create_app() -> FastAPI:
     app.include_router(eval.router)
     app.include_router(datasets.router)
     app.include_router(library.router)
+    app.include_router(models_routes.router)
     app.include_router(cooks.router)
     app.include_router(runner.router)
     app.include_router(public.router)

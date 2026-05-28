@@ -745,3 +745,114 @@ class DatasetCatalog(BaseModel):
     scorecard: DatasetCatalogScorecard
     verticals: Dict[str, DatasetCatalogVertical]
     packages: List[DatasetPackage]
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# § 12 · Model card library (Sprint 10)
+# In-house model cards · compute is the meter. Members can PIN a model card
+# on the per-org chain to seal client-deliverable provenance ("we used this
+# model for this work, declared on this date, here's the verifiable card hash").
+# ──────────────────────────────────────────────────────────────────────────────
+
+
+class ModelCard(BaseModel):
+    """A public, member-facing model card. Hides operator-only fields
+    (weights_location, default_rate_usd_per_hour). Includes `card_sha256`
+    computed at load time over the canonical card body."""
+
+    model_config = ConfigDict(extra="allow")
+    slug: str = Field(description="Stable identifier · `<name>-<base>` form.")
+    name: str
+    family: str = Field(description="`in-house` for sovereign cooks; other tags reserved.")
+    base: str = Field(description="Underlying open base model · e.g. Qwen2-27B, Qwen3.5-9B, Gemma-2-2B.")
+    base_license: str
+    params_b: float = Field(description="Approximate parameter count, in billions.")
+    context_window: int
+    purpose: str = Field(description="Short statement of what this model is for.")
+    trained_on: List[str] = Field(description="Dataset slug references (catalog vocabulary).")
+    eval_notes: Optional[str] = None
+    compute_class: str = Field(description="Hardware tier expected · informs ops planning.")
+    status: str = Field(description="`active` · `experimental` · `archived`.")
+    deed: Optional[str] = None
+    card_sha256: str = Field(description="SHA-256 of the canonical card body. Verifiable, stable.")
+
+
+class ModelCatalogScorecard(BaseModel):
+    """Top-level totals for the model catalog."""
+
+    model_config = ConfigDict(extra="allow")
+    total_models: int
+    in_house_models: int
+    active_models: int
+
+
+class ModelCatalog(BaseModel):
+    """`GET /models/catalog` — members-only model card library.
+
+    Carries `models_sha256` (computed over the sorted card list). A member can
+    fetch the catalog, recompute the hash from the response, and confirm the
+    API mirror matches the books-and-records source.
+    """
+
+    model_config = ConfigDict(extra="allow")
+    version: str
+    generated_at: Optional[str] = None
+    scope: Optional[str] = None
+    doctrine_note: Optional[str] = None
+    models_sha256: str = Field(
+        description="SHA-256 over the canonical sorted card list. Recompute to verify."
+    )
+    scorecard: ModelCatalogScorecard
+    models: List[ModelCard]
+
+
+class ModelPinRequest(BaseModel):
+    """`POST /models/catalog/{slug}/pin` body. Both fields optional.
+
+    `declaration` is a short member-supplied note describing what the model
+    is being pinned FOR (e.g. "agent A on deal X"). Sealed into the receipt
+    payload as-is. `client_ref` is an optional opaque tag the member can use
+    to link the receipt to their own bookkeeping.
+    """
+
+    model_config = ConfigDict(extra="ignore")
+    declaration: Optional[str] = Field(
+        default=None,
+        max_length=500,
+        description="Free-text note · what is this model being pinned for?",
+    )
+    client_ref: Optional[str] = Field(
+        default=None,
+        max_length=120,
+        description="Opaque member-side identifier (deal/agent/project tag).",
+    )
+
+
+class ModelPinModel(BaseModel):
+    """The card identity sealed into a pin receipt. Smaller than the full
+    card — just the fields that make the model identifiable to a third party
+    reading the receipt later."""
+
+    model_config = ConfigDict(extra="allow")
+    slug: str
+    name: str
+    base: str
+    params_b: float
+    card_sha256: str = Field(
+        description="The exact card hash at pin time. Stable forever even if the card later changes."
+    )
+
+
+class ModelPinReceiptOut(BaseModel):
+    """`POST /models/catalog/{slug}/pin` response."""
+
+    receipt_id: str
+    org_seq: int
+    receipt_sha256: str
+    share_url: str = Field(
+        description="Public proof page for the pin — anyone with the URL can verify."
+    )
+    pinned_at: str = Field(description="ISO timestamp · when the pin was minted.")
+    model: ModelPinModel
+    declaration: Optional[str] = None
+    client_ref: Optional[str] = None

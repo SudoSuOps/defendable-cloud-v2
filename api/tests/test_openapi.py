@@ -481,6 +481,111 @@ def test_download_notification_model_idempotency_shape():
     assert fk.column.table is Receipt.__table__, "DownloadNotification FK drifted"
 
 
+def test_model_catalog_schemas_present():
+    """Sprint 10 · model card schemas must be named OpenAPI components."""
+    schema = app.openapi()
+    components = (schema.get("components") or {}).get("schemas") or {}
+    required = {
+        "ModelCard",
+        "ModelCatalog",
+        "ModelCatalogScorecard",
+        "ModelPinRequest",
+        "ModelPinModel",
+        "ModelPinReceiptOut",
+    }
+    missing = required - set(components.keys())
+    assert not missing, f"model schemas missing from OpenAPI: {sorted(missing)}"
+
+
+def test_model_endpoints_registered():
+    """All three /models/catalog paths land in the OpenAPI document."""
+    schema = app.openapi()
+    paths = set(schema.get("paths", {}).keys())
+    required = {
+        "/models/catalog",
+        "/models/catalog/{slug}",
+        "/models/catalog/{slug}/pin",
+    }
+    missing = required - paths
+    assert not missing, f"model endpoints missing: {sorted(missing)}"
+
+
+def test_model_catalog_loads_4_models_with_integrity_hash():
+    """v1 lineup · atlas + katnis + curator + swarm-marketer. card_sha256 is
+    computed deterministically at load; models_sha256 covers the whole list.
+    """
+    from app.models_catalog import catalog_view
+
+    cv = catalog_view()
+    assert cv["scorecard"]["total_models"] == 4, (
+        f"model catalog drift · have {cv['scorecard']['total_models']}, expected 4"
+    )
+    assert cv["scorecard"]["in_house_models"] == 4
+    assert cv["scorecard"]["active_models"] == 4
+    slugs = {m["slug"] for m in cv["models"]}
+    assert slugs == {
+        "atlas-qwen-27b",
+        "katnis-qwen-27b",
+        "swarmcurator-qwen-9b",
+        "swarm-marketer-gemma-2-2b",
+    }, f"model lineup drifted: {sorted(slugs)}"
+    # Every card has a 64-hex card_sha256.
+    for m in cv["models"]:
+        h = m.get("card_sha256")
+        assert isinstance(h, str) and len(h) == 64
+        int(h, 16)  # parses as hex
+    # And the catalog-level integrity hash.
+    assert isinstance(cv["models_sha256"], str) and len(cv["models_sha256"]) == 64
+    int(cv["models_sha256"], 16)
+
+
+def test_model_catalog_response_hides_internal_fields():
+    """API mirror must hide weights_location + default_rate_usd_per_hour."""
+    from app.models_catalog import catalog_view
+
+    card = catalog_view()["models"][0]
+    assert "weights_location" not in card, (
+        "model card leaked weights_location · operator-only field"
+    )
+    assert "default_rate_usd_per_hour" not in card, (
+        "model card leaked default_rate_usd_per_hour · operator-only field"
+    )
+
+
+def test_model_pin_receipt_payload_shape():
+    """`build_model_pin_payload` seals the right schema id + card identity +
+    chain coordinates. The full card body is NOT in the payload — only the
+    durable identity fields + card_sha256 (snapshot at pin time).
+    """
+    from app.receipts import build_model_pin_payload
+
+    payload = build_model_pin_payload(
+        receipt_id="DCR-000000-aaaaaaaa",
+        org_seq=0,
+        parent_hash="0" * 64,
+        created_at="2026-05-28T22:00:00Z",
+        org={"id": "o1", "name": "Acme"},
+        card={
+            "slug": "atlas-qwen-27b",
+            "name": "Atlas",
+            "base": "Qwen2-27B",
+            "params_b": 27.0,
+            "card_sha256": "a" * 64,
+        },
+        pinned_by_user_id="u_01",
+        declaration="agent A on deal X",
+        client_ref="deal-2026-05-28",
+        share_url="https://api.defendablecloud.com/share/shr_xyz",
+    )
+    assert payload["schema"] == "defendablecloud.model-pin-receipt/v1"
+    assert payload["model"]["slug"] == "atlas-qwen-27b"
+    assert payload["model"]["card_sha256"] == "a" * 64
+    assert payload["declaration"] == "agent A on deal X"
+    assert payload["client_ref"] == "deal-2026-05-28"
+    # The full card body shouldn't bleed in — only the 5 identity fields.
+    assert set(payload["model"].keys()) == {"slug", "name", "base", "params_b", "card_sha256"}
+
+
 def test_dataset_ready_email_helper_exists():
     """Sprint 9 · the Resend template for `your dataset is ready` must exist
     and accept the post-stage notify payload (no actual send in this test).
