@@ -11,6 +11,7 @@ import { NewRun } from "./pages/NewRun";
 import { RunDetail } from "./pages/RunDetail";
 import { Datasets } from "./pages/Datasets";
 import { Models } from "./pages/Models";
+import { Admin } from "./pages/Admin";
 import { AgentProfiles, AgentProfileDetail } from "./pages/AgentProfiles";
 import { StackPlanner } from "./pages/StackPlanner";
 import { Incidents } from "./pages/Incidents";
@@ -68,6 +69,7 @@ export default function App() {
         <Route path="/incidents" element={<Protected><Incidents /></Protected>} />
         <Route path="/datasets" element={<Protected><Datasets /></Protected>} />
         <Route path="/models" element={<Protected><Models /></Protected>} />
+        <Route path="/admin" element={<Protected><Admin /></Protected>} />
         <Route path="/org" element={<Protected><Org /></Protected>} />
         <Route path="*" element={<NotFound />} />
       </Routes>

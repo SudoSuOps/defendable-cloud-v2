@@ -582,6 +582,29 @@ class MembershipApplicationIn(BaseModel):
     referral_source: Optional[str] = Field(default=None, max_length=200)
 
 
+class AdminApplicationRow(BaseModel):
+    """One row in the Admin Approval UI queue."""
+
+    model_config = ConfigDict(extra="allow")
+    org_id: str
+    org_slug: str
+    org_name: str
+    applicant_email: Optional[str] = None
+    status: str = Field(description="`pending` or `waitlisted`.")
+    applied_at: Optional[str] = None
+    waitlist_position: Optional[int] = None
+    company_name: Optional[str] = None
+    intended_use: Optional[str] = None
+    referral_source: Optional[str] = None
+
+
+class AdminApplicationList(BaseModel):
+    """`GET /admin/applications` response."""
+
+    applications: List[AdminApplicationRow]
+    count: int
+
+
 class MembershipApproveIn(BaseModel):
     """`POST /membership/approve` body · admin endpoint, internal-key gated.
 

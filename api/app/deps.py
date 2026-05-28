@@ -93,6 +93,23 @@ async def require_runner(authorization: Optional[str] = Header(default=None)) ->
         raise HTTPException(status_code=401, detail="invalid runner token")
 
 
+async def require_admin(current: Principal = Depends(get_current_user)) -> Principal:
+    """Gate behind the configured ADMIN_EMAILS list. Used by the in-app Admin
+    Approval UI (/admin/*). The X-Internal-Key path on /membership/approve
+    remains for scripts and CLI; this dep is for member-auth-with-admin-email
+    only.
+
+    Fails 403 if no admin emails are configured (fail-closed) OR if the
+    current user's email isn't in the list.
+    """
+    if not settings().is_admin_email(current.email):
+        raise HTTPException(
+            status_code=403,
+            detail="admin access required — contact build@defendableos.com",
+        )
+    return current
+
+
 async def require_internal(
     x_internal_key: Optional[str] = Header(default=None, alias="X-Internal-Key"),
 ) -> None:
