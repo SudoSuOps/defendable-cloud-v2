@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { api, apiBase } from "../lib/api";
 import { Badge, Button, Card, ErrorNote, Spinner } from "../components/ui";
+import { PinnedModelBlock } from "../components/PinnedModelBlock";
 
 interface PublicReceipt {
   receipt_id: string;
@@ -86,7 +87,15 @@ export function ShareView() {
               </span>
             </div>
 
-            {(() => {
+            {r.payload?.cook && (
+              <Card className="mt-6" title="Fine-tune lift" subtitle="Eval before → eval after on the same harness">
+                <CookSummary cook={r.payload.cook} />
+              </Card>
+            )}
+
+            {r.payload?.pinned_model && <PinnedModelBlock pin={r.payload.pinned_model} className="mt-6" />}
+
+            {r.payload?.verdict && (() => {
               const v = r.payload?.verdict || {};
               const items = [...(r.payload?.findings || r.payload?.checks || [])].sort(
                 (a: any, b: any) =>
@@ -173,12 +182,14 @@ export function ShareView() {
               </Card>
             )}
 
-            <Card className="mt-6" title="Approval">
-              <div className="flex items-center gap-3 text-sm">
-                <Badge value={r.payload?.approval?.decision} />
-                <span className="text-paper/60">{r.payload?.approval?.approver}</span>
-              </div>
-            </Card>
+            {r.payload?.approval && (
+              <Card className="mt-6" title="Approval">
+                <div className="flex items-center gap-3 text-sm">
+                  <Badge value={r.payload?.approval?.decision} />
+                  <span className="text-paper/60">{r.payload?.approval?.approver}</span>
+                </div>
+              </Card>
+            )}
 
             <Card className="mt-6" title="Integrity">
               <dl className="space-y-2 font-mono text-xs">
@@ -197,6 +208,43 @@ export function ShareView() {
       <footer className="mx-auto max-w-3xl px-6 py-8 text-center font-mono text-xs uppercase tracking-[0.35em] text-honey-300/40">
         // to the shed
       </footer>
+    </div>
+  );
+}
+
+function CookSummary({ cook }: { cook: any }) {
+  const pct = (v: any) => (typeof v === "number" ? `${(v * 100).toFixed(1)}%` : "—");
+  const lift = cook?.lift;
+  const liftTone =
+    typeof lift === "number" && lift >= 0
+      ? "border-emerald-400/30 bg-emerald-400/10 text-emerald-300"
+      : "border-red-400/30 bg-red-400/10 text-red-300";
+  return (
+    <>
+      <div className="flex flex-wrap items-center gap-3">
+        <span className="text-lg font-semibold text-paper">
+          {pct(cook.eval_before)} <span className="text-paper/40">→</span> {pct(cook.eval_after)}
+        </span>
+        <span className={`rounded-md border px-2 py-0.5 font-mono text-xs ${liftTone}`}>
+          {typeof lift === "number" ? `${lift >= 0 ? "+" : ""}${(lift * 100).toFixed(1)}%` : "—"}
+        </span>
+      </div>
+      <dl className="mt-4 grid gap-x-8 gap-y-1 font-mono text-xs sm:grid-cols-2">
+        <KV k="base_model" v={cook.base_model || "—"} />
+        <KV k="dataset" v={cook.dataset || "—"} />
+        <KV k="pairs" v={typeof cook.pairs === "number" ? cook.pairs.toLocaleString() : "—"} />
+        {cook.runner && <KV k="runner" v={cook.runner} />}
+        {cook.compute_usd != null && <KV k="compute_usd" v={`$${cook.compute_usd}`} />}
+      </dl>
+    </>
+  );
+}
+
+function KV({ k, v }: { k: string; v: string }) {
+  return (
+    <div className="flex items-baseline justify-between gap-3 border-b border-white/5 py-1">
+      <dt className="text-paper/45">{k}</dt>
+      <dd className="text-right text-paper/85">{v}</dd>
     </div>
   );
 }
