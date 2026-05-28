@@ -4,6 +4,8 @@ import { Shell } from "./components/Shell";
 import { Spinner } from "./components/ui";
 import { Login } from "./pages/Login";
 import { AuthCallback } from "./pages/AuthCallback";
+import { Landing } from "./pages/Landing";
+import { Verify } from "./pages/Verify";
 import { Dashboard } from "./pages/Dashboard";
 import { NewRun } from "./pages/NewRun";
 import { RunDetail } from "./pages/RunDetail";
@@ -27,14 +29,33 @@ function Protected({ children }: { children: React.ReactNode }) {
   return <Shell>{children}</Shell>;
 }
 
+// Public landing for unauth visitors; signed-in workspace for the rest.
+function Home() {
+  const { me, loading } = useAuth();
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <Spinner label="Opening the vault…" />
+      </div>
+    );
+  }
+  if (!me) return <Landing />;
+  return (
+    <Shell>
+      <Dashboard />
+    </Shell>
+  );
+}
+
 export default function App() {
   return (
     <AuthProvider>
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
+        <Route path="/verify" element={<Verify />} />
         <Route path="/r/:token" element={<ShareView />} />
-        <Route path="/" element={<Protected><Dashboard /></Protected>} />
+        <Route path="/" element={<Home />} />
         <Route path="/runs/new" element={<Protected><NewRun /></Protected>} />
         <Route path="/runs/:id" element={<Protected><RunDetail /></Protected>} />
         <Route path="/plan" element={<Protected><StackPlanner /></Protected>} />
