@@ -10,6 +10,7 @@ import { Dashboard } from "./pages/Dashboard";
 import { NewRun } from "./pages/NewRun";
 import { RunDetail } from "./pages/RunDetail";
 import { Datasets } from "./pages/Datasets";
+import { Models } from "./pages/Models";
 import { AgentProfiles, AgentProfileDetail } from "./pages/AgentProfiles";
 import { StackPlanner } from "./pages/StackPlanner";
 import { Incidents } from "./pages/Incidents";
@@ -66,6 +67,7 @@ export default function App() {
         <Route path="/agents/:id" element={<Protected><AgentProfileDetail /></Protected>} />
         <Route path="/incidents" element={<Protected><Incidents /></Protected>} />
         <Route path="/datasets" element={<Protected><Datasets /></Protected>} />
+        <Route path="/models" element={<Protected><Models /></Protected>} />
         <Route path="/org" element={<Protected><Org /></Protected>} />
         <Route path="*" element={<NotFound />} />
       </Routes>
