@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { api } from "../lib/api";
 import { useAuth } from "../lib/auth";
 import { Badge, Button, Card, ErrorNote, Spinner } from "../components/ui";
+import { RecentReceipts } from "../components/RecentReceipts";
 import { LANES } from "../lib/guidance";
 
 interface RunRow {
@@ -45,6 +46,14 @@ export function Dashboard() {
           </h1>
         </div>
         <Button onClick={() => nav("/runs/new")}>+ New Run</Button>
+      </div>
+
+      <div className="mt-10">
+        <div className="mb-4 flex items-baseline justify-between gap-3">
+          <h2 className="text-xs font-medium uppercase tracking-widest text-paper/40">Recent receipts</h2>
+          <span className="font-mono text-[10px] text-paper/30">on your org chain · latest 5</span>
+        </div>
+        <RecentReceipts limit={5} emptyHint="No receipts on chain yet · approve your first run, pin a model, or download a dataset to mint one." />
       </div>
 
       <div className="mt-10">
