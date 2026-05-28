@@ -843,6 +843,40 @@ class ModelPinModel(BaseModel):
     )
 
 
+class ReceiptRollup(BaseModel):
+    """One row in the per-org recent-receipts rollup.
+
+    Identity + share URL + a compact `summary` projected from the receipt
+    payload. The summary fields vary by schema; the OpenAPI surface declares
+    it as `Dict[str, Any]` so callers can dispatch on schema and read the
+    headline fields without re-fetching the receipt.
+    """
+
+    model_config = ConfigDict(extra="allow")
+    receipt_id: str
+    org_seq: int
+    payload_schema: str = Field(
+        description="The receipt payload's `schema` field · e.g. defendablecloud.cook-receipt/v1"
+    )
+    receipt_sha256: str
+    share_url: str = Field(description="Public proof page · /share/{token} on the API host")
+    created_at: Optional[str] = None
+    summary: Dict[str, Any] = Field(
+        default_factory=dict,
+        description=(
+            "Schema-aware compact projection from the payload. Carries headline "
+            "fields for tile rendering (run_title, outcome, lift, model_slug, etc.)."
+        ),
+    )
+
+
+class ReceiptRollupList(BaseModel):
+    """`GET /receipts/recent` response · sorted desc by created_at."""
+
+    rollups: List[ReceiptRollup]
+    count: int
+
+
 class ModelPinReceiptOut(BaseModel):
     """`POST /models/catalog/{slug}/pin` response."""
 

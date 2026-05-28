@@ -552,6 +552,90 @@ def test_model_catalog_response_hides_internal_fields():
     )
 
 
+def test_receipts_recent_endpoint_registered():
+    """Sprint 14 · /receipts/recent must land in the OpenAPI document and
+    return the ReceiptRollupList schema."""
+    schema = app.openapi()
+    paths = schema.get("paths", {})
+    assert "/receipts/recent" in paths, "/receipts/recent endpoint missing"
+    get_op = paths["/receipts/recent"].get("get", {})
+    response_schema = (
+        ((get_op.get("responses") or {}).get("200") or {}).get("content") or {}
+    ).get("application/json", {}).get("schema") or {}
+    # Pydantic emits either `$ref` or inline schema; both should mention the model.
+    ref = response_schema.get("$ref") or ""
+    assert "ReceiptRollupList" in ref, (
+        f"/receipts/recent 200 response should reference ReceiptRollupList, got: {response_schema}"
+    )
+
+
+def test_receipts_rollup_schemas_named_in_openapi():
+    """The two new components must be named so the frontend's generated types
+    don't drift to anonymous shapes."""
+    schema = app.openapi()
+    components = (schema.get("components") or {}).get("schemas") or {}
+    required = {"ReceiptRollup", "ReceiptRollupList"}
+    missing = required - set(components.keys())
+    assert not missing, f"rollup schemas missing from OpenAPI: {sorted(missing)}"
+    # `payload_schema` (not `schema`, which shadowed BaseModel) must be the
+    # field name on ReceiptRollup — locks the rename in.
+    fields = (components["ReceiptRollup"].get("properties") or {})
+    assert "payload_schema" in fields, (
+        "ReceiptRollup must expose `payload_schema` (was renamed from `schema` "
+        "to avoid the Pydantic BaseModel shadow warning)"
+    )
+    assert "schema" not in fields, (
+        "`schema` field name shadows BaseModel — must remain `payload_schema`"
+    )
+
+
+def test_summary_projectors_cover_all_known_schemas():
+    """Each known schema prefix has a summary projector that returns a dict
+    with at least a `lane` field. New schemas added later should also add a
+    projector — when they don't, this test catches the gap."""
+    from app.routes.receipts import _summarize
+
+    cases = [
+        # (payload, expected lane label)
+        ({"schema": "defendablecloud.eval-receipt/v1", "verdict": {"outcome": "pass"}}, "eval"),
+        (
+            {"schema": "defendablecloud.cook-receipt/v1", "cook": {"base_model": "atlas-qwen-27b"}},
+            "cook",
+        ),
+        ({"schema": "defendablecloud.incident-receipt/v1", "kind": "rogue"}, "incident"),
+        (
+            {"schema": "defendablecloud.dataset-download-receipt/v1", "package": {"slug": "x"}},
+            "dataset-download",
+        ),
+        (
+            {"schema": "defendablecloud.model-pin-receipt/v1", "model": {"slug": "atlas-qwen-27b"}},
+            "model-pin",
+        ),
+        ({"schema": "defendablecloud.unknown-receipt/v1"}, "unknown"),
+    ]
+    for payload, expected_lane in cases:
+        s = _summarize(payload)
+        assert s.get("lane") == expected_lane, (
+            f"summary for {payload['schema']} returned lane={s.get('lane')!r}, "
+            f"expected {expected_lane!r}"
+        )
+
+
+def test_cook_summary_surfaces_pinned_model_slug():
+    """The cook summary projector must surface the pin slug so the frontend
+    tile can show 'pinned: atlas-qwen-27b' without a second fetch."""
+    from app.routes.receipts import _summarize
+
+    payload = {
+        "schema": "defendablecloud.cook-receipt/v1",
+        "cook": {"base_model": "atlas-qwen-27b", "lift": 0.2, "eval_after": 0.7},
+        "pinned_model": {"slug": "atlas-qwen-27b", "name": "Atlas"},
+    }
+    s = _summarize(payload)
+    assert s["pinned_model_slug"] == "atlas-qwen-27b"
+    assert s["lift"] == 0.2
+
+
 def test_cook_payload_seals_pinned_model_when_provided():
     """Sprint 12 · when find_latest_active_pin returns a pin dict, the cook
     receipt builder seals it into a `pinned_model` block alongside the cook.

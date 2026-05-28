@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { api } from "../lib/api";
 import { Button, Card, ErrorNote, Spinner } from "../components/ui";
+import { RecentReceipts } from "../components/RecentReceipts";
 
 interface ModelCard {
   slug: string;
@@ -92,6 +93,18 @@ export function Models() {
 
       {catalog && (
         <>
+          <section className="mt-10">
+            <div className="mb-4 flex items-baseline justify-between gap-3">
+              <h2 className="text-xs font-medium uppercase tracking-widest text-paper/40">Your pins</h2>
+              <span className="font-mono text-[10px] text-paper/30">latest 5 on your chain</span>
+            </div>
+            <RecentReceipts
+              schema="defendablecloud.model-pin-receipt/v1"
+              limit={5}
+              emptyHint="No pins yet · click 'Pin to chain' on any card below to mint your first."
+            />
+          </section>
+
           <section className="mt-10">
             <div className="flex flex-wrap items-end justify-between gap-3">
               <div>
