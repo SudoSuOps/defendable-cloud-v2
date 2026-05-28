@@ -580,3 +580,23 @@ class MembershipApplicationIn(BaseModel):
     company_name: str = Field(min_length=1, max_length=200)
     intended_use: Optional[str] = Field(default=None, max_length=1000)
     referral_source: Optional[str] = Field(default=None, max_length=200)
+
+
+class TrainingDataPolicy(BaseModel):
+    """`GET /policy/training-data` — frozen doctrine on what enters and never
+    enters the training corpus. Hash-anchored: the `sha256` field is computed
+    over the canonical body and any drift shifts the hash. Public, no auth.
+
+    > We learn from how agents fail. We never learn from what your business is doing.
+    """
+
+    version: str = Field(description="Policy version. Updates bump this and last_updated.")
+    statement: str
+    we_learn_from: List[str]
+    we_dont_learn_from: List[str]
+    enforcement: List[str]
+    effective_at: str
+    last_updated: str
+    sha256: str = Field(
+        description="SHA-256 over the canonical policy body (excluding this field). Anyone can recompute."
+    )

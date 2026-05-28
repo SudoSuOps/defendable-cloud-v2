@@ -15,6 +15,7 @@ import { StackPlanner } from "./pages/StackPlanner";
 import { Incidents } from "./pages/Incidents";
 import { Org } from "./pages/Org";
 import { ShareView } from "./pages/ShareView";
+import { TrainingDataPolicy } from "./pages/TrainingDataPolicy";
 import { NotFound } from "./pages/NotFound";
 
 function Protected({ children }: { children: React.ReactNode }) {
@@ -56,6 +57,7 @@ export default function App() {
         <Route path="/auth/callback" element={<AuthCallback />} />
         <Route path="/verify" element={<Verify />} />
         <Route path="/r/:token" element={<ShareView />} />
+        <Route path="/policy/training-data" element={<TrainingDataPolicy />} />
         <Route path="/" element={<Home />} />
         <Route path="/runs/new" element={<Protected><NewRun /></Protected>} />
         <Route path="/runs/:id" element={<Protected><RunDetail /></Protected>} />

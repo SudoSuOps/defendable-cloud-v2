@@ -27,6 +27,7 @@ from .commands import (
     evidence,
     flight_sheets,
     ledger,
+    policy,
     projects,
     public,
     receipt,
@@ -57,6 +58,7 @@ app.add_typer(audit.app, name="audit")
 app.add_typer(approval.app, name="approval")
 app.add_typer(receipt.app, name="receipt")
 app.add_typer(ledger.app, name="ledger")
+app.add_typer(policy.app, name="policy")
 # Public verify is a top-level shortcut: `defendable verify <url-or-token>`
 app.add_typer(public.app, name="verify")
 
