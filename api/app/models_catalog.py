@@ -94,3 +94,59 @@ def raw_card_by_slug(slug: str) -> dict[str, Any] | None:
         if m["slug"] == slug:
             return m
     return None
+
+
+# ── pin → cook join helpers ────────────────────────────────────────────────
+
+
+MODEL_PIN_SCHEMA = "defendablecloud.model-pin-receipt/v1"
+
+
+async def find_latest_active_pin(db, *, org_id: str, model_slug: str) -> dict | None:
+    """Return the most recent model-pin-receipt for `org_id` + `model_slug`.
+
+    "Active" = most recent · later pins for the same (org, slug) supersede
+    earlier ones. Old pins stay on-chain (immutable books-and-records) but
+    they're not what we link to a fresh cook.
+
+    Returns a dict shaped for sealing into a cook receipt:
+        {
+          "slug", "name", "base", "params_b", "card_sha256",  ← from pin payload
+          "pinned_at", "declaration", "client_ref",
+          "pin_receipt_id", "pin_receipt_sha256", "pin_share_url",
+        }
+    or None if no pin exists. Imports SQLAlchemy lazily to avoid a circular
+    `models_catalog → models → db → models_catalog` cycle at startup.
+    """
+    from sqlalchemy import select
+
+    from app.models import Receipt
+
+    rows = await db.execute(
+        select(Receipt)
+        .where(
+            Receipt.org_id == org_id,
+            Receipt.payload["schema"].astext == MODEL_PIN_SCHEMA,
+            Receipt.payload["model"]["slug"].astext == model_slug,
+        )
+        .order_by(Receipt.created_at.desc())
+        .limit(1)
+    )
+    r = rows.scalar_one_or_none()
+    if r is None:
+        return None
+    pin = r.payload or {}
+    model = pin.get("model") or {}
+    return {
+        "slug": model.get("slug"),
+        "name": model.get("name"),
+        "base": model.get("base"),
+        "params_b": model.get("params_b"),
+        "card_sha256": model.get("card_sha256"),
+        "pinned_at": pin.get("pinned_at") or pin.get("created_at"),
+        "declaration": pin.get("declaration"),
+        "client_ref": pin.get("client_ref"),
+        "pin_receipt_id": r.receipt_id,
+        "pin_receipt_sha256": r.receipt_sha256,
+        "pin_share_url": pin.get("share_url"),
+    }

@@ -552,6 +552,103 @@ def test_model_catalog_response_hides_internal_fields():
     )
 
 
+def test_cook_payload_seals_pinned_model_when_provided():
+    """Sprint 12 · when find_latest_active_pin returns a pin dict, the cook
+    receipt builder seals it into a `pinned_model` block alongside the cook.
+    The pin's books-and-records pointer (pin_receipt_id + pin_receipt_sha256
+    + pin_share_url) is sealed so a future reader can verify out-of-band.
+    """
+    from app.receipts import build_cook_payload
+
+    pinned = {
+        "slug": "atlas-qwen-27b",
+        "name": "Atlas",
+        "base": "Qwen2-27B",
+        "params_b": 27.0,
+        "card_sha256": "a" * 64,
+        "pinned_at": "2026-05-28T22:00:00+00:00",
+        "declaration": "agent A on deal X",
+        "client_ref": "deal-2026-05-28",
+        "pin_receipt_id": "DCR-000000-pin",
+        "pin_receipt_sha256": "b" * 64,
+        "pin_share_url": "https://api.defendablecloud.com/share/shr_pin",
+    }
+    payload = build_cook_payload(
+        receipt_id="DCR-000001-cook",
+        org_seq=1,
+        parent_hash="0" * 64,
+        created_at="2026-05-28T23:00:00Z",
+        org={"id": "o1", "name": "Acme"},
+        run={"id": "r1", "lane": "cre", "title": "Run X"},
+        cook={
+            "base_model": "atlas-qwen-27b",
+            "dataset": "cre_cre_honey",
+            "pairs": 1000,
+            "eval_before": 0.5,
+            "eval_after": 0.7,
+            "lift": 0.2,
+        },
+        share_url="https://api.defendablecloud.com/share/shr_cook",
+        pinned_model=pinned,
+    )
+    assert payload["schema"] == "defendablecloud.cook-receipt/v1"
+    pm = payload.get("pinned_model")
+    assert pm is not None, "pinned_model should be sealed into the cook payload"
+    # Identity sealed.
+    assert pm["slug"] == "atlas-qwen-27b"
+    assert pm["card_sha256"] == "a" * 64
+    # Anchor pointer sealed — three fields make the pin verifiable.
+    assert pm["pin_receipt_id"] == "DCR-000000-pin"
+    assert pm["pin_receipt_sha256"] == "b" * 64
+    assert pm["pin_share_url"].endswith("/share/shr_pin")
+    # Member-supplied context sealed.
+    assert pm["declaration"] == "agent A on deal X"
+    assert pm["client_ref"] == "deal-2026-05-28"
+
+
+def test_cook_payload_omits_pinned_model_when_none():
+    """When no pin exists for the org/slug, the cook payload must not carry a
+    `pinned_model` key at all — clean payload, no null clutter."""
+    from app.receipts import build_cook_payload
+
+    payload = build_cook_payload(
+        receipt_id="DCR-000001-cook",
+        org_seq=1,
+        parent_hash="0" * 64,
+        created_at="2026-05-28T23:00:00Z",
+        org={"id": "o1", "name": "Acme"},
+        run={"id": "r1", "lane": "cre", "title": "Run X"},
+        cook={
+            "base_model": "atlas-qwen-27b",
+            "dataset": "cre_cre_honey",
+            "pairs": 1000,
+            "eval_before": 0.5,
+            "eval_after": 0.7,
+            "lift": 0.2,
+        },
+        share_url="https://api.defendablecloud.com/share/shr_cook",
+        pinned_model=None,
+    )
+    assert "pinned_model" not in payload, (
+        "no pin → no pinned_model field (cleaner than sealing null)"
+    )
+
+
+def test_find_latest_active_pin_signature_lock():
+    """Sprint 12 · the lookup helper must be importable from app.models_catalog
+    and accept (db, *, org_id, model_slug). Signature lock; behavior tested
+    via integration in a future end-to-end suite."""
+    import inspect
+
+    from app.models_catalog import find_latest_active_pin
+
+    sig = inspect.signature(find_latest_active_pin)
+    params = set(sig.parameters.keys())
+    assert {"db", "org_id", "model_slug"} <= params, (
+        f"find_latest_active_pin signature drifted: {sorted(params)}"
+    )
+
+
 def test_model_pin_receipt_payload_shape():
     """`build_model_pin_payload` seals the right schema id + card identity +
     chain coordinates. The full card body is NOT in the payload — only the
