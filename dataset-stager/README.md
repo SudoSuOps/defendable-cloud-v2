@@ -22,10 +22,10 @@ download grant flips to ready.
               │       → list of pending tigris_keys (unique across all members)
               │
               │  for each task:
-              │      aws s3 ls   s3://defendable-cloud-v2/<tigris_key>
+              │      boto3 head_object  s3://defendable-cloud-v2/<tigris_key>
               │      ├─ exists → "already-staged"
-              │      └─ missing →  aws s3 cp /mnt/swarm/<source_path>
-              │                              s3://defendable-cloud-v2/<tigris_key>
+              │      └─ missing →  boto3 upload_file /mnt/swarm/<source_path>
+              │                                     s3://defendable-cloud-v2/<tigris_key>
               │
               │  POST https://api.defendablecloud.com/internal/stage-complete
               │       { tigris_key, bytes_uploaded }
@@ -56,9 +56,9 @@ cp .env.example .env
 chmod 600 .env
 ${EDITOR:-nano} .env        # paste INTERNAL_API_KEY + Tigris creds
 
-# 3. Confirm the NAS mount + aws cli are healthy.
+# 3. Confirm the NAS mount + boto3 are healthy.
 ls /mnt/swarm/swarm-and-bee-datasets/ | head
-which aws
+python3 -c "import boto3; print(boto3.__version__)"
 
 # 4. Dry-run once interactively before handing to systemd.
 STAGER_DRY_RUN=1 python3 stage.py
