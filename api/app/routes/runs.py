@@ -23,6 +23,14 @@ from app.models import (
 )
 from app import receipts as receipt_builder
 from app.schemas import ApprovalIn, EvidenceIn, RunIn
+from app.schemas import (
+    Approval as ApprovalOut,
+    ChecksList,
+    FlagsList,
+    Receipt as ReceiptOut,
+    Submission as SubmissionOut,
+    Verdict as VerdictOut,
+)
 from app.security import make_share_token
 from app.storage import put_object
 from app.util import iso, iso_now, new_id
@@ -335,7 +343,70 @@ async def upload_evidence(
         return _evidence_out(e)
 
 
-# ── checks / verdict ──────────────────────────────────────────────────────────
+# ── doctrine projections — named-schema views for clients polling a single concept ──
+
+
+@router.get("/runs/{run_id}/submission", response_model=SubmissionOut)
+async def get_run_submission(run_id: str, current: Principal = Depends(get_current_user)):
+    """The agent's structured output for this Run. 404 if no submission yet."""
+    from app.models import AgentSubmission
+
+    async with session_scope() as db:
+        await _get_run(db, run_id, current.org_id)
+        sub = (
+            await db.execute(
+                select(AgentSubmission)
+                .where(AgentSubmission.run_id == run_id)
+                .order_by(AgentSubmission.submitted_at.desc())
+                .limit(1)
+            )
+        ).scalar_one_or_none()
+        if sub is None:
+            raise HTTPException(status_code=404, detail="no submission")
+        return {
+            "agent_name": sub.agent_name, "model_name": sub.model_name, "provider": sub.provider,
+            "output_text": sub.output_text, "tool_logs": sub.tool_logs, "notes": sub.notes,
+            "sha256": sub.sha256, "submitted_at": iso(sub.submitted_at),
+        }
+
+
+@router.get("/runs/{run_id}/checks", response_model=ChecksList)
+async def get_run_checks(run_id: str, current: Principal = Depends(get_current_user)):
+    """All applied rules for this Run — each one passes or raises a flag.
+
+    The referee is a rulebook engine. Clients filter by `status` for findings;
+    sort by `category` for the three-bucket repair plan (math/schema/structure/
+    evidence = work-defect; policy = deal-finding).
+    """
+    async with session_scope() as db:
+        run = await _get_run(db, run_id, current.org_id)
+        return {"checks": [_check_out_full(c) for c in sorted(run.checks, key=lambda x: x.created_at)]}
+
+
+@router.get("/runs/{run_id}/flags", response_model=FlagsList)
+async def get_run_flags(run_id: str, current: Principal = Depends(get_current_user)):
+    """The subset of checks with `status='flag'` — the thrown flags.
+
+    Each item is a `Finding` (a located defect). Use `category` to sort into
+    the three-bucket repair plan; use `severity` to rank.
+    """
+    async with session_scope() as db:
+        run = await _get_run(db, run_id, current.org_id)
+        return {"flags": [_check_out_full(c) for c in run.checks if c.status == "flag"]}
+
+
+@router.get("/runs/{run_id}/verdict", response_model=VerdictOut)
+async def get_run_verdict(run_id: str, current: Principal = Depends(get_current_user)):
+    """The latest deterministic verdict — score is % of declared rules satisfied, weighted by tier. 404 if not yet computed."""
+    async with session_scope() as db:
+        await _get_run(db, run_id, current.org_id)
+        v = await _latest_verdict(db, run_id)
+        if v is None:
+            raise HTTPException(status_code=404, detail="no verdict")
+        return _verdict_out(v)
+
+
+# ── checks / verdict (legacy POST that builds them) ────────────────────────────
 
 
 @router.post("/runs/{run_id}/checks")
@@ -374,7 +445,7 @@ def _check_out_data(r) -> dict:
 # ── approval ─────────────────────────────────────────────────────────────────
 
 
-@router.post("/runs/{run_id}/approve")
+@router.post("/runs/{run_id}/approve", response_model=ApprovalOut)
 async def approve_run(run_id: str, body: ApprovalIn, current: Principal = Depends(get_current_user)):
     async with session_scope() as db:
         run = await _get_run(db, run_id, current.org_id)
@@ -394,7 +465,7 @@ async def approve_run(run_id: str, body: ApprovalIn, current: Principal = Depend
 # ── receipt ──────────────────────────────────────────────────────────────────
 
 
-@router.post("/runs/{run_id}/receipt")
+@router.post("/runs/{run_id}/receipt", response_model=ReceiptOut)
 async def generate_receipt(run_id: str, current: Principal = Depends(get_current_user)):
     from app.ledger import mint_receipt
     from app.models import AgentSubmission, FlightSheet
