@@ -9,6 +9,7 @@ from app.db import session_scope
 from app.deps import require_runner
 from app.ledger import mint_receipt
 from app.models import Cook, Dataset, Organization, Run
+from app.models_catalog import find_latest_active_pin
 from app.routes.cooks import cook_out
 from app.schemas import RunnerClaimIn, RunnerCompleteIn, RunnerFailIn, RunnerStatusIn
 
@@ -82,6 +83,14 @@ async def complete(cook_id: str, body: RunnerCompleteIn):
         cook.metrics = metrics
         cook.status = "succeeded"
 
+        # If the org has previously pinned this base_model (exact slug match),
+        # seal the most recent pin into the cook receipt. Read-only · no
+        # mutation of the pin receipt. If no pin exists, pinned_model stays
+        # absent from the payload.
+        pinned = await find_latest_active_pin(
+            db, org_id=cook.org_id, model_slug=cook.base_model
+        )
+
         receipt = await mint_receipt(
             db,
             org_id=cook.org_id,
@@ -102,6 +111,7 @@ async def complete(cook_id: str, body: RunnerCompleteIn):
                     "compute_usd": compute_usd,
                 },
                 share_url=share,
+                pinned_model=pinned,
             ),
         )
         cook.receipt_id = receipt.id

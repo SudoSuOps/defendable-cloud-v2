@@ -108,9 +108,21 @@ def build_cook_payload(
     run: dict,
     cook: dict,
     share_url: str,
+    pinned_model: dict | None = None,
 ) -> dict:
-    """Receipt body for a fine-tune cook — proves the before→after lift."""
-    return {
+    """Receipt body for a fine-tune cook — proves the before→after lift.
+
+    If the org has a prior `model-pin-receipt/v1` for the same model slug
+    (matched against `cook["base_model"]`), the most recent pin is sealed in
+    here as `pinned_model` — a books-and-records pointer from the cook to
+    the declaration the member made about *which model* this run used.
+
+    The pinned_model block carries enough to verify out-of-band:
+      - slug + name + base + params_b + card_sha256 (sealed snapshot)
+      - pinned_at + declaration + client_ref (member-supplied context)
+      - pin_receipt_id + pin_receipt_sha256 + pin_share_url (anchor pointer)
+    """
+    body: dict = {
         "schema": "defendablecloud.cook-receipt/v1",
         "receipt_id": receipt_id,
         "org_seq": org_seq,
@@ -131,6 +143,24 @@ def build_cook_payload(
         },
         "share_url": share_url,
     }
+    if pinned_model is not None:
+        # Seal only the durable fields. The pin's pin_receipt_sha256 makes the
+        # pointer tamper-evident: a future reader can fetch the pin via
+        # pin_share_url and confirm the hash.
+        body["pinned_model"] = {
+            "slug": pinned_model.get("slug"),
+            "name": pinned_model.get("name"),
+            "base": pinned_model.get("base"),
+            "params_b": pinned_model.get("params_b"),
+            "card_sha256": pinned_model.get("card_sha256"),
+            "pinned_at": pinned_model.get("pinned_at"),
+            "declaration": pinned_model.get("declaration"),
+            "client_ref": pinned_model.get("client_ref"),
+            "pin_receipt_id": pinned_model.get("pin_receipt_id"),
+            "pin_receipt_sha256": pinned_model.get("pin_receipt_sha256"),
+            "pin_share_url": pinned_model.get("pin_share_url"),
+        }
+    return body
 
 
 def build_eval_payload(
@@ -688,6 +718,23 @@ def _render_cook(payload: dict, receipt_sha256: str) -> bytes:
         row("Compute (transparency)", f'${c["compute_usd"]}')
     row("Organization", payload["organization"]["name"])
     pdf.ln(2)
+
+    # Pin pointer — if the org has a prior model-pin-receipt for this slug,
+    # the join was sealed at mint time. Surface it so the reader can verify
+    # the model claim out-of-band.
+    pin = payload.get("pinned_model")
+    if pin:
+        section("Model declared via pin")
+        row("Slug", pin.get("slug") or "—")
+        if pin.get("pinned_at"):
+            row("Pinned at", pin["pinned_at"])
+        if pin.get("declaration"):
+            row("Declaration", pin["declaration"])
+        if pin.get("client_ref"):
+            row("Client ref", pin["client_ref"])
+        if pin.get("pin_share_url"):
+            row("Pin receipt", pin["pin_share_url"])
+        pdf.ln(2)
 
     section("Integrity")
     pdf.set_font("Courier", "", 8)
