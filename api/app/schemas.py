@@ -582,6 +582,38 @@ class MembershipApplicationIn(BaseModel):
     referral_source: Optional[str] = Field(default=None, max_length=200)
 
 
+class MembershipApproveIn(BaseModel):
+    """`POST /membership/approve` body · admin endpoint, internal-key gated.
+
+    Identifies the org by its slug (same identifier the application email
+    surfaces in the operator inbox).
+    """
+
+    org_slug: str = Field(min_length=1, max_length=80)
+
+
+class MembershipCheckoutIn(BaseModel):
+    """`POST /membership/checkout` body. Optional · the only field is the
+    return origin (defaults to app_base_url), useful for preview deploys
+    that want Stripe to redirect back to a non-prod URL.
+    """
+
+    model_config = ConfigDict(extra="ignore")
+    return_to_origin: Optional[str] = Field(
+        default=None,
+        description="Override the success/cancel redirect origin. Defaults to APP_BASE_URL.",
+    )
+
+
+class MembershipCheckoutOut(BaseModel):
+    """`POST /membership/checkout` response · the Stripe-hosted URL the
+    frontend redirects the member to. The session expires after ~24h."""
+
+    url: str = Field(description="Stripe Checkout hosted URL · redirect the browser here.")
+    session_id: str = Field(description="Stripe checkout session id · useful for client-side logging.")
+    expires_at: int = Field(description="Unix epoch seconds when the Stripe session expires.")
+
+
 class TrainingDataPolicy(BaseModel):
     """`GET /policy/training-data` — frozen doctrine on what enters and never
     enters the training corpus. Hash-anchored: the `sha256` field is computed

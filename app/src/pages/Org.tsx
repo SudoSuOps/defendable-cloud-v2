@@ -2,7 +2,13 @@ import { useEffect, useState } from "react";
 import { api } from "../lib/api";
 import { Badge, Button, Card, ErrorNote, Field, inputClass, Spinner } from "../components/ui";
 
-type MembershipStatus = "pending" | "active" | "waitlisted" | "inactive";
+type MembershipStatus = "pending" | "approved" | "active" | "waitlisted" | "inactive";
+
+interface CheckoutOut {
+  url: string;
+  session_id: string;
+  expires_at: number;
+}
 
 interface MembershipApplicationView {
   company_name?: string;
@@ -121,8 +127,47 @@ export function Org() {
     }
   }
 
+  async function startCheckout() {
+    setErr(null);
+    setBusy("checkout");
+    try {
+      const out = await api<CheckoutOut>("/membership/checkout", {
+        method: "POST",
+        body: { return_to_origin: window.location.origin },
+      });
+      // Hand off to Stripe-hosted checkout. The webhook flips status to
+      // active when payment lands; we re-fetch /membership on the success
+      // round-trip below.
+      window.location.assign(out.url);
+    } catch (e: any) {
+      setErr(e.message || String(e));
+      setBusy(null);
+    }
+  }
+
   useEffect(() => {
     load();
+  }, []);
+
+  // Surface Stripe's success / cancel return param. Success additionally
+  // triggers a re-fetch so the freshly-active state shows up without a manual
+  // reload (the webhook fires async; we poll once after a beat).
+  const [checkoutResult, setCheckoutResult] = useState<"success" | "cancel" | null>(null);
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const r = params.get("checkout");
+    if (r === "success" || r === "cancel") {
+      setCheckoutResult(r);
+      // Strip the param so the banner doesn't survive a refresh.
+      params.delete("checkout");
+      const next = window.location.pathname + (params.toString() ? `?${params}` : "");
+      window.history.replaceState({}, "", next);
+      if (r === "success") {
+        // The webhook flips status async — give it ~2s then refetch.
+        const t = window.setTimeout(() => load(), 2000);
+        return () => window.clearTimeout(t);
+      }
+    }
   }, []);
 
   async function createKey() {
@@ -171,6 +216,17 @@ export function Org() {
       <h1 className="mt-2 text-3xl font-semibold tracking-tight text-paper">{org.name}</h1>
       {err && <div className="mt-4"><ErrorNote>{err}</ErrorNote></div>}
 
+      {checkoutResult === "success" && (
+        <div className="mt-4 rounded-md border border-emerald-400/30 bg-emerald-400/5 px-4 py-3 text-sm text-emerald-200">
+          Payment received · finalizing your seat assignment. The membership card will update shortly.
+        </div>
+      )}
+      {checkoutResult === "cancel" && (
+        <div className="mt-4 rounded-md border border-amber-400/30 bg-amber-400/5 px-4 py-3 text-sm text-amber-200">
+          Checkout cancelled · no charge made. Your seat hold is still good · activate any time.
+        </div>
+      )}
+
       {/* Membership — the headline. */}
       {m.status === "active" ? (
         <Card
@@ -205,6 +261,33 @@ export function Org() {
               <Row k="Applied" v={m.applied_at ? new Date(m.applied_at).toLocaleString() : "—"} />
             </dl>
           )}
+        </Card>
+      ) : m.status === "approved" ? (
+        <Card
+          className="mt-6 border-emerald-400/40"
+          title="Membership · approved"
+          subtitle="One step left · activate your seat with the $100/year fee"
+          actions={<Badge value="approved" />}
+        >
+          <p className="text-sm leading-relaxed text-paper/70">
+            Welcome aboard. Pay the annual <span className="font-semibold text-paper">$100</span> via secure Stripe checkout and your seat goes live the moment payment lands.
+          </p>
+          {m.application && (
+            <dl className="mt-4 grid gap-x-8 gap-y-2 text-sm sm:grid-cols-2">
+              <Row k="Company" v={m.application.company_name || "—"} />
+              <Row k="Applied" v={m.applied_at ? new Date(m.applied_at).toLocaleString() : "—"} />
+              <Row k="Seats" v={`${m.active_count}/${m.cap} active · ${seatsLeft} open`} />
+              <Row k="Annual fee" v="$100 · one-time · manual renewal yearly" />
+            </dl>
+          )}
+          <div className="mt-5 flex flex-wrap items-center gap-3 border-t border-white/5 pt-4">
+            <Button disabled={busy === "checkout"} onClick={startCheckout}>
+              {busy === "checkout" ? "Opening Stripe…" : "Activate · $100 / year"}
+            </Button>
+            <span className="text-xs text-paper/45">
+              Stripe-hosted checkout. We never see your card. Datasets are free with membership · compute billed monthly.
+            </span>
+          </div>
         </Card>
       ) : hasApplied ? (
         <Card

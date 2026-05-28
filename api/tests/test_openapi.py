@@ -552,6 +552,129 @@ def test_model_catalog_response_hides_internal_fields():
     )
 
 
+def test_membership_stripe_surface_registered():
+    """Sprint 17 · 3 new paths must land in the OpenAPI document."""
+    schema = app.openapi()
+    paths = set(schema.get("paths", {}).keys())
+    required = {
+        "/membership/approve",  # admin · internal-key gated
+        "/membership/checkout",  # member · creates Stripe session
+        "/stripe/webhook",       # Stripe · signature-verified
+    }
+    missing = required - paths
+    assert not missing, f"Stripe membership endpoints missing: {sorted(missing)}"
+
+
+def test_membership_stripe_schemas_present():
+    """The 3 new request/response components must be named OpenAPI schemas."""
+    schema = app.openapi()
+    components = (schema.get("components") or {}).get("schemas") or {}
+    required = {"MembershipApproveIn", "MembershipCheckoutIn", "MembershipCheckoutOut"}
+    missing = required - set(components.keys())
+    assert not missing, f"Stripe membership schemas missing: {sorted(missing)}"
+
+
+def test_membership_checkout_unconfigured_fails_closed():
+    """When STRIPE_API_KEY + STRIPE_PRICE_ID aren't set, /membership/checkout
+    refuses (503) rather than silently mis-configuring. This is the same
+    fail-closed posture as /internal/* (locked 2026-05-28).
+    """
+    import asyncio
+
+    from fastapi import HTTPException
+
+    from app.config import settings as _settings_fn
+    from app.routes.membership import create_checkout_session
+
+    s = _settings_fn()
+    original_key = s.stripe_api_key
+    original_price = s.stripe_price_id
+    try:
+        s.stripe_api_key = None
+        s.stripe_price_id = None
+        try:
+            asyncio.run(create_checkout_session(None, None))  # type: ignore[arg-type]
+        except HTTPException as e:
+            assert e.status_code == 503, (
+                f"unconfigured Stripe surface should 503, got {e.status_code}"
+            )
+        else:
+            raise AssertionError("create_checkout_session accepted call with no Stripe config")
+    finally:
+        s.stripe_api_key = original_key
+        s.stripe_price_id = original_price
+
+
+def test_stripe_webhook_unconfigured_fails_closed():
+    """`/stripe/webhook` refuses 503 without STRIPE_API_KEY + STRIPE_WEBHOOK_SECRET.
+    Critical · we never want to accept unauthenticated webhook bodies if the
+    signature secret isn't configured."""
+    import asyncio
+
+    from fastapi import HTTPException
+
+    from app.config import settings as _settings_fn
+    from app.routes.stripe_webhook import stripe_webhook as webhook_handler
+
+    class _FakeRequest:
+        async def body(self):
+            return b"{}"
+
+    s = _settings_fn()
+    original_key = s.stripe_api_key
+    original_secret = s.stripe_webhook_secret
+    try:
+        s.stripe_api_key = None
+        s.stripe_webhook_secret = None
+        try:
+            asyncio.run(webhook_handler(_FakeRequest(), stripe_signature="anything"))  # type: ignore[arg-type]
+        except HTTPException as e:
+            assert e.status_code == 503, (
+                f"unconfigured Stripe webhook should 503, got {e.status_code}"
+            )
+        else:
+            raise AssertionError("webhook accepted call with no Stripe config")
+    finally:
+        s.stripe_api_key = original_key
+        s.stripe_webhook_secret = original_secret
+
+
+def test_organization_model_has_stripe_columns():
+    """Sprint 17 migration · stripe_customer_id + stripe_payment_intent_id +
+    membership_renewal_at must land on the Organization model. The PI column
+    must be UNIQUE — it's the webhook idempotency key (a duplicate delivery
+    hits the constraint and we no-op)."""
+    from app.models import Organization
+
+    cols = {c.name: c for c in Organization.__table__.columns}
+    required = {"stripe_customer_id", "stripe_payment_intent_id", "membership_renewal_at"}
+    missing = required - set(cols.keys())
+    assert not missing, f"Organization missing Stripe columns: {sorted(missing)}"
+
+    pi_col = cols["stripe_payment_intent_id"]
+    assert pi_col.unique, (
+        "stripe_payment_intent_id must be UNIQUE · it's the webhook idempotency key. "
+        "Duplicate delivery should hit the constraint and no-op."
+    )
+
+
+def test_membership_activated_email_helper_exists():
+    """Sprint 17 · the welcome email must exist with the right signature so the
+    webhook can fire it without runtime introspection."""
+    import inspect
+
+    from app import email
+
+    fn = getattr(email, "send_membership_activated", None)
+    assert fn is not None, "send_membership_activated missing from app.email"
+    sig = inspect.signature(fn)
+    required = {"to_email", "org_slug", "seat_number"}
+    missing = required - set(sig.parameters.keys())
+    assert not missing, (
+        f"send_membership_activated signature missing kwargs: {sorted(missing)}"
+    )
+
+
 def test_receipts_recent_endpoint_registered():
     """Sprint 14 · /receipts/recent must land in the OpenAPI document and
     return the ReceiptRollupList schema."""

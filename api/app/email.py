@@ -120,6 +120,52 @@ async def send_dataset_ready(
         return False
 
 
+async def send_membership_activated(
+    *,
+    to_email: str,
+    org_slug: str,
+    seat_number: int,
+) -> bool:
+    """Welcome a newly-activated member. Sent from the Stripe webhook after a
+    successful checkout flips the org to `active`.
+
+    Plain-text body; the trust posture says no marketing copy at sign-in.
+    """
+    s = settings()
+    if not (s.resend_api_key and to_email):
+        return False
+
+    subject = "Welcome to DefendableCloud · seat activated"
+    text = (
+        "DefendableCloud · membership activated\n"
+        "--------------------------------------\n\n"
+        f"Org slug    : {org_slug}\n"
+        f"Seat number : #{seat_number}\n\n"
+        "You're in. Pin a model, run a cook, mint a receipt.\n"
+        "Datasets are free with membership. Compute is the meter.\n\n"
+        "Vault   : https://app.defendablecloud.com\n"
+        "API     : https://api.defendablecloud.com\n"
+        "CLI     : pip install defendablecloud-cli\n\n"
+        "To the shed."
+    )
+
+    try:
+        async with httpx.AsyncClient(timeout=15) as client:
+            r = await client.post(
+                "https://api.resend.com/emails",
+                headers={"Authorization": f"Bearer {s.resend_api_key}"},
+                json={
+                    "from": s.email_from,
+                    "to": [to_email],
+                    "subject": subject,
+                    "text": text,
+                },
+            )
+            return r.status_code < 300
+    except Exception:
+        return False
+
+
 async def send_membership_application(
     *,
     applicant_email: str,

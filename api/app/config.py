@@ -61,6 +61,20 @@ class Settings(BaseSettings):
     # refuses all calls — fail-closed.
     internal_api_key: Optional[str] = Field(default=None, alias="INTERNAL_API_KEY")
 
+    # Stripe · members-only one-time annual checkout. Test mode for v1
+    # (sk_test_...); flip to live mode in Fly secrets when ready to charge
+    # the first member. /stripe/webhook verifies the signature against
+    # STRIPE_WEBHOOK_SECRET; /membership/checkout creates sessions for the
+    # configured STRIPE_PRICE_ID. All three unset = membership checkout
+    # surface is unavailable (503 by design — fail-closed).
+    stripe_api_key: Optional[str] = Field(default=None, alias="STRIPE_API_KEY")
+    stripe_webhook_secret: Optional[str] = Field(default=None, alias="STRIPE_WEBHOOK_SECRET")
+    stripe_price_id: Optional[str] = Field(default=None, alias="STRIPE_PRICE_ID")
+    # Where Stripe Checkout redirects on success/cancel · defaults to /org so
+    # the activation CTA round-trip is one page.
+    stripe_success_path: str = Field(default="/org?checkout=success", alias="STRIPE_SUCCESS_PATH")
+    stripe_cancel_path: str = Field(default="/org?checkout=cancel", alias="STRIPE_CANCEL_PATH")
+
     @property
     def cors_origins(self) -> List[str]:
         if not self.cors_origins_raw:

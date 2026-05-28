@@ -33,14 +33,26 @@ class Organization(Base):
     slug: Mapped[str] = mapped_column(String(80), unique=True, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utc_now, nullable=False)
 
-    # Membership · members-only community, capped seats, trust-based monthly billing.
-    # Status transitions: pending → active (admin) · pending → waitlisted (cap hit) ·
-    # active → inactive (lapse). Held off Stripe until the relationship is built.
+    # Membership · members-only community, capped seats, $100/yr one-time annual.
+    # Status taxonomy:
+    #   pending      application submitted, admin hasn't reviewed
+    #   waitlisted   cap hit at application time
+    #   approved     admin reviewed and approved · waiting on Stripe checkout
+    #   active       paid · seat_number assigned · on-chain
+    #   inactive     lapsed / cancelled
     membership_status: Mapped[str] = mapped_column(String(16), default="pending", nullable=False, index=True)
     membership_applied_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     membership_activated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     membership_seat_number: Mapped[int | None] = mapped_column(Integer, nullable=True)
     membership_application: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    membership_renewal_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    # Stripe rails · test mode for v1. customer_id is stable across renewals;
+    # payment_intent_id is unique per cycle and acts as the webhook
+    # idempotency key (a duplicate delivery hits the unique constraint and
+    # we no-op).
+    stripe_customer_id: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
+    stripe_payment_intent_id: Mapped[str | None] = mapped_column(String(64), nullable=True, unique=True, index=True)
 
 
 class User(Base):
