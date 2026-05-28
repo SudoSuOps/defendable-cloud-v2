@@ -411,6 +411,100 @@ def test_evidence_and_submission_customer_provided_defaults_true():
     )
 
 
+def test_internal_staging_endpoints_registered():
+    """Sprint 9 · the rails-side stager surface must be wired and tagged."""
+    schema = app.openapi()
+    paths = set(schema.get("paths", {}).keys())
+    required = {"/internal/staging-tasks", "/internal/stage-complete"}
+    missing = required - paths
+    assert not missing, f"internal staging endpoints missing: {sorted(missing)}"
+
+
+def test_internal_endpoints_require_x_internal_key_header():
+    """/internal/* is fail-closed — missing INTERNAL_API_KEY returns 503;
+    wrong key returns 401. We test the dep directly so we don't need a live
+    database to assert the auth boundary.
+    """
+    import asyncio
+
+    from fastapi import HTTPException
+
+    from app.deps import require_internal
+
+    # No config + no header → 503 (fail-closed).
+    try:
+        asyncio.run(require_internal(None))
+    except HTTPException as e:
+        assert e.status_code == 503, f"unconfigured internal surface should 503, got {e.status_code}"
+    else:
+        raise AssertionError("require_internal accepted a call with no INTERNAL_API_KEY set")
+
+    # Configured but wrong key → 401. Set on the cached singleton to avoid
+    # re-reading env in a test context.
+    from app.config import settings as _settings_fn
+
+    s = _settings_fn()
+    original = s.internal_api_key
+    try:
+        s.internal_api_key = "expected-secret"
+        try:
+            asyncio.run(require_internal("wrong-secret"))
+        except HTTPException as e:
+            assert e.status_code == 401, (
+                f"wrong INTERNAL_API_KEY should 401, got {e.status_code}"
+            )
+        else:
+            raise AssertionError("require_internal accepted a wrong key")
+
+        # Right key → no exception, returns None.
+        result = asyncio.run(require_internal("expected-secret"))
+        assert result is None
+    finally:
+        s.internal_api_key = original
+
+
+def test_download_notification_model_idempotency_shape():
+    """Sprint 9 · download_notifications carries the receipt PK so we never
+    notify the same member twice for the same grant. We don't mutate receipts.
+    """
+    from app.models import DownloadNotification, Receipt
+
+    cols = {c.name for c in DownloadNotification.__table__.columns}
+    assert {"receipt_id", "notified_at", "notified_email", "tigris_key"} <= cols, (
+        f"DownloadNotification columns drifted: {sorted(cols)}"
+    )
+    # receipt_id is the PK → SQLite/Postgres will refuse the duplicate insert.
+    pk = [c.name for c in DownloadNotification.__table__.primary_key.columns]
+    assert pk == ["receipt_id"], f"DownloadNotification PK drifted: {pk}"
+    # Confirm the FK actually points at receipts.id (cascade on delete).
+    fk = next(iter(DownloadNotification.__table__.c.receipt_id.foreign_keys))
+    assert fk.column.table is Receipt.__table__, "DownloadNotification FK drifted"
+
+
+def test_dataset_ready_email_helper_exists():
+    """Sprint 9 · the Resend template for `your dataset is ready` must exist
+    and accept the post-stage notify payload (no actual send in this test).
+    """
+    import inspect
+
+    from app import email
+
+    fn = getattr(email, "send_dataset_ready", None)
+    assert fn is not None, "send_dataset_ready missing from app.email"
+    sig = inspect.signature(fn)
+    required = {
+        "to_email",
+        "package_name",
+        "package_slug",
+        "pairs",
+        "share_url",
+        "download_url",
+        "expires_at",
+    }
+    missing = required - set(sig.parameters.keys())
+    assert not missing, f"send_dataset_ready signature missing kwargs: {sorted(missing)}"
+
+
 def test_incident_kind_documented_taxonomy():
     """IncidentIn.kind is a closed taxonomy. The doctrine says a single flag is
     NOT an incident — it's a Run-level work-defect / deal-finding. Crossing

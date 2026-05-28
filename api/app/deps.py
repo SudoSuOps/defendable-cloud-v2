@@ -93,6 +93,22 @@ async def require_runner(authorization: Optional[str] = Header(default=None)) ->
         raise HTTPException(status_code=401, detail="invalid runner token")
 
 
+async def require_internal(
+    x_internal_key: Optional[str] = Header(default=None, alias="X-Internal-Key"),
+) -> None:
+    """Shared-key auth for the rails-side dataset stager (INTERNAL_API_KEY).
+
+    Fail-closed: if INTERNAL_API_KEY isn't configured in the API process, the
+    /internal/* surface refuses all calls (503). This prevents a misconfigured
+    dev/staging env from silently accepting unauthenticated calls.
+    """
+    expected = settings().internal_api_key
+    if not expected:
+        raise HTTPException(status_code=503, detail="internal surface not configured")
+    if not x_internal_key or x_internal_key.strip() != expected:
+        raise HTTPException(status_code=401, detail="invalid internal key")
+
+
 async def require_member(current: Principal = Depends(get_current_user)) -> Principal:
     """Gate behind active membership. Used by dataset + cook routes (PR-2+).
 

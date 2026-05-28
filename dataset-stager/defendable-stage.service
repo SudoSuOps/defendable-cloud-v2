@@ -1,0 +1,31 @@
+[Unit]
+Description=DefendableCloud dataset stager (NAS → Tigris)
+Documentation=https://github.com/SudoSuOps/defendable-cloud-v2/tree/main/dataset-stager
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=swarm
+Group=swarm
+WorkingDirectory=/home/swarm/defendable-stager
+EnvironmentFile=/home/swarm/defendable-stager/.env
+ExecStart=/usr/bin/python3 /home/swarm/defendable-stager/stage.py
+
+# Read-only access to the dataset NAS mount + write to our own log dir only.
+ProtectSystem=full
+ProtectHome=read-only
+ReadWritePaths=/home/swarm/defendable-stager
+
+# No new privileges, no devices.
+NoNewPrivileges=true
+PrivateDevices=true
+PrivateTmp=true
+
+# A single pass should never take more than five minutes; the cron fires
+# every two minutes but oneshot units run serially under the same unit so
+# this guards against runaway aws-cli uploads.
+TimeoutStartSec=300
+
+[Install]
+WantedBy=multi-user.target

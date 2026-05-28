@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app import __version__
 from app.config import settings
-from app.routes import agents, auth, cooks, datasets, eval, healthz, incidents, library, membership, org, policy, projects, public, runner, runs
+from app.routes import agents, auth, cooks, datasets, eval, healthz, incidents, internal, library, membership, org, policy, projects, public, runner, runs
 
 
 def create_app() -> FastAPI:
@@ -43,6 +43,7 @@ def create_app() -> FastAPI:
     app.include_router(runner.router)
     app.include_router(public.router)
     app.include_router(policy.router)
+    app.include_router(internal.router)
 
     @app.get("/")
     def root():
