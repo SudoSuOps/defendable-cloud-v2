@@ -1,0 +1,89 @@
+{
+  "header": {
+    "version": "v1",
+    "generated_at": "2026-05-28T22:00:00+00:00",
+    "scope": "DefendableCloud in-house model catalog · v1 lineup",
+    "doctrine_note": "Datasets are free with membership. Models are reference cards; members PIN the model they used on the per-org chain to seal client-deliverable provenance."
+  },
+  "models": [
+    {
+      "slug": "atlas-qwen-27b",
+      "name": "Atlas",
+      "family": "in-house",
+      "base": "Qwen2-27B",
+      "base_license": "Apache-2.0",
+      "params_b": 27.0,
+      "context_window": 32768,
+      "purpose": "Sovereign in-house operator base · CRE + capital-markets reasoning",
+      "trained_on": [
+        "cre_cre_honey",
+        "cre_cre_canonical",
+        "capital-markets_*"
+      ],
+      "eval_notes": "Internal eval-receipt rail · books-and-records on the per-org chain.",
+      "weights_location": "rails:/mnt/swarm/models/atlas-qwen-27b/",
+      "compute_class": "rtx-pro-6000-blackwell-96gb",
+      "default_rate_usd_per_hour": 5.0,
+      "status": "active",
+      "deed": null
+    },
+    {
+      "slug": "katnis-qwen-27b",
+      "name": "Katnis",
+      "family": "in-house",
+      "base": "Qwen2-27B",
+      "base_license": "Apache-2.0",
+      "params_b": 27.0,
+      "context_window": 32768,
+      "purpose": "Atlas-Qwen-27B variant · capital markets specialist (LoRA on top of Atlas)",
+      "trained_on": [
+        "capital-markets_*"
+      ],
+      "eval_notes": "Lift over Atlas measured on capital-markets eval set; receipts on per-org chain.",
+      "weights_location": "rails:/mnt/swarm/models/katnis-qwen-27b/",
+      "compute_class": "rtx-pro-6000-blackwell-96gb",
+      "default_rate_usd_per_hour": 5.0,
+      "status": "active",
+      "deed": null
+    },
+    {
+      "slug": "swarmcurator-qwen-9b",
+      "name": "SwarmCurator",
+      "family": "in-house",
+      "base": "Qwen3.5-9B",
+      "base_license": "Apache-2.0",
+      "params_b": 9.0,
+      "context_window": 32768,
+      "purpose": "Tribunal / rulebook engine · 4-dim grader · in-house cook",
+      "trained_on": [
+        "jelly_*",
+        "tribunal_grade_v1"
+      ],
+      "eval_notes": "Used as the in-house referee for SwarmJelly extraction and pair grading.",
+      "weights_location": "rails:/mnt/swarm/models/swarmcurator-qwen-9b/",
+      "compute_class": "rtx-pro-6000-blackwell-96gb",
+      "default_rate_usd_per_hour": 5.0,
+      "status": "active",
+      "deed": null
+    },
+    {
+      "slug": "swarm-marketer-gemma-2-2b",
+      "name": "SwarmMarketer",
+      "family": "in-house",
+      "base": "Gemma-2-2B",
+      "base_license": "Gemma-License",
+      "params_b": 2.0,
+      "context_window": 8192,
+      "purpose": "Outreach copy / landing surface generation · small fast model on edge hardware",
+      "trained_on": [
+        "marketing_outreach_v1"
+      ],
+      "eval_notes": "Field-deployed on sigedge for landing-page A/B and outreach drafts.",
+      "weights_location": "sigedge:/srv/swarm-marketer/",
+      "compute_class": "jetson-orin-nano",
+      "default_rate_usd_per_hour": 0.50,
+      "status": "active",
+      "deed": null
+    }
+  ]
+}

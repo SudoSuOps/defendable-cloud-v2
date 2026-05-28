@@ -249,6 +249,41 @@ def build_dataset_download_payload(
     }
 
 
+def build_model_pin_payload(
+    *, receipt_id: str, org_seq: int, parent_hash: str, created_at: str,
+    org: dict, card: dict, pinned_by_user_id: str | None,
+    declaration: str | None, client_ref: str | None, share_url: str,
+) -> dict:
+    """Books-and-records for a model card pin · who declared which model on
+    what date, with what content-hash, sealed onto the per-org chain.
+
+    Only the durable identity fields go in the payload: slug, name, base,
+    params, the card's content-hash at pin time. The card body itself can
+    evolve in subsequent catalog deploys; this receipt remembers the EXACT
+    card hash that was in effect on the pin date.
+    """
+    return {
+        "schema": "defendablecloud.model-pin-receipt/v1",
+        "receipt_id": receipt_id,
+        "org_seq": org_seq,
+        "parent_hash": parent_hash,
+        "created_at": created_at,
+        "organization": {"id": org["id"], "name": org["name"]},
+        "model": {
+            "slug": card["slug"],
+            "name": card["name"],
+            "base": card["base"],
+            "params_b": card["params_b"],
+            "card_sha256": card["card_sha256"],
+        },
+        "pinned_at": created_at,
+        "pinned_by_user_id": pinned_by_user_id,
+        "declaration": declaration,
+        "client_ref": client_ref,
+        "share_url": share_url,
+    }
+
+
 def render_pdf(payload: dict, receipt_sha256: str) -> bytes:
     schema = str(payload.get("schema", ""))
     if schema.startswith("defendablecloud.cook"):
@@ -259,7 +294,86 @@ def render_pdf(payload: dict, receipt_sha256: str) -> bytes:
         return _render_incident(payload, receipt_sha256)
     if schema.startswith("defendablecloud.dataset-download"):
         return _render_dataset_download(payload, receipt_sha256)
+    if schema.startswith("defendablecloud.model-pin"):
+        return _render_model_pin(payload, receipt_sha256)
     return _render_run(payload, receipt_sha256)
+
+
+def _render_model_pin(payload: dict, receipt_sha256: str) -> bytes:
+    """Minimal PDF for a model card pin · books-and-records grade. The
+    member, the model, the card hash, the declaration, the chain coordinates.
+    """
+    pdf = FPDF(unit="mm", format="A4")
+    pdf.set_auto_page_break(auto=True, margin=16)
+    pdf.add_page()
+
+    def line(text: str, h: float = 6) -> None:
+        pdf.cell(0, h, _s(text), new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+
+    def wrap(text: str, h: float = 5) -> None:
+        pdf.multi_cell(0, h, _s(text), new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+
+    def section(title: str) -> None:
+        pdf.set_text_color(168, 127, 51)
+        pdf.set_font("Helvetica", "B", 8)
+        line(title.upper())
+        pdf.set_text_color(20, 20, 20)
+
+    pdf.set_font("Helvetica", "B", 14)
+    line("DefendableCloud — Model Pin Receipt")
+    pdf.ln(2)
+    pdf.set_font("Helvetica", "", 9)
+    line(f"Receipt: {payload.get('receipt_id')}  (org_seq {payload.get('org_seq')})")
+    line(f"Pinned: {payload.get('pinned_at') or payload.get('created_at')}")
+    pdf.ln(2)
+
+    section("Organization")
+    pdf.set_font("Helvetica", "", 10)
+    org = payload.get("organization") or {}
+    line(f"{org.get('name', '—')} ({org.get('id', '—')})")
+    pdf.ln(1)
+
+    section("Model")
+    model = payload.get("model") or {}
+    pdf.set_font("Helvetica", "B", 11)
+    line(model.get("name", "—"))
+    pdf.set_font("Helvetica", "", 10)
+    line(f"slug: {model.get('slug', '—')}")
+    line(f"base: {model.get('base', '—')}    params: {model.get('params_b', '—')}B")
+    pdf.ln(1)
+
+    section("Declaration")
+    if payload.get("declaration"):
+        pdf.set_font("Helvetica", "", 10)
+        wrap(payload["declaration"])
+    else:
+        pdf.set_font("Helvetica", "I", 10)
+        pdf.set_text_color(120, 120, 120)
+        line("(no declaration supplied)")
+        pdf.set_text_color(20, 20, 20)
+    if payload.get("client_ref"):
+        pdf.set_font("Helvetica", "", 9)
+        line(f"client_ref: {payload['client_ref']}")
+    pdf.ln(1)
+
+    section("Integrity")
+    pdf.set_font("Courier", "", 8)
+    pdf.set_text_color(90, 90, 90)
+    wrap(f"receipt_sha256:  {receipt_sha256}", h=4.5)
+    wrap(f"parent_hash:     {payload.get('parent_hash', '—')}", h=4.5)
+    wrap(f"card_sha256:     {model.get('card_sha256', '—')}", h=4.5)
+    wrap(f"verify:          {payload.get('share_url', '—')}", h=4.5)
+    pdf.ln(3)
+    pdf.set_font("Helvetica", "I", 8)
+    pdf.set_text_color(120, 120, 120)
+    wrap(
+        "This receipt seals the model card identity at pin time. Even if the "
+        "catalog card content evolves later, the card_sha256 above is the exact "
+        "snapshot the member declared on this date. Compute is the meter; this "
+        "receipt is the books-and-records.",
+        h=4.5,
+    )
+    return bytes(pdf.output())
 
 
 def _render_dataset_download(payload: dict, receipt_sha256: str) -> bytes:
