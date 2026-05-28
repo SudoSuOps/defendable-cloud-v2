@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { api, apiBase } from "../lib/api";
 import { Badge, Button, Callout, Card, ErrorNote, ExampleList, Field, inputClass, Spinner } from "../components/ui";
@@ -28,6 +28,17 @@ export function RunDetail() {
   const [busy, setBusy] = useState<string | null>(null);
   const [resub, setResub] = useState(false);
 
+  // Refs for auto-scroll after key state transitions. The right card lands
+  // where the eye is, so the operator never has to hunt for the result.
+  const auditRef = useRef<HTMLDivElement | null>(null);
+  const approvalRef = useRef<HTMLDivElement | null>(null);
+  const receiptRef = useRef<HTMLDivElement | null>(null);
+  const prevStateRef = useRef<{ verdict: boolean; approved: boolean; receipted: boolean }>({
+    verdict: false,
+    approved: false,
+    receipted: false,
+  });
+
   async function load() {
     try { setRun(await api<Run>(`/runs/${id}`)); } catch (e: any) { setErr(e.message); }
   }
@@ -38,12 +49,34 @@ export function RunDetail() {
     try { await fn(); await load(); } catch (e: any) { setErr(e.message); } finally { setBusy(null); }
   }
 
+  // Detect transitions and scroll the relevant card into view. Only scrolls on
+  // an actual transition (false → true), not on every reload.
+  useEffect(() => {
+    if (!run) return;
+    const cur = { verdict: !!run.verdict, approved: run.approval?.decision === "approved", receipted: !!run.receipt };
+    const prev = prevStateRef.current;
+    const target = cur.receipted && !prev.receipted ? receiptRef.current
+      : cur.approved && !prev.approved ? receiptRef.current
+      : cur.verdict && !prev.verdict ? auditRef.current
+      : null;
+    if (target) {
+      // Honour the sticky header + strip; offset the scroll by their combined height.
+      const y = target.getBoundingClientRect().top + window.scrollY - 120;
+      window.scrollTo({ top: y, behavior: "smooth" });
+    }
+    prevStateRef.current = cur;
+  }, [run?.verdict, run?.approval?.decision, run?.receipt?.receipt_id]);
+
   if (err && !run) return <ErrorNote>{err}</ErrorNote>;
   if (!run) return <Spinner label="Loading eval run…" />;
 
   const hasVerdict = !!run.verdict;
   const approved = run.approval?.decision === "approved";
   const receipted = !!run.receipt;
+
+  const triggerAudit = () => act("audit", () => api(`/runs/${run.id}/audit`, { method: "POST" }));
+  const triggerFinalize = () => act("fin", () => api(`/runs/${run.id}/findings`, { method: "POST" }));
+  const triggerReceipt = () => act("receipt", () => api(`/runs/${run.id}/receipt`, { method: "POST" }));
 
   return (
     <div className="mx-auto max-w-3xl">
@@ -60,6 +93,16 @@ export function RunDetail() {
       </div>
       {err && <div className="mt-4"><ErrorNote>{err}</ErrorNote></div>}
 
+      {/* Sticky next-move strip — one button always pinned at the right next action. */}
+      <NextMoveStrip
+        run={run}
+        busy={busy}
+        setResub={setResub}
+        triggerAudit={triggerAudit}
+        triggerFinalize={triggerFinalize}
+        triggerReceipt={triggerReceipt}
+      />
+
       {/* 1 · Assignment */}
       {run.assignment_text && <AssignmentCard text={run.assignment_text} />}
 
@@ -73,7 +116,7 @@ export function RunDetail() {
       <div id="submission" className="mt-6"><SubmissionSection run={run} busy={busy} act={act} resub={resub} setResub={setResub} /></div>
 
       {/* 4 · Audit + Referee Findings */}
-      <div className="mt-6"><AuditSection run={run} busy={busy} act={act} /></div>
+      <div id="audit" ref={auditRef} className="mt-6"><AuditSection run={run} busy={busy} act={act} /></div>
 
       {/* 4.5 · Repair plan — "it failed, now what?" */}
       <RepairPlan run={run} setResub={setResub} />
@@ -86,27 +129,128 @@ export function RunDetail() {
 
       {/* 7 · Approval */}
       {hasVerdict && (
-        <Card className="mt-6" title="Human approval" subtitle="The operator owns the final trust decision">
-          {run.approval ? (
-            <div className="flex items-center gap-3 text-sm">
-              <Badge value={run.approval.decision} />
-              <span className="text-paper/60">{run.approval.approver_email}{run.approval.note ? ` · "${run.approval.note}"` : ""}</span>
-            </div>
-          ) : <ApprovalForm runId={run.id} busy={busy} act={act} />}
-        </Card>
+        <div id="approval" ref={approvalRef}>
+          <Card className="mt-6" title="Human approval" subtitle="The operator owns the final trust decision">
+            {run.approval ? (
+              <div className="flex items-center gap-3 text-sm">
+                <Badge value={run.approval.decision} />
+                <span className="text-paper/60">{run.approval.approver_email}{run.approval.note ? ` · "${run.approval.note}"` : ""}</span>
+              </div>
+            ) : <ApprovalForm runId={run.id} busy={busy} act={act} />}
+          </Card>
+        </div>
       )}
 
       {/* 8 · Receipt */}
-      <Card className="mt-6" title="Client Results Package">
-        {receipted ? <ReceiptPanel receipt={run.receipt!} /> : approved ? (
-          <div>
-            <p className="mb-4 text-sm text-paper/60">Approved. Issue the eval receipt — findings, verdict, ownership, hashed JSON + PDF, shareable.</p>
-            <Button disabled={busy === "receipt"} onClick={() => act("receipt", () => api(`/runs/${run.id}/receipt`, { method: "POST" }))}>
-              {busy === "receipt" ? "Issuing…" : "Issue Receipt"}
-            </Button>
-          </div>
-        ) : <p className="text-sm text-paper/50">A human must approve before the receipt can be issued.</p>}
-      </Card>
+      <div id="receipt" ref={receiptRef}>
+        <Card className="mt-6" title="Client Results Package">
+          {receipted ? <ReceiptPanel receipt={run.receipt!} /> : approved ? (
+            <div>
+              <p className="mb-4 text-sm text-paper/60">Approved. Generate the eval receipt — findings, verdict, ownership, hashed JSON + PDF, shareable.</p>
+              <Button disabled={busy === "receipt"} onClick={triggerReceipt}>
+                {busy === "receipt" ? "Generating…" : "Generate Receipt"}
+              </Button>
+            </div>
+          ) : <p className="text-sm text-paper/50">A human must approve before the receipt can be generated.</p>}
+        </Card>
+      </div>
+    </div>
+  );
+}
+
+// ── Next-move strip ─────────────────────────────────────────────────────────
+// One button always pinned at the right next action. The killer button at
+// every moment, derived from run state — never makes the operator hunt for
+// what's next on a long page.
+interface NextMove {
+  label: string;
+  cta: string;
+  variant?: "primary" | "ghost" | "danger";
+  onClick: () => void;
+}
+
+function NextMoveStrip({
+  run,
+  busy,
+  setResub,
+  triggerAudit,
+  triggerFinalize,
+  triggerReceipt,
+}: {
+  run: Run;
+  busy: string | null;
+  setResub: (v: boolean) => void;
+  triggerAudit: () => Promise<void> | void;
+  triggerFinalize: () => Promise<void> | void;
+  triggerReceipt: () => Promise<void> | void;
+}) {
+  const [copied, setCopied] = useState(false);
+  const scrollTo = (id: string) =>
+    document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+
+  const move: NextMove = useMemo(() => {
+    if (run.receipt) {
+      const url = `${window.location.origin}/r/${run.receipt.share_token}`;
+      return {
+        label: "Receipt minted — share or open the public proof.",
+        cta: copied ? "Copied ✓" : "Copy share link",
+        onClick: () => {
+          navigator.clipboard.writeText(url);
+          setCopied(true);
+          setTimeout(() => setCopied(false), 1500);
+        },
+      };
+    }
+    if (run.approval?.decision === "rejected") {
+      return { label: "Run closed — rejected at approval.", cta: "Back to Runs", onClick: () => window.scrollTo({ top: 0, behavior: "smooth" }), variant: "ghost" };
+    }
+    if (run.approval?.decision === "approved") {
+      return { label: "Approved — generate the receipt to seal the chain.", cta: busy === "receipt" ? "Generating…" : "Generate Receipt", onClick: triggerReceipt };
+    }
+    if (run.verdict) {
+      return { label: "Verdict in — a human approves before anything mints.", cta: "Go to approval", onClick: () => scrollTo("approval") };
+    }
+    if (run.checks.some((c) => c.status === "open")) {
+      const n = run.checks.filter((c) => c.status === "open").length;
+      return { label: `${n} checklist rule${n > 1 ? "s" : ""} still need to be applied.`, cta: "Review open rules", onClick: () => scrollTo("audit") };
+    }
+    if (run.checks.length > 0) {
+      return { label: "All rules graded — finalize the flags to mint the verdict.", cta: busy === "fin" ? "Finalizing…" : "Finalize flags", onClick: triggerFinalize };
+    }
+    if (run.submission) {
+      return { label: "Submission in. Run the rulebook against the agent's output.", cta: busy === "audit" ? "Auditing…" : "Run ruleset audit", onClick: triggerAudit };
+    }
+    return {
+      label: "Paste the agent's output to start the referee.",
+      cta: "Add submission",
+      onClick: () => {
+        setResub(false);
+        scrollTo("submission");
+      },
+    };
+  }, [run.receipt?.receipt_id, run.approval?.decision, run.verdict?.outcome, run.checks.length, run.checks.filter((c) => c.status === "open").length, run.submission?.sha256, busy, copied]);
+
+  const v = run.verdict;
+  return (
+    <div className="sticky top-[57px] z-30 -mx-2 mt-5 mb-2 rounded-xl border border-honey-400/25 bg-ink/85 px-4 py-3 backdrop-blur sm:mx-0">
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="flex min-w-0 flex-1 items-center gap-3">
+          {v?.severity && (
+            <span className={`rounded-md border px-2 py-0.5 text-xs font-semibold uppercase ${SEV_TONE[v.severity] || ""}`}>{v.severity}</span>
+          )}
+          {v && (
+            <span className="font-mono text-xs text-paper/60">{v.score_100}/100</span>
+          )}
+          <p className="truncate text-sm text-paper/80">{move.label}</p>
+        </div>
+        <Button
+          variant={move.variant ?? "primary"}
+          disabled={!!busy}
+          onClick={() => move.onClick()}
+        >
+          {move.cta}
+        </Button>
+      </div>
     </div>
   );
 }
@@ -451,19 +595,38 @@ function ApprovalForm({ runId, busy, act }: { runId: string; busy: string | null
 
 function ReceiptPanel({ receipt }: { receipt: Receipt }) {
   const [copied, setCopied] = useState(false);
+  const [showHashes, setShowHashes] = useState(false);
   const shareUrl = `${window.location.origin}/r/${receipt.share_token}`;
   return (
     <div>
-      <div className="flex items-center gap-3"><Badge value="receipted" /><span className="font-mono text-sm text-paper/80">{receipt.receipt_id}</span></div>
-      <dl className="mt-4 space-y-2 font-mono text-xs">
-        <div className="flex gap-3"><dt className="w-32 shrink-0 text-paper/40">receipt_sha256</dt><dd className="break-all text-paper/70">{receipt.receipt_sha256}</dd></div>
-        <div className="flex gap-3"><dt className="w-32 shrink-0 text-paper/40">parent_hash</dt><dd className="break-all text-paper/70">{receipt.parent_hash}</dd></div>
-      </dl>
-      <div className="mt-5 flex flex-wrap gap-3">
-        <Button onClick={() => { navigator.clipboard.writeText(shareUrl); setCopied(true); setTimeout(() => setCopied(false), 1500); }}>{copied ? "Copied ✓" : "Copy share link"}</Button>
+      {/* Receipt id + share = the moment of mint. The link to share is the primary action. */}
+      <div className="flex flex-wrap items-center gap-3">
+        <Badge value="receipted" />
+        <span className="font-mono text-sm text-paper/80">{receipt.receipt_id}</span>
+        <span className="font-mono text-[10px] text-paper/40">org_seq {receipt.org_seq}</span>
+      </div>
+      <div className="mt-4 flex flex-wrap gap-3">
+        <Button onClick={() => { navigator.clipboard.writeText(shareUrl); setCopied(true); setTimeout(() => setCopied(false), 1500); }}>
+          {copied ? "Copied ✓" : "Copy share link"}
+        </Button>
         <a href={`/r/${receipt.share_token}`} target="_blank" rel="noreferrer"><Button variant="ghost">Open proof page</Button></a>
         <a href={`${apiBase}/share/${receipt.share_token}/pdf`} target="_blank" rel="noreferrer"><Button variant="ghost">PDF</Button></a>
         <a href={`${apiBase}/share/${receipt.share_token}`} target="_blank" rel="noreferrer"><Button variant="ghost">JSON</Button></a>
+      </div>
+      <div className="mt-5 border-t border-white/5 pt-4">
+        <button
+          type="button"
+          onClick={() => setShowHashes((v) => !v)}
+          className="font-mono text-xs uppercase tracking-widest text-paper/40 hover:text-paper/70"
+        >
+          {showHashes ? "▾ Integrity" : "▸ Integrity"}
+        </button>
+        {showHashes && (
+          <dl className="mt-3 space-y-2 font-mono text-xs">
+            <div className="flex gap-3"><dt className="w-32 shrink-0 text-paper/40">receipt_sha256</dt><dd className="break-all text-paper/70">{receipt.receipt_sha256}</dd></div>
+            <div className="flex gap-3"><dt className="w-32 shrink-0 text-paper/40">parent_hash</dt><dd className="break-all text-paper/70">{receipt.parent_hash}</dd></div>
+          </dl>
+        )}
       </div>
     </div>
   );
