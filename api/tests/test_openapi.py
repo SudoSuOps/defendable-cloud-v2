@@ -55,6 +55,27 @@ def test_doctrine_schemas_present_in_openapi():
     )
 
 
+def _enum_values(node) -> set[str]:
+    """Recursively collect all string `enum` values nested inside a schema node."""
+    found: set[str] = set()
+
+    def walk(n):
+        if isinstance(n, dict):
+            enum = n.get("enum")
+            if isinstance(enum, list):
+                for v in enum:
+                    if isinstance(v, str):
+                        found.add(v)
+            for v in n.values():
+                walk(v)
+        elif isinstance(n, list):
+            for v in n:
+                walk(v)
+
+    walk(node)
+    return found
+
+
 def test_severity_literal_used_on_verdict():
     """The Verdict.severity field must speak honey / jelly / propolis only.
 
@@ -65,23 +86,74 @@ def test_severity_literal_used_on_verdict():
     verdict = (schema.get("components") or {}).get("schemas", {}).get("Verdict")
     assert verdict is not None, "Verdict schema missing"
     severity = verdict.get("properties", {}).get("severity", {})
-    # The field is Optional[Severity], so Pydantic emits anyOf with the enum + null.
-    found_values: set[str] = set()
+    found = _enum_values(severity)
+    assert found == {"honey", "jelly", "propolis"}, (
+        f"Verdict.severity literal drifted from honey/jelly/propolis: {sorted(found)}"
+    )
 
-    def walk(node):
-        if isinstance(node, dict):
-            enum = node.get("enum")
-            if isinstance(enum, list):
-                for v in enum:
-                    if isinstance(v, str):
-                        found_values.add(v)
-            for v in node.values():
-                walk(v)
-        elif isinstance(node, list):
-            for v in node:
-                walk(v)
 
-    walk(severity)
-    assert found_values == {"honey", "jelly", "propolis"}, (
-        f"Verdict.severity literal drifted from honey/jelly/propolis: {sorted(found_values)}"
+# Closed set of every severity value that has appeared in a Flight Sheet
+# author's hand. New flight sheets should prefer the tier-shaped values
+# (high/mid/low); the others are accepted for backward compatibility.
+EXPECTED_RULE_SEVERITY = {
+    "high", "mid", "medium", "low",       # tier-shaped (preferred)
+    "critical", "noncritical",            # Kimi Library V1 vocabulary
+    "honey", "jelly", "propolis",         # verdict-vocab leak (legacy)
+    "minor",
+}
+
+
+def test_rule_severity_literal_used_on_check():
+    """The *rule's* severity (Check.severity) must come from RuleSeverity.
+
+    Distinct from Verdict.severity. A Flight Sheet authoring an unknown
+    severity will fail Pydantic validation at the response boundary rather
+    than be silently coerced through `tier_of()`.
+    """
+    schema = app.openapi()
+    check = (schema.get("components") or {}).get("schemas", {}).get("Check")
+    assert check is not None, "Check schema missing"
+    severity = check.get("properties", {}).get("severity", {})
+    found = _enum_values(severity)
+    assert found == EXPECTED_RULE_SEVERITY, (
+        f"Check.severity literal drifted from RuleSeverity vocabulary: "
+        f"missing={sorted(EXPECTED_RULE_SEVERITY - found)}, "
+        f"extra={sorted(found - EXPECTED_RULE_SEVERITY)}"
+    )
+
+
+def test_rule_severity_literal_used_on_finding():
+    """Finding inherits from Check; its severity field must reference the same RuleSeverity."""
+    schema = app.openapi()
+    finding = (schema.get("components") or {}).get("schemas", {}).get("Finding")
+    assert finding is not None, "Finding schema missing"
+    severity = finding.get("properties", {}).get("severity", {})
+    found = _enum_values(severity)
+    assert found == EXPECTED_RULE_SEVERITY, (
+        f"Finding.severity must speak RuleSeverity (inherits from Check). Got: {sorted(found)}"
+    )
+
+
+def test_incident_kind_documented_taxonomy():
+    """IncidentIn.kind is a closed taxonomy. The doctrine says a single flag is
+    NOT an incident — it's a Run-level work-defect / deal-finding. Crossing
+    into incident-land requires policy_violation (declared gate) or
+    recurring_flag (operational pattern). This test asserts the taxonomy
+    holds; if the doctrine changes (e.g. add `single_flag`), update both the
+    Literal in schemas.py AND this test deliberately.
+    """
+    schema = app.openapi()
+    incident_in = (schema.get("components") or {}).get("schemas", {}).get("IncidentIn")
+    assert incident_in is not None, "IncidentIn schema missing"
+    kind = incident_in.get("properties", {}).get("kind", {})
+    found = _enum_values(kind)
+    assert found == {"rogue", "dark", "policy_violation", "recurring_flag"}, (
+        f"IncidentKind taxonomy drifted: {sorted(found)}. "
+        "If you intentionally added a new kind, update this test."
+    )
+    # Negative assertion: single_flag is *explicitly* not in the taxonomy.
+    assert "single_flag" not in found, (
+        "single_flag added to IncidentKind. The doctrine routes single flags "
+        "through the Run's repair plan (work-defect / deal-finding), not via "
+        "incidents. If you intend to change this, document the rationale."
     )
