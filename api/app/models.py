@@ -58,6 +58,31 @@ class MagicToken(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utc_now, nullable=False)
 
 
+class ApiKey(Base):
+    """Programmatic-access bearer token. Format `dc_<32 url-safe base64>`.
+
+    Plaintext returned ONCE on creation; thereafter we store only the SHA-256
+    (via `hash_token`) and the 12-char prefix for display. Revoking sets
+    `revoked_at` — never delete (audit trail).
+    """
+
+    __tablename__ = "api_keys"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    org_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    name: Mapped[str] = mapped_column(String(200), nullable=False)
+    key_prefix: Mapped[str] = mapped_column(String(12), unique=True, nullable=False, index=True)
+    key_hash: Mapped[str] = mapped_column(String(128), nullable=False)
+    created_by: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utc_now, nullable=False)
+    last_used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
 # ─── Work ───────────────────────────────────────────────────────────────────
 
 

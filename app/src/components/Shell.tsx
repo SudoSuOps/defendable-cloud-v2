@@ -26,6 +26,7 @@ export function Shell({ children }: { children: ReactNode }) {
               <Link to="/agents" className="text-paper/60 transition-colors hover:text-paper">Agents</Link>
               <Link to="/incidents" className="text-paper/60 transition-colors hover:text-paper">Incidents</Link>
               <Link to="/datasets" className="text-paper/60 transition-colors hover:text-paper">Datasets</Link>
+              <Link to="/org" className="text-paper/60 transition-colors hover:text-paper">Org</Link>
               <span className="hidden text-paper/40 sm:inline">{me.email}</span>
               <button
                 onClick={() => {
