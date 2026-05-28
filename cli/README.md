@@ -158,8 +158,40 @@ defendable --version
 
 ```bash
 pip install -e './cli[dev]'
-pytest cli/tests
+pytest cli/tests              # 19 smoke tests · no creds required
 ```
+
+### End-to-end test against the live API
+
+`cli/tests/e2e/test_run_lifecycle.py` drives the full Defendable Run lifecycle as a single test:
+
+```
+auth status → projects (find-or-create) → flight-sheets ls → runs new
+  → evidence add → submission add → audit run → grade open rules
+  → audit finalize → runs verdict (assert severity ∈ {honey, jelly, propolis})
+  → approval set → receipt generate → verify (hash check) → ledger ls + verify
+```
+
+The test SKIPS cleanly if no credentials are available — `pytest cli/tests` is always safe to run.
+
+**To run it against `api.defendablecloud.com`:**
+
+```bash
+# Easiest: sign in via the CLI itself, then pytest reads your stored JWT.
+defendable auth login --email you@org.com
+defendable auth verify <TOKEN-FROM-EMAIL>
+pytest cli/tests/e2e -v
+
+# Or supply a JWT directly (CI pattern):
+export DEFENDABLE_E2E_TOKEN="eyJ..."
+pytest cli/tests/e2e -v
+
+# Override the API base if testing against a non-prod environment:
+export DEFENDABLE_E2E_API="https://api.staging.defendablecloud.com"
+pytest cli/tests/e2e -v
+```
+
+The e2e test uses an isolated `DEFENDABLE_HOME` so it never touches `~/.defendable/credentials.json`. Artifacts (one project, one Run, one receipt per run) accumulate in your org; the API is append-only by design.
 
 ---
 
