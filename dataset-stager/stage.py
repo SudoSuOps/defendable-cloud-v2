@@ -1,19 +1,19 @@
 #!/usr/bin/env python3
 """DefendableCloud dataset stager — runs on swarmrails (192.168.0.100).
 
-Where the NAS lives. Polls the API for pending download grants, rsyncs the
-matching dataset file from `/mnt/swarm/...` to the Tigris bucket, then tells
+Where the NAS lives. Polls the API for pending download grants, copies the
+matching dataset file from `/mnt/swarm/...` into the Tigris bucket, then tells
 the API the file is staged so it can email the member.
 
   rails worker every 2 min (systemd timer):
     GET  /internal/staging-tasks      ← unique tigris_keys waiting on staging
     for each task:
-        if not already in Tigris:     aws s3 cp /mnt/swarm/... s3://...
+        if not already in Tigris:     boto3 upload_file from /mnt/swarm/...
     POST /internal/stage-complete     ← API sweeps + Resend-notifies members
 
-This script is stdlib-only (urllib + subprocess + aws CLI). No pip install on
-rails. Same shape as cook-runner/runner.py — single file, easy to read on a
-production box.
+Uses urllib (stdlib) for the API surface + boto3 for Tigris. Rails already
+has boto3 — keeps us off `apt install awscli` on a production box and aligns
+with the API side which uses boto3 too.
 
 Env:
   STAGER_API_BASE        default https://api.defendablecloud.com
@@ -22,6 +22,7 @@ Env:
   TIGRIS_ENDPOINT_URL    default https://fly.storage.tigris.dev
   AWS_ACCESS_KEY_ID      Tigris access key id                                [required]
   AWS_SECRET_ACCESS_KEY  Tigris secret access key                            [required]
+  AWS_REGION             default auto
   STAGER_DRY_RUN         "1" → don't upload or call stage-complete
 
 Exit codes:
@@ -34,17 +35,42 @@ from __future__ import annotations
 
 import json
 import os
-import subprocess
 import sys
 import urllib.error
 import urllib.request
+
+import boto3
+from botocore.client import Config
+from botocore.exceptions import BotoCoreError, ClientError
 
 
 API = os.environ.get("STAGER_API_BASE", "https://api.defendablecloud.com").rstrip("/")
 INTERNAL_KEY = os.environ.get("INTERNAL_API_KEY", "")
 BUCKET = os.environ.get("TIGRIS_BUCKET", "defendable-cloud-v2")
 ENDPOINT = os.environ.get("TIGRIS_ENDPOINT_URL", "https://fly.storage.tigris.dev")
+REGION = os.environ.get("AWS_REGION", "auto")
 DRY_RUN = os.environ.get("STAGER_DRY_RUN") == "1"
+
+
+_S3 = None
+
+
+def s3():
+    """Lazily build the Tigris boto3 client. signature_version=s3v4 is what
+    Tigris expects; addressing_style=path matches our other code paths."""
+    global _S3
+    if _S3 is None:
+        _S3 = boto3.client(
+            "s3",
+            endpoint_url=ENDPOINT,
+            region_name=REGION,
+            config=Config(
+                signature_version="s3v4",
+                s3={"addressing_style": "path"},
+                retries={"max_attempts": 3, "mode": "standard"},
+            ),
+        )
+    return _S3
 
 
 def _http(method: str, path: str, body: dict | None = None) -> dict:
@@ -62,22 +88,22 @@ def _http(method: str, path: str, body: dict | None = None) -> dict:
         return json.loads(r.read().decode() or "{}")
 
 
-def _aws(args: list[str]) -> tuple[int, str]:
-    """Run `aws s3 ...` with the Tigris endpoint. Returns (rc, combined_output)."""
-    cmd = ["aws", "s3", *args, "--endpoint-url", ENDPOINT]
-    try:
-        p = subprocess.run(cmd, capture_output=True, text=True, timeout=600)
-        return p.returncode, (p.stdout + p.stderr).strip()
-    except FileNotFoundError:
-        return 127, "aws cli not found on PATH"
-    except subprocess.TimeoutExpired:
-        return 124, "aws cli timed out after 600s"
-
-
 def head_object(tigris_key: str) -> bool:
     """True if the object exists in the bucket."""
-    rc, _ = _aws(["ls", f"s3://{BUCKET}/{tigris_key}"])
-    return rc == 0
+    try:
+        s3().head_object(Bucket=BUCKET, Key=tigris_key)
+        return True
+    except ClientError as e:
+        code = e.response.get("Error", {}).get("Code", "")
+        if code in ("404", "NoSuchKey", "NotFound"):
+            return False
+        # Some other error (auth, network) — log + treat as "not staged" so
+        # we re-attempt upload, which will then surface the real error.
+        print(f"[head_object] {tigris_key}: {code or e}", file=sys.stderr)
+        return False
+    except BotoCoreError as e:
+        print(f"[head_object] {tigris_key}: {e}", file=sys.stderr)
+        return False
 
 
 def upload(source_path: str, tigris_key: str) -> tuple[bool, str]:
@@ -87,10 +113,11 @@ def upload(source_path: str, tigris_key: str) -> tuple[bool, str]:
     if not os.path.exists(source_path):
         return False, f"source missing: {source_path}"
     if DRY_RUN:
-        return True, f"DRY_RUN: would cp {source_path} → s3://{BUCKET}/{tigris_key}"
-    rc, out = _aws(["cp", source_path, f"s3://{BUCKET}/{tigris_key}"])
-    if rc != 0:
-        return False, f"aws cp rc={rc}: {out[:240]}"
+        return True, f"DRY_RUN: would upload {source_path} → s3://{BUCKET}/{tigris_key}"
+    try:
+        s3().upload_file(Filename=source_path, Bucket=BUCKET, Key=tigris_key)
+    except (ClientError, BotoCoreError) as e:
+        return False, f"upload_file: {e}"
     return True, "uploaded"
 
 
@@ -107,6 +134,9 @@ def stage_complete(tigris_key: str, bytes_uploaded: int | None = None) -> dict:
 def main() -> int:
     if not INTERNAL_KEY:
         print("ERR: set INTERNAL_API_KEY", file=sys.stderr)
+        return 1
+    if not (os.environ.get("AWS_ACCESS_KEY_ID") and os.environ.get("AWS_SECRET_ACCESS_KEY")):
+        print("ERR: set AWS_ACCESS_KEY_ID + AWS_SECRET_ACCESS_KEY", file=sys.stderr)
         return 1
 
     try:
