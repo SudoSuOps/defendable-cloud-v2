@@ -172,6 +172,45 @@ def test_org_endpoints_registered():
     assert not missing, f"/org endpoints missing from OpenAPI: {sorted(missing)}"
 
 
+def test_membership_schemas_present_in_openapi():
+    """Phase 5 membership schemas — Membership, MembershipApplicationIn,
+    MembershipApplicationView — must be named components.
+    """
+    schema = app.openapi()
+    components = (schema.get("components") or {}).get("schemas") or {}
+    required = {"Membership", "MembershipApplicationIn", "MembershipApplicationView"}
+    missing = required - set(components.keys())
+    assert not missing, (
+        f"Membership schemas missing from OpenAPI: {sorted(missing)}"
+    )
+
+
+def test_membership_status_literal_locked():
+    """Membership.status must speak the canonical MembershipStatus literal.
+
+    Doctrine: members-only community, capped seats, trust-based monthly billing.
+    The four states are pending / active / waitlisted / inactive. A typo here
+    would silently break the dashboard or the apply flow.
+    """
+    schema = app.openapi()
+    membership = (schema.get("components") or {}).get("schemas", {}).get("Membership")
+    assert membership is not None, "Membership schema missing"
+    status = membership.get("properties", {}).get("status", {})
+    found = _enum_values(status)
+    assert found == {"pending", "active", "waitlisted", "inactive"}, (
+        f"Membership.status literal drifted from MembershipStatus vocabulary: {sorted(found)}"
+    )
+
+
+def test_membership_endpoints_registered():
+    """The two /membership endpoints must be wired before the frontend can call them."""
+    schema = app.openapi()
+    paths = set(schema.get("paths", {}).keys())
+    required = {"/membership", "/membership/apply"}
+    missing = required - paths
+    assert not missing, f"/membership endpoints missing from OpenAPI: {sorted(missing)}"
+
+
 def test_incident_kind_documented_taxonomy():
     """IncidentIn.kind is a closed taxonomy. The doctrine says a single flag is
     NOT an incident — it's a Run-level work-defect / deal-finding. Crossing

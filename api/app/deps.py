@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Optional
 
-from fastapi import Header, HTTPException
+from fastapi import Depends, Header, HTTPException
 from sqlalchemy import select
 
 from app.config import settings
@@ -91,3 +91,27 @@ async def require_runner(authorization: Optional[str] = Header(default=None)) ->
         raise HTTPException(status_code=503, detail="runner not configured")
     if not authorization or authorization.removeprefix("Bearer ").strip() != expected:
         raise HTTPException(status_code=401, detail="invalid runner token")
+
+
+async def require_member(current: Principal = Depends(get_current_user)) -> Principal:
+    """Gate behind active membership. Used by dataset + cook routes (PR-2+).
+
+    Datasets are free with membership; non-members get the doctrine reason in
+    the 403 body so the UX can route them to the apply flow without ambiguity.
+    """
+    from app.db import session_scope
+    from app.models import Organization
+
+    async with session_scope() as db:
+        org = await db.get(Organization, current.org_id)
+        if org is None:
+            raise HTTPException(status_code=404, detail="org not found")
+        if org.membership_status != "active":
+            raise HTTPException(
+                status_code=403,
+                detail=(
+                    f"membership required (current status: {org.membership_status}). "
+                    "Apply via POST /membership/apply or the dashboard at /org."
+                ),
+            )
+        return current

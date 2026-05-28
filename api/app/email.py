@@ -49,3 +49,68 @@ async def send_magic_link(to_email: str, link: str) -> bool:
             return r.status_code < 300
     except Exception:
         return False
+
+
+async def send_membership_application(
+    *,
+    applicant_email: str,
+    org_name: str,
+    org_slug: str,
+    company_name: str,
+    intended_use: str | None,
+    referral_source: str | None,
+    waitlisted: bool,
+    queue_position: int | None,
+) -> bool:
+    """Email the review inbox (settings.membership_review_email) when a new
+    application lands. Plain-text body so it's easy to read in any client;
+    subject is grep-able for the operator's inbox triage. Returns True if
+    Resend accepted; the application is saved regardless.
+    """
+    s = settings()
+    if not s.resend_api_key:
+        return False
+
+    queue_line = (
+        f"WAITLISTED — queue position #{queue_position}.\n"
+        if waitlisted and queue_position is not None
+        else "Open for approval.\n"
+    )
+
+    subject = f"Membership application · {company_name} · {applicant_email}"
+    text = (
+        "DefendableCloud · new membership application\n"
+        "------------------------------------------\n\n"
+        f"Email          : {applicant_email}\n"
+        f"Org name       : {org_name}\n"
+        f"Org slug       : {org_slug}\n"
+        f"Company        : {company_name}\n"
+        f"Intended use   : {intended_use or '—'}\n"
+        f"Referral source: {referral_source or '—'}\n\n"
+        f"Status         : {queue_line}"
+        "\nApprove via direct SQL (admin endpoint lands later):\n\n"
+        "  UPDATE organizations SET membership_status='active', "
+        "membership_activated_at=NOW(), "
+        "membership_seat_number=("
+        "SELECT COALESCE(MAX(membership_seat_number),0)+1 FROM organizations "
+        "WHERE membership_status='active') "
+        f"WHERE slug='{org_slug}';\n\n"
+        "To the shed."
+    )
+
+    try:
+        async with httpx.AsyncClient(timeout=15) as client:
+            r = await client.post(
+                "https://api.resend.com/emails",
+                headers={"Authorization": f"Bearer {s.resend_api_key}"},
+                json={
+                    "from": s.email_from,
+                    "to": [s.membership_review_email],
+                    "reply_to": applicant_email,
+                    "subject": subject,
+                    "text": text,
+                },
+            )
+            return r.status_code < 300
+    except Exception:
+        return False
