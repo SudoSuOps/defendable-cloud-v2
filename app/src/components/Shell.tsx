@@ -4,17 +4,9 @@ import { useAuth } from "../lib/auth";
 
 function Wordmark() {
   return (
-    <Link to="/" className="flex items-center gap-2.5" aria-label="DefendableCloud Vault">
-      <svg viewBox="0 0 32 32" className="h-7 w-7" aria-hidden="true">
-        <rect width="32" height="32" rx="6" fill="#0a0a0a" stroke="#e6ab2a" strokeWidth="1" />
-        <g fill="none" stroke="#f6c64b" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M8 6h12l4 4v16H8z" />
-          <path d="M12 12h8M12 16h10M12 20h6" strokeWidth="1.2" opacity="0.7" />
-        </g>
-      </svg>
-      <span className="text-sm font-semibold tracking-tight text-paper">
-        DefendableCloud <span className="text-paper/40">Vault</span>
-      </span>
+    <Link to="/" className="flex items-center gap-2" aria-label="DefendableCloud Vault">
+      <img src="/defendable-wordmark.png" alt="Defendable" className="h-9 w-auto" />
+      <span className="text-sm font-medium tracking-tight text-paper/55">Vault</span>
     </Link>
   );
 }
