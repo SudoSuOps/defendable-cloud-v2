@@ -215,6 +215,40 @@ def build_incident_payload(
     }
 
 
+def build_dataset_download_payload(
+    *, receipt_id: str, org_seq: int, parent_hash: str, created_at: str,
+    org: dict, package: dict, tigris_key: str, ready_at_grant: bool,
+    expires_at: str, granted_to_user_id: str | None, share_url: str,
+) -> dict:
+    """Books-and-records for a dataset-download grant: who got what, when, with
+    what expiry · hashed + chained on the per-org receipt rail. The download
+    URL itself is operational and NOT in the payload (it rotates with each
+    access). The receipt records the GRANT facts.
+    """
+    return {
+        "schema": "defendablecloud.dataset-download-receipt/v1",
+        "receipt_id": receipt_id,
+        "org_seq": org_seq,
+        "parent_hash": parent_hash,
+        "created_at": created_at,
+        "organization": {"id": org["id"], "name": org["name"]},
+        "package": {
+            "slug": package["slug"],
+            "name": package["name"],
+            "vertical": package["vertical"],
+            "tier": package["tier"],
+            "pkg_class": package["pkg_class"],
+            "pairs": package["pairs"],
+            "deed_anchored": package["deed_anchored"],
+        },
+        "tigris_key": tigris_key,
+        "ready_at_grant": ready_at_grant,
+        "expires_at": expires_at,
+        "granted_to_user_id": granted_to_user_id,
+        "share_url": share_url,
+    }
+
+
 def render_pdf(payload: dict, receipt_sha256: str) -> bytes:
     schema = str(payload.get("schema", ""))
     if schema.startswith("defendablecloud.cook"):
@@ -223,7 +257,79 @@ def render_pdf(payload: dict, receipt_sha256: str) -> bytes:
         return _render_eval(payload, receipt_sha256)
     if schema.startswith("defendablecloud.incident"):
         return _render_incident(payload, receipt_sha256)
+    if schema.startswith("defendablecloud.dataset-download"):
+        return _render_dataset_download(payload, receipt_sha256)
     return _render_run(payload, receipt_sha256)
+
+
+def _render_dataset_download(payload: dict, receipt_sha256: str) -> bytes:
+    """Minimal PDF for a dataset-download grant. Books-and-records grade — the
+    member who got the grant, what package, what TTL, the chain coordinates.
+    """
+    pdf = FPDF(unit="mm", format="A4")
+    pdf.set_auto_page_break(auto=True, margin=16)
+    pdf.add_page()
+
+    def line(text: str, h: float = 6) -> None:
+        pdf.cell(0, h, _s(text), new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+
+    def wrap(text: str, h: float = 5) -> None:
+        pdf.multi_cell(0, h, _s(text), new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+
+    def section(title: str) -> None:
+        pdf.set_text_color(168, 127, 51)
+        pdf.set_font("Helvetica", "B", 8)
+        line(title.upper())
+        pdf.set_text_color(20, 20, 20)
+
+    pdf.set_font("Helvetica", "B", 14)
+    line("DefendableCloud — Dataset Download Receipt")
+    pdf.ln(2)
+    pdf.set_font("Helvetica", "", 9)
+    line(f"Receipt: {payload.get('receipt_id')}  (org_seq {payload.get('org_seq')})")
+    line(f"Granted: {payload.get('created_at')}")
+    pdf.ln(2)
+
+    section("Organization")
+    pdf.set_font("Helvetica", "", 10)
+    org = payload.get("organization") or {}
+    line(f"{org.get('name', '—')} ({org.get('id', '—')})")
+    pdf.ln(1)
+
+    section("Package")
+    pkg = payload.get("package") or {}
+    pdf.set_font("Helvetica", "B", 11)
+    line(pkg.get("name", "—"))
+    pdf.set_font("Helvetica", "", 10)
+    line(f"slug: {pkg.get('slug', '—')}")
+    line(f"vertical: {pkg.get('vertical', '—')}    tier: {pkg.get('tier', '—')}    class: {pkg.get('pkg_class', '—')}")
+    line(f"pairs: {pkg.get('pairs', 0):,}    deed-anchored: {'yes' if pkg.get('deed_anchored') else 'no'}")
+    pdf.ln(1)
+
+    section("Access grant")
+    line(f"Tigris key:   {payload.get('tigris_key', '—')}")
+    line(f"Ready at grant: {'yes' if payload.get('ready_at_grant') else 'no (staging)'}")
+    line(f"Signed URL expires: {payload.get('expires_at', '—')}")
+    if payload.get("granted_to_user_id"):
+        line(f"Granted to user: {payload.get('granted_to_user_id')}")
+    pdf.ln(1)
+
+    section("Integrity")
+    pdf.set_font("Courier", "", 8)
+    pdf.set_text_color(90, 90, 90)
+    wrap(f"receipt_sha256:  {receipt_sha256}", h=4.5)
+    wrap(f"parent_hash:     {payload.get('parent_hash', '—')}", h=4.5)
+    wrap(f"verify:          {payload.get('share_url', '—')}", h=4.5)
+    pdf.ln(3)
+    pdf.set_font("Helvetica", "I", 8)
+    pdf.set_text_color(120, 120, 120)
+    wrap(
+        "Datasets are free with membership. This receipt records the access grant — "
+        "the package identity, the staging key, and the chain coordinates. The download "
+        "URL itself rotates with each access via /share/{token}/download.",
+        h=4.5,
+    )
+    return bytes(pdf.output())
 
 
 def _render_incident(payload: dict, receipt_sha256: str) -> bytes:

@@ -663,6 +663,63 @@ class DatasetCatalogAnchor(BaseModel):
     hash: Optional[str] = None
 
 
+class DatasetDownloadRequest(BaseModel):
+    """`POST /datasets/catalog/{slug}/download` body — optional TTL override.
+
+    Defaults to 24 hours; capped at 7 days to keep signed URLs short-lived.
+    The receipt itself is permanent; only the operational signed URL TTL is
+    bounded.
+    """
+
+    model_config = ConfigDict(extra="ignore")
+    expires_in_hours: int = Field(default=24, ge=1, le=168)
+
+
+class DatasetDownloadPackage(BaseModel):
+    """The package identity sealed into the download receipt."""
+
+    model_config = ConfigDict(extra="allow")
+    slug: str
+    name: str
+    vertical: str
+    tier: str
+    pkg_class: str
+    pairs: int
+    deed_anchored: bool
+
+
+class DatasetDownloadGrant(BaseModel):
+    """`POST /datasets/catalog/{slug}/download` response.
+
+    The receipt is the books-and-records artifact (per-org hash chain, JSON +
+    PDF, shareable). The download_url is operational — it's an indirection
+    through `GET /share/{token}/download` which 302s to a fresh Tigris signed
+    URL each access. When `ready=False` the file isn't yet staged in our
+    download bucket; the receipt still mints and the member can re-request a
+    fresh URL anytime via the same share token.
+    """
+
+    receipt_id: str
+    org_seq: int
+    receipt_sha256: str
+    share_url: str = Field(
+        description="Public proof page for the grant — the receipt anyone can verify."
+    )
+    download_url: str = Field(
+        description=(
+            "Operational handle. GET this URL → 302 to a fresh Tigris signed URL when "
+            "ready, or 425 with Retry-After when still staging."
+        )
+    )
+    ready: bool = Field(
+        description="True when the file is staged in Tigris. False = preparing; retry later."
+    )
+    expires_at: str = Field(
+        description="ISO timestamp · the signed-URL TTL end. Receipts themselves never expire."
+    )
+    package: DatasetDownloadPackage
+
+
 class DatasetCatalog(BaseModel):
     """`GET /datasets/catalog` — the members-only library view of the corpus.
 

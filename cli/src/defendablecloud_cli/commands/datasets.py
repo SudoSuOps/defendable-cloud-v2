@@ -96,3 +96,61 @@ def show(
         },
         title=f"package · {slug}",
     )
+
+
+@app.command("download")
+def download(
+    slug: str = typer.Argument(..., help="Package slug — e.g. `cre_cre_honey`"),
+    expires_in_hours: int = typer.Option(
+        24, "--ttl", "-t", min=1, max=168,
+        help="Signed-URL TTL in hours (1-168). Receipt itself never expires.",
+    ),
+    output_json: bool = typer.Option(False, "--json"),
+):
+    """Request a download grant for a package. Mints a receipt on the per-org
+    chain and returns a fresh download URL.
+
+    The receipt is books-and-records — share_url is the public proof page.
+    The download_url indirects through /share/{token}/download which 302s to
+    a fresh Tigris signed URL each time. If `ready=False`, the file is still
+    staging in our download bucket; re-request anytime via the share URL.
+    """
+    c = Client()
+    grant = c.post(
+        f"/datasets/catalog/{slug}/download",
+        json={"expires_in_hours": expires_in_hours},
+    )
+    if output_json:
+        emit_json(grant)
+        return
+
+    pkg = grant.get("package") or {}
+    console.print()
+    console.print(
+        f"[bold honey]✓ download grant minted[/bold honey]  "
+        f"[dim]{grant.get('receipt_id')} · org_seq {grant.get('org_seq')}[/dim]"
+    )
+    ready = grant.get("ready")
+    if ready:
+        console.print(f"  [green]ready[/green] · valid until {grant.get('expires_at')}")
+    else:
+        console.print(
+            f"  [yellow]preparing[/yellow] · re-request via the share URL when staged"
+        )
+    console.print()
+
+    emit_kv(
+        {
+            "package": f"{pkg.get('name')} ({pkg.get('slug')})",
+            "vertical": pkg.get("vertical"),
+            "tier": pkg.get("tier"),
+            "pairs": f"{pkg.get('pairs', 0):,}",
+            "deed_anchored": pkg.get("deed_anchored"),
+            "share_url": grant.get("share_url"),
+            "download_url": grant.get("download_url"),
+            "expires_at": grant.get("expires_at"),
+            "ready": ready,
+            "receipt_sha256": grant.get("receipt_sha256"),
+        },
+        title="grant",
+    )
