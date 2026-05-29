@@ -27,6 +27,17 @@ DefendableCloud is a proof and dataset access system. Production deploys must fa
 - Static marketing pages expose `/.well-known/security.txt`.
 - API responses set baseline browser security headers.
 
+## Operational Runbooks
+
+- Cloudflare WAF/rate limits: `docs/cloudflare/waf-rate-limits.md`
+- Incident response: `docs/ops/incident-runbook.md`
+- Logging and alerts: `docs/ops/logging-alerting.md`
+- Backup and restore drills: `docs/ops/backups-restore.md`
+- Secrets rotation: `docs/ops/secrets-rotation.md`
+- SSO/SAML/OIDC roadmap: `docs/ops/sso-saml-oidc.md`
+- External security review plan: `docs/ops/external-security-review.md`
+- SOC2-style control map: `docs/ops/soc2-control-map.md`
+
 ## Reporting
 
 Report security issues to `build@defendableos.com`.

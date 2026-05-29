@@ -140,7 +140,21 @@ def test_org_schemas_present_in_openapi():
     """
     schema = app.openapi()
     components = (schema.get("components") or {}).get("schemas") or {}
-    required = {"Org", "ApiKey", "ApiKeyCreated", "ApiKeyIn", "ApiKeyList", "UsageStats"}
+    required = {
+        "Org",
+        "ApiKey",
+        "ApiKeyCreated",
+        "ApiKeyIn",
+        "ApiKeyList",
+        "UsageStats",
+        "OrgMember",
+        "OrgMemberList",
+        "OrgMemberRoleUpdate",
+        "OrgInvite",
+        "OrgInviteIn",
+        "OrgInviteCreated",
+        "OrgInviteList",
+    }
     missing = required - set(components.keys())
     assert not missing, (
         f"Phase 4 client-dashboard schemas missing from OpenAPI: {sorted(missing)}"
@@ -167,9 +181,27 @@ def test_org_endpoints_registered():
     """The four /org endpoints must be wired before the frontend can call them."""
     schema = app.openapi()
     paths = set(schema.get("paths", {}).keys())
-    required = {"/org", "/org/api-keys", "/org/api-keys/{key_id}", "/org/usage"}
+    required = {
+        "/org",
+        "/org/api-keys",
+        "/org/api-keys/{key_id}",
+        "/org/usage",
+        "/org/members",
+        "/org/members/{user_id}/role",
+        "/org/invites",
+    }
     missing = required - paths
     assert not missing, f"/org endpoints missing from OpenAPI: {sorted(missing)}"
+
+
+def test_org_invite_model_exists():
+    from app.models import OrgInvite
+
+    cols = {c.name: c for c in OrgInvite.__table__.columns}
+    required = {"org_id", "email", "role", "token_hash", "invited_by", "expires_at", "accepted_at"}
+    missing = required - set(cols.keys())
+    assert not missing, f"OrgInvite missing columns: {sorted(missing)}"
+    assert cols["token_hash"].unique, "invite tokens must be stored as unique hashes"
 
 
 def test_membership_schemas_present_in_openapi():

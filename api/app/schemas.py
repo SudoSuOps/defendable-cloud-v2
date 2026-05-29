@@ -115,6 +115,10 @@ class MagicVerifyIn(BaseModel):
     token: str
 
 
+class InviteAcceptIn(BaseModel):
+    token: str
+
+
 class ProjectIn(BaseModel):
     name: str = Field(min_length=1, max_length=200)
 
@@ -446,6 +450,7 @@ class PublicReceipt(BaseModel):
 
 # Plan tier — placeholder until Phase 5 (Stripe) wires real billing.
 PlanTier = Literal["free", "pro", "enterprise"]
+OrgRole = Literal["owner", "member"]
 
 
 class Org(BaseModel):
@@ -459,6 +464,49 @@ class Org(BaseModel):
     receipt_count: int = 0
     plan: PlanTier = "free"
     created_at: Optional[str] = None
+
+
+class OrgMember(BaseModel):
+    id: str
+    email: str
+    name: Optional[str] = None
+    role: OrgRole
+    created_at: Optional[str] = None
+
+
+class OrgMemberList(BaseModel):
+    members: List[OrgMember]
+
+
+class OrgMemberRoleUpdate(BaseModel):
+    role: OrgRole
+
+
+class OrgInviteIn(BaseModel):
+    email: str = Field(min_length=3, max_length=320)
+    role: OrgRole = "member"
+
+
+class OrgInviteCreated(BaseModel):
+    id: str
+    email: str
+    role: OrgRole
+    invite_url: str
+    expires_at: str
+    created_at: Optional[str] = None
+
+
+class OrgInvite(BaseModel):
+    id: str
+    email: str
+    role: OrgRole
+    expires_at: str
+    accepted_at: Optional[str] = None
+    created_at: Optional[str] = None
+
+
+class OrgInviteList(BaseModel):
+    invites: List[OrgInvite]
 
 
 class ApiKey(BaseModel):

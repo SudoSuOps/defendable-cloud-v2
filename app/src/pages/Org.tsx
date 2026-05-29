@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { api } from "../lib/api";
+import { useAuth } from "../lib/auth";
 import { Badge, Button, Card, ErrorNote, Field, inputClass, Spinner } from "../components/ui";
 
 type MembershipStatus = "pending" | "approved" | "active" | "waitlisted" | "inactive";
@@ -54,6 +55,32 @@ interface ApiKeyCreated {
   created_at: string | null;
 }
 
+interface OrgMember {
+  id: string;
+  email: string;
+  name: string | null;
+  role: "owner" | "member";
+  created_at: string | null;
+}
+
+interface OrgInvite {
+  id: string;
+  email: string;
+  role: "owner" | "member";
+  expires_at: string;
+  accepted_at: string | null;
+  created_at: string | null;
+}
+
+interface InviteCreated {
+  id: string;
+  email: string;
+  role: "owner" | "member";
+  invite_url: string;
+  expires_at: string;
+  created_at: string | null;
+}
+
 interface UsageStats {
   receipts_lifetime: number;
   receipts_this_month: number;
@@ -68,10 +95,13 @@ const PLAN_LABEL: Record<string, string> = {
 };
 
 export function Org() {
+  const { me } = useAuth();
   const [org, setOrg] = useState<OrgInfo | null>(null);
   const [keys, setKeys] = useState<ApiKeyRow[] | null>(null);
   const [usage, setUsage] = useState<UsageStats | null>(null);
   const [membership, setMembership] = useState<Membership | null>(null);
+  const [members, setMembers] = useState<OrgMember[] | null>(null);
+  const [invites, setInvites] = useState<OrgInvite[]>([]);
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
 
@@ -79,25 +109,41 @@ export function Org() {
   const [showCreate, setShowCreate] = useState(false);
   const [newKeyName, setNewKeyName] = useState("");
   const [createdKey, setCreatedKey] = useState<ApiKeyCreated | null>(null);
+  const [createdInvite, setCreatedInvite] = useState<InviteCreated | null>(null);
   const [copied, setCopied] = useState(false);
 
   // Apply for membership form state
   const [applyCompany, setApplyCompany] = useState("");
   const [applyUse, setApplyUse] = useState("");
   const [applyReferral, setApplyReferral] = useState("");
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteRole, setInviteRole] = useState<"owner" | "member">("member");
+  const isOwner = me?.role === "owner";
 
   async function load() {
     try {
-      const [o, k, u, m] = await Promise.all([
+      const [o, u, m, memberList] = await Promise.all([
         api<OrgInfo>("/org"),
-        api<{ api_keys: ApiKeyRow[] }>("/org/api-keys"),
         api<UsageStats>("/org/usage"),
         api<Membership>("/membership"),
+        api<{ members: OrgMember[] }>("/org/members"),
       ]);
       setOrg(o);
-      setKeys(k.api_keys);
       setUsage(u);
       setMembership(m);
+      setMembers(memberList.members);
+      const canManage = memberList.members.some((member) => member.id === me?.id && member.role === "owner");
+      if (canManage) {
+        const [k, inv] = await Promise.all([
+          api<{ api_keys: ApiKeyRow[] }>("/org/api-keys"),
+          api<{ invites: OrgInvite[] }>("/org/invites"),
+        ]);
+        setKeys(k.api_keys);
+        setInvites(inv.invites);
+      } else {
+        setKeys([]);
+        setInvites([]);
+      }
     } catch (e: any) {
       setErr(e.message || String(e));
     }
@@ -146,8 +192,8 @@ export function Org() {
   }
 
   useEffect(() => {
-    load();
-  }, []);
+    if (me) load();
+  }, [me?.id]);
 
   // Surface Stripe's success / cancel return param. Success additionally
   // triggers a re-fetch so the freshly-active state shows up without a manual
@@ -190,6 +236,26 @@ export function Org() {
     }
   }
 
+  async function createInvite() {
+    if (!inviteEmail.trim()) return;
+    setErr(null);
+    setBusy("invite");
+    try {
+      const out = await api<InviteCreated>("/org/invites", {
+        method: "POST",
+        body: { email: inviteEmail.trim(), role: inviteRole },
+      });
+      setCreatedInvite(out);
+      setInviteEmail("");
+      setInviteRole("member");
+      await load();
+    } catch (e: any) {
+      setErr(e.message || String(e));
+    } finally {
+      setBusy(null);
+    }
+  }
+
   async function revoke(id: string) {
     if (!confirm("Revoke this API key? Existing integrations using it will start failing immediately.")) return;
     setBusy(`revoke:${id}`);
@@ -204,7 +270,7 @@ export function Org() {
   }
 
   if (err && !org) return <ErrorNote>{err}</ErrorNote>;
-  if (!org || !keys || !usage || !membership) return <Spinner label="Loading workspace…" />;
+  if (!org || !keys || !usage || !membership || !members) return <Spinner label="Loading workspace…" />;
 
   const m = membership;
   const hasApplied = !!m.applied_at;
@@ -365,6 +431,68 @@ export function Org() {
         </dl>
       </Card>
 
+      {/* Members + RBAC */}
+      <Card
+        className="mt-6"
+        title="Members"
+        subtitle="Owner/member roles · owner-only invites and API key management"
+        actions={<Badge value={isOwner ? "owner" : "member"} />}
+      >
+        <ul className="space-y-3">
+          {members.map((m) => (
+            <li
+              key={m.id}
+              className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-white/8 bg-white/[0.02] px-4 py-3"
+            >
+              <div>
+                <div className="font-medium text-paper">{m.email}</div>
+                <div className="mt-1 font-mono text-xs text-paper/40">
+                  joined {m.created_at ? new Date(m.created_at).toLocaleDateString() : "—"}
+                </div>
+              </div>
+              <Badge value={m.role} />
+            </li>
+          ))}
+        </ul>
+
+        {isOwner && (
+          <div className="mt-5 border-t border-white/5 pt-5">
+            <div className="grid gap-3 sm:grid-cols-[1fr_8rem_8rem]">
+              <input
+                className={inputClass}
+                type="email"
+                placeholder="teammate@company.com"
+                value={inviteEmail}
+                onChange={(e) => setInviteEmail(e.target.value)}
+              />
+              <select
+                className={inputClass}
+                value={inviteRole}
+                onChange={(e) => setInviteRole(e.target.value as "owner" | "member")}
+              >
+                <option value="member">member</option>
+                <option value="owner">owner</option>
+              </select>
+              <Button disabled={busy === "invite" || !inviteEmail.trim()} onClick={createInvite}>
+                {busy === "invite" ? "Inviting…" : "Invite"}
+              </Button>
+            </div>
+            {invites.length > 0 && (
+              <ul className="mt-4 space-y-2 text-sm">
+                {invites.slice(0, 5).map((i) => (
+                  <li key={i.id} className="flex flex-wrap items-center justify-between gap-3 text-paper/60">
+                    <span>{i.email}</span>
+                    <span className="font-mono text-xs">
+                      {i.accepted_at ? "accepted" : `expires ${new Date(i.expires_at).toLocaleDateString()}`}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
+      </Card>
+
       {/* Usage */}
       <Card className="mt-6" title="Usage" subtitle="What this org has minted">
         <dl className="grid gap-x-8 gap-y-2 text-sm sm:grid-cols-2">
@@ -520,6 +648,49 @@ export function Org() {
             <p className="mt-4 font-mono text-[10px] uppercase tracking-widest text-paper/35">
               use as: <span className="text-paper/55">Authorization: Bearer {createdKey.key_prefix}…</span>
             </p>
+          </div>
+        </div>
+      )}
+
+      {createdInvite && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-ink/85 backdrop-blur-sm px-4"
+          onClick={() => setCreatedInvite(null)}
+        >
+          <div
+            className="w-full max-w-lg rounded-xl border border-honey-400/30 bg-ink/95 p-6 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <p className="font-mono text-xs uppercase tracking-widest text-honey-300/80">
+              Invite created
+            </p>
+            <h2 className="mt-2 text-xl font-semibold text-paper">{createdInvite.email}</h2>
+            <p className="mt-3 text-sm text-paper/70">
+              Send this one-time invite link through your normal secure channel. It expires in 7 days.
+            </p>
+            <div className="mt-5 rounded-md border border-honey-400/30 bg-honey-300/[0.06] p-3">
+              <div className="break-all font-mono text-xs text-honey-100">{createdInvite.invite_url}</div>
+            </div>
+            <div className="mt-5 flex flex-wrap gap-3">
+              <Button
+                onClick={() => {
+                  navigator.clipboard.writeText(createdInvite.invite_url);
+                  setCopied(true);
+                  setTimeout(() => setCopied(false), 1500);
+                }}
+              >
+                {copied ? "Copied ✓" : "Copy invite"}
+              </Button>
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  setCreatedInvite(null);
+                  setCopied(false);
+                }}
+              >
+                Done
+              </Button>
+            </div>
           </div>
         </div>
       )}
