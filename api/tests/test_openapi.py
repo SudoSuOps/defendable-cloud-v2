@@ -374,6 +374,55 @@ def test_dataset_download_receipt_payload_shape():
     assert payload["share_url"].endswith("/share/shr_abc")
 
 
+def test_public_dataset_download_payload_redacts_operational_fields():
+    from app.routes.public import _public_payload
+
+    payload = {
+        "schema": "defendablecloud.dataset-download-receipt/v1",
+        "organization": {"id": "org_123", "name": "Acme"},
+        "package": {"slug": "cre_honey"},
+        "tigris_key": "datasets/cre_honey/train.jsonl",
+        "granted_to_user_id": "user_123",
+        "granted_to_email": "builder@example.com",
+    }
+    public = _public_payload(payload)
+    assert "tigris_key" not in public
+    assert "granted_to_user_id" not in public
+    assert public["organization"] == {"name": "Acme"}
+    assert public["granted_to"] == "builder@example.com"
+
+
+def test_dataset_download_quota_rejects_when_limit_reached():
+    import asyncio
+
+    from fastapi import HTTPException
+
+    from app.deps import Principal
+    from app.routes.library import _enforce_download_quota
+
+    class _Result:
+        def scalar_one(self):
+            return 500
+
+    class _Db:
+        async def execute(self, *_args, **_kwargs):
+            return _Result()
+
+    try:
+        asyncio.run(
+            _enforce_download_quota(
+                _Db(),
+                current=Principal(id="user_1", org_id="org_1", email="builder@example.com"),
+                limit=500,
+            )
+        )
+    except HTTPException as e:
+        assert e.status_code == 429
+        assert e.headers and e.headers.get("Retry-After") == "86400"
+    else:
+        raise AssertionError("download quota accepted a caller at the limit")
+
+
 def test_catalog_response_hides_internal_fields():
     """API mirror must hide the NAS path and the internal $ valuation per package.
 
@@ -688,6 +737,68 @@ def test_membership_checkout_unconfigured_fails_closed():
     finally:
         s.stripe_api_key = original_key
         s.stripe_price_id = original_price
+
+
+def test_runtime_config_rejects_production_insecure_defaults():
+    from app.config import Settings
+
+    cfg = Settings(
+        APP_ENV="production",
+        APP_BASE_URL="https://app.example.test",
+        API_BASE_URL="https://api.example.test",
+        CORS_ORIGINS="https://app.example.test",
+        RESEND_API_KEY="re_test",
+        JWT_SECRET="dev-insecure-change-me",
+    )
+    try:
+        cfg.validate_runtime()
+    except RuntimeError as e:
+        assert "JWT_SECRET" in str(e)
+    else:
+        raise AssertionError("production runtime accepted default JWT_SECRET")
+
+
+def test_magic_link_not_returned_inline_in_production(monkeypatch):
+    import asyncio
+
+    from fastapi import HTTPException
+
+    from app.config import settings as _settings_fn
+    from app.routes import auth
+    from app.schemas import MagicRequestIn
+
+    async def _not_sent(*_args, **_kwargs):
+        return False
+
+    s = _settings_fn()
+    original_env = s.app_env
+    original_resend = s.resend_api_key
+    monkeypatch.setattr(auth, "send_magic_link", _not_sent)
+    try:
+        s.app_env = "production"
+        s.resend_api_key = None
+        try:
+            asyncio.run(auth.magic_request(MagicRequestIn(email="dev@example.com")))
+        except HTTPException as e:
+            assert e.status_code == 503
+        else:
+            raise AssertionError("production auth returned a dev magic link")
+    finally:
+        s.app_env = original_env
+        s.resend_api_key = original_resend
+
+
+def test_checkout_return_origin_allowlist():
+    from app.config import Settings
+
+    cfg = Settings(
+        APP_BASE_URL="https://app.defendablecloud.com",
+        CHECKOUT_RETURN_ORIGINS="https://preview.defendablecloud.com",
+    )
+    assert cfg.allowed_checkout_origin("https://app.defendablecloud.com")
+    assert cfg.allowed_checkout_origin("https://preview.defendablecloud.com")
+    assert not cfg.allowed_checkout_origin("https://evil.example")
+    assert not cfg.allowed_checkout_origin("http://evil.example")
 
 
 def test_stripe_webhook_unconfigured_fails_closed():

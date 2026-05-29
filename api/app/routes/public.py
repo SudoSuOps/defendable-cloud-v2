@@ -18,6 +18,27 @@ from app.util import iso
 router = APIRouter(tags=["public"])
 
 
+def _public_payload(payload: dict) -> dict:
+    """Return a share-safe payload projection.
+
+    The canonical payload stays immutable in the ledger and is what we hash.
+    Public share routes should not expose storage keys or internal principal ids.
+    """
+    schema = str(payload.get("schema", ""))
+    if not schema.startswith("defendablecloud.dataset-download"):
+        return payload
+
+    out = dict(payload)
+    out.pop("tigris_key", None)
+    out.pop("granted_to_user_id", None)
+    org = out.get("organization")
+    if isinstance(org, dict):
+        out["organization"] = {"name": org.get("name")}
+    if out.get("granted_to_email"):
+        out["granted_to"] = out.pop("granted_to_email")
+    return out
+
+
 @router.get("/share/{token}", response_model=PublicReceipt)
 async def public_receipt(token: str):
     async with session_scope() as db:
@@ -34,7 +55,7 @@ async def public_receipt(token: str):
             "receipt_sha256": r.receipt_sha256,
             "verified": recomputed == r.receipt_sha256,
             "created_at": r.payload.get("created_at"),
-            "payload": r.payload,
+            "payload": _public_payload(r.payload),
         }
 
 
@@ -96,7 +117,7 @@ async def public_receipt_pdf(token: str):
         ).scalar_one_or_none()
         if r is None:
             raise HTTPException(status_code=404, detail="receipt not found")
-        pdf = receipt_builder.render_pdf(r.payload, r.receipt_sha256)
+        pdf = receipt_builder.render_pdf(_public_payload(r.payload), r.receipt_sha256)
         return Response(
             content=pdf,
             media_type="application/pdf",

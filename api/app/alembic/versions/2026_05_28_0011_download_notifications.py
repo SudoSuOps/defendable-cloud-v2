@@ -2,7 +2,7 @@
 
 When a member POSTs /datasets/catalog/{slug}/download before the file is staged
 in Tigris, the receipt is minted with `ready_at_grant=false`. The rails-side
-stager then runs every 2 min: `aws s3 cp` from /mnt/swarm → Tigris bucket, then
+stager then runs every 2 min: `aws s3 cp` from private dataset storage → Tigris bucket, then
 calls /internal/stage-complete on the API.
 
 On stage-complete, the API sweeps every receipt with that `tigris_key` whose

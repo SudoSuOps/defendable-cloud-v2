@@ -6,9 +6,9 @@ key isn't configured. Customers never see this surface.
 
 Flow (Sprint 9):
 
-  rails worker every 2 min:
+      operator worker every 2 min:
     GET  /internal/staging-tasks      ← list of pending tigris_keys + source paths
-       (for each, rails checks Tigris; if absent, aws s3 cp from /mnt/swarm;
+       (for each, worker checks Tigris; if absent, stages from private storage;
         if present, treat as already-uploaded and proceed)
     POST /internal/stage-complete     ← sweep receipts → Resend notify members
 
@@ -52,7 +52,7 @@ class StagingTask(BaseModel):
     tigris_key: str = Field(description="Destination key in the Tigris bucket.")
     slug: str = Field(description="Package slug — used by rails for logging.")
     source_path: str = Field(
-        description="NAS path the rails worker rsyncs from (e.g. /mnt/swarm/...)."
+        description="Operator-side source basename or private storage hint."
     )
     pending_receipts: int = Field(
         description="How many ready-at-grant=false receipts point at this key."
@@ -159,7 +159,7 @@ async def staging_tasks():
             StagingTask(
                 tigris_key=key,
                 slug=slug,
-                source_path=raw.get("path", "") or "",
+                source_path=raw.get("source_basename") or raw.get("path", "") or "",
                 pending_receipts=count,
             )
         )

@@ -1,18 +1,19 @@
 # dataset-stager · DefendableCloud Sprint 9
 
-Rails-side cron worker that bridges the NAS (`/mnt/swarm/swarm-and-bee-datasets/...`)
-to the Tigris download bucket and triggers the API to email members when their
-download grant flips to ready.
+Private operator cron worker that bridges the mounted dataset store to the
+Tigris download bucket and triggers the API to email members when their
+download grant flips to ready. The public repo stores source basenames only;
+the private host maps them with `STAGER_SOURCE_ROOT`.
 
 ## Where it runs
 
 | | |
 |---|---|
-| **Host** | `swarmrails` (192.168.0.100) |
+| **Host** | `private staging host` |
 | **User** | `swarm` |
 | **Install path** | `/home/swarm/defendable-stager/` |
 | **Cadence** | systemd timer, every 2 min |
-| **Why here, not Fly** | the NAS is mounted on rails. The Fly API stays on its fail-open lane (see *sidecar-fails-open* doctrine, 2026-05-25). |
+| **Why here, not Fly** | the dataset store is mounted privately. The Fly API stays off the storage host. |
 
 ## The loop
 
@@ -24,7 +25,7 @@ download grant flips to ready.
               │  for each task:
               │      boto3 head_object  s3://defendable-cloud-v2/<tigris_key>
               │      ├─ exists → "already-staged"
-              │      └─ missing →  boto3 upload_file /mnt/swarm/<source_path>
+              │      └─ missing →  boto3 upload_file $STAGER_SOURCE_ROOT/<source_path>
               │                                     s3://defendable-cloud-v2/<tigris_key>
               │
               │  POST https://api.defendablecloud.com/internal/stage-complete
@@ -43,21 +44,21 @@ Idempotency lives in `download_notifications` on the API side, not here. The
 script can run twice for the same key — the second pass sees the rows and
 makes zero new emails.
 
-## Install on swarmrails
+## Install on private staging host
 
 ```bash
 # 1. Place the script + units. From this checkout on your laptop:
-scp -r dataset-stager/ swarm@192.168.0.100:/home/swarm/defendable-stager/
+scp -r dataset-stager/ operator@staging-host:/home/swarm/defendable-stager/
 
-# 2. On rails: configure secrets.
-ssh swarm@192.168.0.100
+# 2. On the private staging host: configure secrets.
+ssh operator@staging-host
 cd ~/defendable-stager
 cp .env.example .env
 chmod 600 .env
-${EDITOR:-nano} .env        # paste INTERNAL_API_KEY + Tigris creds
+${EDITOR:-nano} .env        # paste INTERNAL_API_KEY, STAGER_SOURCE_ROOT, and Tigris creds
 
-# 3. Confirm the NAS mount + boto3 are healthy.
-ls /mnt/swarm/swarm-and-bee-datasets/ | head
+# 3. Confirm the private mount + boto3 are healthy.
+ls "$STAGER_SOURCE_ROOT" | head
 python3 -c "import boto3; print(boto3.__version__)"
 
 # 4. Dry-run once interactively before handing to systemd.

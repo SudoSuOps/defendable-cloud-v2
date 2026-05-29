@@ -36,7 +36,7 @@ _NODE = _node_env()
 API = os.environ.get("DC_API") or _NODE.get("DC_API", "https://api.defendablecloud.com")
 TOKEN = os.environ.get("JWT") or os.environ.get("DC_TOKEN") or _NODE.get("DC_TOKEN", "")
 RIG_KEY = os.path.expanduser(os.environ.get("RIG_KEY", "~/.ssh/defendable_5090"))
-RIG = os.environ.get("RIG", "swarm@192.168.0.99")
+RIG = os.environ.get("RIG", "operator-host")
 
 # Canonical structured-submission schema the executor checks. Used as the
 # grammar constraint so the model cannot emit a shape the referee can't read.

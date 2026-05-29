@@ -7,11 +7,16 @@
 
 # astro
 **/.astro/
+**/.wrangler/
 
 # python (api/, phase 2)
 **/__pycache__/
 **/.venv/
+**/.pytest_cache/
 *.pyc
+
+# generated type/build cache
+**/tsconfig.tsbuildinfo
 
 # secrets
 .env

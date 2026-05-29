@@ -1,5 +1,4 @@
 import { defineConfig } from "astro/config";
-import tailwind from "@astrojs/tailwind";
 import sitemap from "@astrojs/sitemap";
 
 // DefendableCloud — clean static marketing site.
@@ -7,7 +6,7 @@ import sitemap from "@astrojs/sitemap";
 export default defineConfig({
   site: "https://defendablecloud.com",
   output: "static",
-  integrations: [tailwind(), sitemap()],
+  integrations: [sitemap()],
   server: {
     port: 4321,
     host: true,

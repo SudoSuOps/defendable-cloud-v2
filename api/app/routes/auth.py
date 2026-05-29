@@ -24,6 +24,8 @@ async def magic_request(body: MagicRequestIn):
         raise HTTPException(status_code=400, detail="enter a valid email")
 
     s = settings()
+    if s.is_production and not s.email_configured:
+        raise HTTPException(status_code=503, detail="email delivery unavailable")
     token = make_magic_token()
     expires = datetime.now(timezone.utc) + timedelta(minutes=s.magic_ttl_minutes)
     async with session_scope() as db:
@@ -33,6 +35,8 @@ async def magic_request(body: MagicRequestIn):
     sent = await send_magic_link(email, link)
     out = {"ok": True, "sent": sent}
     if not sent:
+        if s.is_production:
+            raise HTTPException(status_code=503, detail="email delivery unavailable")
         # Dev / email-not-configured: surface the link so login still works.
         out["dev_link"] = link
     return out

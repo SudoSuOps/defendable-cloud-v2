@@ -249,6 +249,7 @@ def build_dataset_download_payload(
     *, receipt_id: str, org_seq: int, parent_hash: str, created_at: str,
     org: dict, package: dict, tigris_key: str, ready_at_grant: bool,
     expires_at: str, granted_to_user_id: str | None, share_url: str,
+    granted_to_email: str | None = None,
 ) -> dict:
     """Books-and-records for a dataset-download grant: who got what, when, with
     what expiry · hashed + chained on the per-org receipt rail. The download
@@ -275,6 +276,7 @@ def build_dataset_download_payload(
         "ready_at_grant": ready_at_grant,
         "expires_at": expires_at,
         "granted_to_user_id": granted_to_user_id,
+        "granted_to_email": granted_to_email,
         "share_url": share_url,
     }
 

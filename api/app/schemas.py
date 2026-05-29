@@ -660,7 +660,7 @@ class TrainingDataPolicy(BaseModel):
 # ──────────────────────────────────────────────────────────────────────────────
 # Dataset catalog schemas — the members-only library surface.
 #
-# The catalog mirrors /mnt/swarm/CATALOG.md (the books-and-records inventory).
+# The catalog mirrors private dataset storage/CATALOG.md (the books-and-records inventory).
 # 99 packages across 12 verticals · 3.35M training pairs · hash-anchored.
 # Datasets are FREE with membership; we surface package identity + pair counts
 # + deed status, never the internal NAS path or our internal $ valuation.
@@ -790,7 +790,7 @@ class DatasetCatalog(BaseModel):
     filter_version: Optional[str] = None
     catalog_sha256: Optional[str] = Field(
         default=None,
-        description="SHA-256 of the catalog as published on /mnt/swarm/CATALOG.md (source-of-truth header).",
+        description="SHA-256 of the catalog as published on private dataset storage/CATALOG.md (source-of-truth header).",
     )
     packages_sha256: Optional[str] = Field(
         default=None,

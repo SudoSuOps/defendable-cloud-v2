@@ -20,6 +20,7 @@ import os
 from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import or_, select, func
 
 from app import receipts as receipt_builder
 from app.catalog import catalog_view, package_by_slug, raw_package_by_slug
@@ -27,7 +28,7 @@ from app.config import settings
 from app.db import session_scope
 from app.deps import Principal, require_member
 from app.ledger import mint_receipt
-from app.models import Organization
+from app.models import Organization, Receipt
 from app.schemas import (
     DatasetCatalog,
     DatasetDownloadGrant,
@@ -38,14 +39,45 @@ from app.storage import get_object_partial, head_object, head_object_meta
 
 router = APIRouter(prefix="/datasets/catalog", tags=["datasets"])
 
+DATASET_DOWNLOAD_SCHEMA = "defendablecloud.dataset-download-receipt/v1"
+
 
 def _tigris_key_for(slug: str, source_path: str) -> str:
-    """Derive the Tigris staging key from the source NAS path. Keeps the
-    on-disk basename so the file is recognisable on download, namespaced by
-    slug so multiple packages don't collide.
+    """Derive the Tigris staging key from the catalog source basename.
+
+    Older private snapshots used a full source path; public snapshots should
+    only carry a basename. Namespacing by slug avoids collisions.
     """
     basename = os.path.basename(source_path) or f"{slug}.jsonl"
     return f"datasets/{slug}/{basename}"
+
+
+async def _enforce_download_quota(db, *, current: Principal, limit: int) -> None:
+    if limit < 1:
+        raise HTTPException(status_code=503, detail="dataset download quota is not configured")
+    window_start = datetime.now(timezone.utc) - timedelta(hours=24)
+    identity_filters = [Receipt.payload["granted_to_user_id"].astext == current.id]
+    if current.email:
+        identity_filters.append(Receipt.payload["granted_to_email"].astext == current.email)
+    used = (
+        await db.execute(
+            select(func.count(Receipt.id)).where(
+                Receipt.org_id == current.org_id,
+                Receipt.created_at >= window_start,
+                Receipt.payload["schema"].astext == DATASET_DOWNLOAD_SCHEMA,
+                or_(*identity_filters),
+            )
+        )
+    ).scalar_one()
+    if int(used) >= limit:
+        raise HTTPException(
+            status_code=429,
+            detail=(
+                f"dataset download limit reached ({limit} grants per rolling 24 hours). "
+                "Contact build@defendableos.com for higher-volume access."
+            ),
+            headers={"Retry-After": "86400"},
+        )
 
 
 @router.get("", response_model=DatasetCatalog)
@@ -87,7 +119,7 @@ async def request_download(
         raise HTTPException(status_code=404, detail=f"package not found: {slug}")
 
     expires_in_hours = (body or DatasetDownloadRequest()).expires_in_hours
-    tigris_key = _tigris_key_for(slug, raw_pkg.get("path", ""))
+    tigris_key = _tigris_key_for(slug, raw_pkg.get("source_basename") or raw_pkg.get("path", ""))
     ready = head_object(tigris_key)
 
     now = datetime.now(timezone.utc)
@@ -97,6 +129,11 @@ async def request_download(
         org = await db.get(Organization, current.org_id)
         if org is None:
             raise HTTPException(status_code=404, detail="org not found")
+        await _enforce_download_quota(
+            db,
+            current=current,
+            limit=settings().dataset_download_daily_limit,
+        )
 
         # Principal.id is the user id; if it's an api-key principal, it's
         # `apikey:<id>` — record it as-is for audit.
@@ -112,6 +149,7 @@ async def request_download(
                 ready_at_grant=ready,
                 expires_at=expires_at,
                 granted_to_user_id=granted_to,
+                granted_to_email=current.email or None,
                 share_url=share_url,
             )
 
@@ -162,7 +200,7 @@ async def get_samples(
     if raw_pkg is None or customer_pkg is None:
         raise HTTPException(status_code=404, detail=f"package not found: {slug}")
 
-    tigris_key = _tigris_key_for(slug, raw_pkg.get("path", ""))
+    tigris_key = _tigris_key_for(slug, raw_pkg.get("source_basename") or raw_pkg.get("path", ""))
     meta = head_object_meta(tigris_key)
     if meta is None:
         from fastapi.responses import JSONResponse
