@@ -1,8 +1,8 @@
 """Frozen dataset catalog loader.
 
 The catalog body lives at `app/data/catalog_v1.json`, parsed from the canonical
-`/mnt/swarm/CATALOG.md` on the rails NAS. Updates require a deploy that ships
-a new JSON snapshot — same discipline as the training-data policy.
+operator-side books-and-records catalog. Updates require a deploy that ships a
+new JSON snapshot — same discipline as the training-data policy.
 
 The customer-facing API hides the internal NAS path and the internal USD
 valuation. Datasets are free with membership; the priced columns are internal
@@ -74,9 +74,9 @@ def package_by_slug(slug: str) -> dict[str, Any] | None:
 
 
 def raw_package_by_slug(slug: str) -> dict[str, Any] | None:
-    """Internal use only — returns the raw package WITH the NAS path. Used by
-    the download endpoint to derive the Tigris staging key from the source
-    basename. Never returned over the API.
+    """Internal use only — returns the raw package snapshot. The public repo
+    stores only source basenames, not private NAS paths; the operator-side
+    stager maps those basenames back to mounted storage.
     """
     for p in _raw_catalog()["packages"]:
         if p["slug"] == slug:

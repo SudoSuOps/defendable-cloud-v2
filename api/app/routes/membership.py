@@ -269,6 +269,11 @@ async def create_checkout_session(
     # base URL) so the same backend can serve preview deploys.
     return_origin = (body and body.return_to_origin) or s.app_base_url
     return_origin = return_origin.rstrip("/")
+    if not s.allowed_checkout_origin(return_origin):
+        raise HTTPException(
+            status_code=400,
+            detail="return_to_origin is not allowed for checkout redirects",
+        )
 
     try:
         session = stripe.checkout.Session.create(

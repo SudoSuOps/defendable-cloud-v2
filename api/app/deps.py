@@ -110,6 +110,27 @@ async def require_admin(current: Principal = Depends(get_current_user)) -> Princ
     return current
 
 
+async def require_org_owner(current: Principal = Depends(get_current_user)) -> Principal:
+    """Require a signed-in human user with owner role in their organization.
+
+    API keys can operate on work surfaces, but cannot manage people, invites, or
+    privileged organization settings.
+    """
+    if current.id.startswith("apikey:"):
+        raise HTTPException(status_code=403, detail="owner user required")
+
+    from app.db import session_scope
+    from app.models import User
+
+    async with session_scope() as db:
+        user = await db.get(User, current.id)
+        if user is None or user.org_id != current.org_id:
+            raise HTTPException(status_code=401, detail="user not found")
+        if user.role != "owner":
+            raise HTTPException(status_code=403, detail="organization owner required")
+        return current
+
+
 async def require_internal(
     x_internal_key: Optional[str] = Header(default=None, alias="X-Internal-Key"),
 ) -> None:

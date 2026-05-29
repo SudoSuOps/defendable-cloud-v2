@@ -1,0 +1,361 @@
+{
+  "flight_sheet": {
+    "name": "WACC Calculation",
+    "slug": "fin_wacc_calculation_v1"
+  },
+  "submission": {
+    "assignment_id": "fin_wacc_calculation_v1",
+    "agent_summary": "WACC for a firm with $6M equity, $4M debt, Ke 12%, Kd 6%, tax 21%.",
+    "inputs_used": {
+      "total_equity": 6000000,
+      "total_debt": 4000000,
+      "cost_of_equity": 0.12,
+      "cost_of_debt": 0.06,
+      "tax_rate": 0.21
+    },
+    "missing_inputs": [],
+    "claims": [
+      {
+        "claim": "Capital structure is 60/40.",
+        "evidence_reference": "inputs_used",
+        "confidence": "high"
+      }
+    ],
+    "calculations": [
+      {
+        "name": "total_capital",
+        "formula": "total_equity + total_debt",
+        "inputs": {
+          "total_equity": 6000000,
+          "total_debt": 4000000
+        },
+        "result": 10000000,
+        "units": "USD"
+      },
+      {
+        "name": "weight_of_equity",
+        "formula": "total_equity / total_capital",
+        "inputs": {
+          "total_equity": 6000000,
+          "total_capital": 10000000
+        },
+        "result": 0.6,
+        "units": "ratio"
+      },
+      {
+        "name": "weight_of_debt",
+        "formula": "total_debt / total_capital",
+        "inputs": {
+          "total_debt": 4000000,
+          "total_capital": 10000000
+        },
+        "result": 0.4,
+        "units": "ratio"
+      },
+      {
+        "name": "after_tax_cost_of_debt",
+        "formula": "cost_of_debt * (1 - tax_rate)",
+        "inputs": {
+          "cost_of_debt": 0.06,
+          "tax_rate": 0.21
+        },
+        "result": 0.06,
+        "units": "ratio"
+      },
+      {
+        "name": "wacc",
+        "formula": "weight_of_equity*cost_of_equity + weight_of_debt*after_tax_cost_of_debt",
+        "inputs": {
+          "weight_of_equity": 0.6,
+          "cost_of_equity": 0.12,
+          "weight_of_debt": 0.4,
+          "after_tax_cost_of_debt": 0.0474
+        },
+        "result": 0.09096,
+        "units": "ratio"
+      }
+    ],
+    "risks": [
+      {
+        "risk": "WACC sensitive to tax assumption."
+      }
+    ],
+    "assumptions": [
+      "Federal tax 21%."
+    ],
+    "open_questions": [
+      "Confirm target structure."
+    ],
+    "final_output": "PASS",
+    "self_check": {
+      "all_required_sections_completed": true,
+      "all_numbers_have_sources": true,
+      "assumptions_labeled": true,
+      "missing_inputs_disclosed": true
+    }
+  },
+  "checks": [
+    {
+      "check_key": "json_valid",
+      "label": "Submission is valid JSON",
+      "category": "schema",
+      "kind": "auto",
+      "source": "auto",
+      "status": "pass",
+      "severity": "high",
+      "detail": "Parsed."
+    },
+    {
+      "check_key": "required_fields_present",
+      "label": "Required fields present",
+      "category": "schema",
+      "kind": "auto",
+      "source": "auto",
+      "status": "pass",
+      "severity": "high",
+      "detail": "All required fields present."
+    },
+    {
+      "check_key": "det_1",
+      "label": "check 1",
+      "category": "structure",
+      "kind": "auto",
+      "source": "auto",
+      "status": "skip",
+      "severity": "low",
+      "detail": "No match_field; not machine-evaluable in v1."
+    },
+    {
+      "check_key": "det_2",
+      "label": "check 2",
+      "category": "structure",
+      "kind": "auto",
+      "source": "auto",
+      "status": "skip",
+      "severity": "low",
+      "detail": "No match_field; not machine-evaluable in v1."
+    },
+    {
+      "check_key": "det_3",
+      "label": "check 3",
+      "category": "structure",
+      "kind": "auto",
+      "source": "auto",
+      "status": "skip",
+      "severity": "low",
+      "detail": "No match_field; not machine-evaluable in v1."
+    },
+    {
+      "check_key": "det_4",
+      "label": "check 4",
+      "category": "structure",
+      "kind": "auto",
+      "source": "auto",
+      "status": "skip",
+      "severity": "low",
+      "detail": "No match_field; not machine-evaluable in v1."
+    },
+    {
+      "check_key": "det_5",
+      "label": "check 5",
+      "category": "structure",
+      "kind": "auto",
+      "source": "auto",
+      "status": "skip",
+      "severity": "low",
+      "detail": "No match_field; not machine-evaluable in v1."
+    },
+    {
+      "check_key": "det_6",
+      "label": "check 6",
+      "category": "structure",
+      "kind": "auto",
+      "source": "auto",
+      "status": "skip",
+      "severity": "low",
+      "detail": "No match_field; not machine-evaluable in v1."
+    },
+    {
+      "check_key": "det_7",
+      "label": "check 7",
+      "category": "structure",
+      "kind": "auto",
+      "source": "auto",
+      "status": "skip",
+      "severity": "low",
+      "detail": "No match_field; not machine-evaluable in v1."
+    },
+    {
+      "check_key": "ev_1",
+      "label": "evidence 1",
+      "category": "evidence",
+      "kind": "auto",
+      "source": "auto",
+      "status": "skip",
+      "severity": "low",
+      "detail": "Not a machine-evaluable evidence pattern in v1."
+    },
+    {
+      "check_key": "ev_2",
+      "label": "evidence 2",
+      "category": "evidence",
+      "kind": "auto",
+      "source": "auto",
+      "status": "skip",
+      "severity": "low",
+      "detail": "Not a machine-evaluable evidence pattern in v1."
+    },
+    {
+      "check_key": "ev_3",
+      "label": "evidence 3",
+      "category": "evidence",
+      "kind": "auto",
+      "source": "auto",
+      "status": "skip",
+      "severity": "low",
+      "detail": "Not a machine-evaluable evidence pattern in v1."
+    },
+    {
+      "check_key": "math_total_capital",
+      "label": "Math: total_capital",
+      "category": "math",
+      "kind": "auto",
+      "source": "auto",
+      "status": "pass",
+      "severity": "high",
+      "detail": "total_capital: stated 10000000.0, recomputed 10000000.0 \u2014 matches (within 1%)"
+    },
+    {
+      "check_key": "math_weight_of_equity",
+      "label": "Math: weight_of_equity",
+      "category": "math",
+      "kind": "auto",
+      "source": "auto",
+      "status": "pass",
+      "severity": "high",
+      "detail": "weight_of_equity: stated 0.6, recomputed 0.6 \u2014 matches (within 1%)"
+    },
+    {
+      "check_key": "math_weight_of_debt",
+      "label": "Math: weight_of_debt",
+      "category": "math",
+      "kind": "auto",
+      "source": "auto",
+      "status": "pass",
+      "severity": "high",
+      "detail": "weight_of_debt: stated 0.4, recomputed 0.4 \u2014 matches (within 1%)"
+    },
+    {
+      "check_key": "math_after_tax_cost_of_debt",
+      "label": "Math: after_tax_cost_of_debt",
+      "category": "math",
+      "kind": "auto",
+      "source": "auto",
+      "status": "flag",
+      "severity": "high",
+      "detail": "after_tax_cost_of_debt: stated 0.06, recomputed 0.0474 \u2014 off by $0.01 (26.6%) \u00b7 material miss"
+    },
+    {
+      "check_key": "math_wacc",
+      "label": "Math: wacc",
+      "category": "math",
+      "kind": "auto",
+      "source": "auto",
+      "status": "pass",
+      "severity": "high",
+      "detail": "wacc: stated 0.09096, recomputed 0.09096 \u2014 matches (within 1%)"
+    }
+  ],
+  "verdict": {
+    "outcome": "fail",
+    "score": 0.86,
+    "score_100": 86,
+    "severity": "propolis",
+    "client_ready": "No \u2014 high-risk flag",
+    "recommended_action": "HIGH-RISK \u2014 resolve before release: Math: after_tax_cost_of_debt.",
+    "summary": "6/7 rules passed \u00b7 1 high-risk, 0 mid, 0 low flag(s) \u00b7 86/100 weighted.",
+    "checks_passed": 6,
+    "checks_failed": 1,
+    "risk_breakdown": {
+      "high": [
+        "Math: after_tax_cost_of_debt"
+      ],
+      "mid": [],
+      "low": []
+    }
+  },
+  "math_view": [
+    {
+      "name": "total_capital",
+      "formula": "total_equity + total_debt",
+      "inputs": {
+        "total_equity": 6000000,
+        "total_debt": 4000000
+      },
+      "substituted": "6,000,000 + 4,000,000",
+      "stated": 10000000,
+      "recomputed": 10000000.0,
+      "status": "pass",
+      "severity": "high",
+      "detail": "total_capital: stated 10000000.0, recomputed 10000000.0 \u2014 matches (within 1%)"
+    },
+    {
+      "name": "weight_of_equity",
+      "formula": "total_equity / total_capital",
+      "inputs": {
+        "total_equity": 6000000,
+        "total_capital": 10000000
+      },
+      "substituted": "6,000,000 / 10,000,000",
+      "stated": 0.6,
+      "recomputed": 0.6,
+      "status": "pass",
+      "severity": "high",
+      "detail": "weight_of_equity: stated 0.6, recomputed 0.6 \u2014 matches (within 1%)"
+    },
+    {
+      "name": "weight_of_debt",
+      "formula": "total_debt / total_capital",
+      "inputs": {
+        "total_debt": 4000000,
+        "total_capital": 10000000
+      },
+      "substituted": "4,000,000 / 10,000,000",
+      "stated": 0.4,
+      "recomputed": 0.4,
+      "status": "pass",
+      "severity": "high",
+      "detail": "weight_of_debt: stated 0.4, recomputed 0.4 \u2014 matches (within 1%)"
+    },
+    {
+      "name": "after_tax_cost_of_debt",
+      "formula": "cost_of_debt * (1 - tax_rate)",
+      "inputs": {
+        "cost_of_debt": 0.06,
+        "tax_rate": 0.21
+      },
+      "substituted": "0.06 \u00d7 (1 - 0.21)",
+      "stated": 0.06,
+      "recomputed": 0.0474,
+      "status": "flag",
+      "severity": "high",
+      "detail": "after_tax_cost_of_debt: stated 0.06, recomputed 0.0474 \u2014 off by $0.01 (26.6%) \u00b7 material miss"
+    },
+    {
+      "name": "wacc",
+      "formula": "weight_of_equity*cost_of_equity + weight_of_debt*after_tax_cost_of_debt",
+      "inputs": {
+        "weight_of_equity": 0.6,
+        "cost_of_equity": 0.12,
+        "weight_of_debt": 0.4,
+        "after_tax_cost_of_debt": 0.0474
+      },
+      "substituted": "0.6 \u00d7 0.12 + 0.4 \u00d7 0.0474",
+      "stated": 0.09096,
+      "recomputed": 0.09096,
+      "status": "pass",
+      "severity": "high",
+      "detail": "wacc: stated 0.09096, recomputed 0.09096 \u2014 matches (within 1%)"
+    }
+  ]
+}

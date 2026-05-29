@@ -6,6 +6,7 @@ import { Login } from "./pages/Login";
 import { AuthCallback } from "./pages/AuthCallback";
 import { Landing } from "./pages/Landing";
 import { Verify } from "./pages/Verify";
+import ShowMath from "./pages/ShowMath";
 import { Dashboard } from "./pages/Dashboard";
 import { NewRun } from "./pages/NewRun";
 import { RunDetail } from "./pages/RunDetail";
@@ -60,6 +61,7 @@ export default function App() {
         <Route path="/verify" element={<Verify />} />
         <Route path="/r/:token" element={<ShareView />} />
         <Route path="/policy/training-data" element={<TrainingDataPolicy />} />
+        <Route path="/math" element={<ShowMath />} />
         <Route path="/" element={<Home />} />
         <Route path="/runs/new" element={<Protected><NewRun /></Protected>} />
         <Route path="/runs/:id" element={<Protected><RunDetail /></Protected>} />

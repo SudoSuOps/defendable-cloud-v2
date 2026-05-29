@@ -1,4 +1,7 @@
 /* DefendableCloud — global styles layered on top of Tailwind base. */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 html {
   scroll-behavior: smooth;

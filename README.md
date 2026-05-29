@@ -24,7 +24,8 @@ defendable-cloud-v2/
 
 React 18 + Vite + Tailwind SPA. Sign in (magic link) → dashboard → new run →
 attach evidence → run checks → approve → **Generate Receipt** → share. Talks to
-the API at `VITE_API_BASE` (default `https://api.defendablecloud.com`).
+the API at `VITE_API_BASE` (default `https://api.defendablecloud.com`). Cloudflare
+Pages headers live in `app/public/_headers`.
 
 ```bash
 cd app
@@ -36,6 +37,8 @@ npm run build    # → app/dist  (deploy to CF Pages, SPA fallback via public/_r
 ## site/ — marketing (Phase 1, live)
 
 Astro + Tailwind, fully static. Same stack and design system as defendableos.com.
+The site uses a pinned Node 22 build command because current patched Astro requires
+Node 22. Cloudflare Pages should set `NODE_VERSION=22.12.0` or newer.
 
 ```bash
 cd site
@@ -47,6 +50,13 @@ npm run build    # → site/dist
 **Deploy (Cloudflare Pages):** root directory `site/`, build `npm run build`, output `site/dist`.
 Contact form is a Pages Function (`site/functions/api/contact.ts`) → Resend → `build@defendableos.com`;
 set `RESEND_API_KEY` as a project secret.
+
+## Enterprise Guardrails
+
+See `SECURITY.md`. Production API boot validates non-default JWT secrets, explicit
+CORS, HTTPS URLs, email delivery, and dataset quota settings. Dataset downloads
+are members-only, receipt-backed, short-lived, redacted on public proof views, and
+capped by `DATASET_DOWNLOAD_DAILY_LIMIT`.
 
 ---
 

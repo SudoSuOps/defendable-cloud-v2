@@ -10,6 +10,7 @@ from app.routes import admin, agents, auth, cooks, datasets, eval, healthz, inci
 
 def create_app() -> FastAPI:
     s = settings()
+    s.validate_runtime()
     app = FastAPI(
         title="DefendableCloud API",
         description=(
@@ -27,6 +28,22 @@ def create_app() -> FastAPI:
         allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
         allow_headers=["*"],
     )
+
+    @app.middleware("http")
+    async def security_headers(request, call_next):
+        response = await call_next(request)
+        response.headers.setdefault("X-Content-Type-Options", "nosniff")
+        response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+        response.headers.setdefault(
+            "Permissions-Policy",
+            "camera=(), microphone=(), geolocation=(), payment=()",
+        )
+        if s.is_production:
+            response.headers.setdefault(
+                "Strict-Transport-Security",
+                "max-age=31536000; includeSubDomains; preload",
+            )
+        return response
 
     app.include_router(healthz.router)
     app.include_router(auth.router)

@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
-"""DefendableCloud dataset stager — runs on swarmrails (192.168.0.100).
+"""DefendableCloud dataset stager — runs on the private operator staging host.
 
-Where the NAS lives. Polls the API for pending download grants, copies the
-matching dataset file from `/mnt/swarm/...` into the Tigris bucket, then tells
+Where the private dataset mount lives. Polls the API for pending download
+grants, copies the matching dataset file into the Tigris bucket, then tells
 the API the file is staged so it can email the member.
 
   rails worker every 2 min (systemd timer):
     GET  /internal/staging-tasks      ← unique tigris_keys waiting on staging
     for each task:
-        if not already in Tigris:     boto3 upload_file from /mnt/swarm/...
+        if not already in Tigris:     boto3 upload_file from private dataset storage
     POST /internal/stage-complete     ← API sweeps + Resend-notifies members
 
 Uses urllib (stdlib) for the API surface + boto3 for Tigris. Rails already
@@ -18,6 +18,7 @@ with the API side which uses boto3 too.
 Env:
   STAGER_API_BASE        default https://api.defendablecloud.com
   INTERNAL_API_KEY       shared secret matching the API's INTERNAL_API_KEY  [required]
+  STAGER_SOURCE_ROOT     private dataset mount root                         [required]
   TIGRIS_BUCKET          default defendable-cloud-v2
   TIGRIS_ENDPOINT_URL    default https://fly.storage.tigris.dev
   AWS_ACCESS_KEY_ID      Tigris access key id                                [required]
@@ -50,6 +51,7 @@ BUCKET = os.environ.get("TIGRIS_BUCKET", "defendable-cloud-v2")
 ENDPOINT = os.environ.get("TIGRIS_ENDPOINT_URL", "https://fly.storage.tigris.dev")
 REGION = os.environ.get("AWS_REGION", "auto")
 DRY_RUN = os.environ.get("STAGER_DRY_RUN") == "1"
+SOURCE_ROOT = os.environ.get("STAGER_SOURCE_ROOT", "")
 
 
 _S3 = None
@@ -106,10 +108,17 @@ def head_object(tigris_key: str) -> bool:
         return False
 
 
+def resolve_source_path(source_path: str) -> str:
+    if source_path and not os.path.isabs(source_path):
+        return os.path.join(SOURCE_ROOT, source_path)
+    return source_path
+
+
 def upload(source_path: str, tigris_key: str) -> tuple[bool, str]:
     """rsync the file. Returns (ok, message)."""
     if not source_path:
         return False, "no source_path (slug not in catalog?)"
+    source_path = resolve_source_path(source_path)
     if not os.path.exists(source_path):
         return False, f"source missing: {source_path}"
     if DRY_RUN:
@@ -134,6 +143,9 @@ def stage_complete(tigris_key: str, bytes_uploaded: int | None = None) -> dict:
 def main() -> int:
     if not INTERNAL_KEY:
         print("ERR: set INTERNAL_API_KEY", file=sys.stderr)
+        return 1
+    if not SOURCE_ROOT:
+        print("ERR: set STAGER_SOURCE_ROOT", file=sys.stderr)
         return 1
     if not (os.environ.get("AWS_ACCESS_KEY_ID") and os.environ.get("AWS_SECRET_ACCESS_KEY")):
         print("ERR: set AWS_ACCESS_KEY_ID + AWS_SECRET_ACCESS_KEY", file=sys.stderr)
@@ -173,9 +185,10 @@ def main() -> int:
             tag = "uploaded"
 
         size = None
-        if src and os.path.exists(src):
+        resolved_src = resolve_source_path(src)
+        if resolved_src and os.path.exists(resolved_src):
             try:
-                size = os.path.getsize(src)
+                size = os.path.getsize(resolved_src)
             except OSError:
                 size = None
 

@@ -9,8 +9,8 @@ from app.config import settings
 from app.db import session_scope
 from app.deps import Principal, get_current_user
 from app.email import send_magic_link
-from app.models import MagicToken, Organization, User
-from app.schemas import MagicRequestIn, MagicVerifyIn
+from app.models import MagicToken, OrgInvite, Organization, User
+from app.schemas import InviteAcceptIn, MagicRequestIn, MagicVerifyIn
 from app.security import hash_token, issue_jwt, make_magic_token
 from app.util import iso, new_id, slugify
 
@@ -24,6 +24,8 @@ async def magic_request(body: MagicRequestIn):
         raise HTTPException(status_code=400, detail="enter a valid email")
 
     s = settings()
+    if s.is_production and not s.email_configured:
+        raise HTTPException(status_code=503, detail="email delivery unavailable")
     token = make_magic_token()
     expires = datetime.now(timezone.utc) + timedelta(minutes=s.magic_ttl_minutes)
     async with session_scope() as db:
@@ -33,6 +35,8 @@ async def magic_request(body: MagicRequestIn):
     sent = await send_magic_link(email, link)
     out = {"ok": True, "sent": sent}
     if not sent:
+        if s.is_production:
+            raise HTTPException(status_code=503, detail="email delivery unavailable")
         # Dev / email-not-configured: surface the link so login still works.
         out["dev_link"] = link
     return out
@@ -64,6 +68,38 @@ async def magic_verify(body: MagicVerifyIn):
             user = User(id=new_id(), org_id=org_id, email=email, role="owner")
             db.add(user)
 
+        token = issue_jwt(user.id, user.org_id, user.email)
+        return {
+            "access_token": token,
+            "token_type": "bearer",
+            "user": {"id": user.id, "email": user.email, "org_id": user.org_id, "name": user.name},
+        }
+
+
+@router.post("/accept-invite")
+async def accept_invite(body: InviteAcceptIn):
+    th = hash_token(body.token.strip())
+    now = datetime.now(timezone.utc)
+    async with session_scope() as db:
+        invite = (
+            await db.execute(select(OrgInvite).where(OrgInvite.token_hash == th))
+        ).scalar_one_or_none()
+        if invite is None or invite.accepted_at is not None or invite.expires_at < now:
+            raise HTTPException(status_code=401, detail="invalid or expired invite")
+
+        existing = (
+            await db.execute(select(User).where(User.email == invite.email))
+        ).scalar_one_or_none()
+        if existing is not None:
+            raise HTTPException(status_code=409, detail="email already has an account")
+
+        org = await db.get(Organization, invite.org_id)
+        if org is None:
+            raise HTTPException(status_code=404, detail="invited organization not found")
+
+        user = User(id=new_id(), org_id=invite.org_id, email=invite.email, role=invite.role)
+        invite.accepted_at = now
+        db.add(user)
         token = issue_jwt(user.id, user.org_id, user.email)
         return {
             "access_token": token,

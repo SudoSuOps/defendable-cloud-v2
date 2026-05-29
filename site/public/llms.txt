@@ -38,6 +38,19 @@ Teams running AI agents · dataset owners and buyers · compute sellers and Micr
 
 DefendableCloud is rolling out to early teams. Request access at https://defendablecloud.com/contact.
 
+## Trust and security
+
+- Security: https://defendablecloud.com/security
+- Trust Center: https://defendablecloud.com/trust
+- Status: https://defendablecloud.com/status
+- SLA: https://defendablecloud.com/sla
+- Privacy: https://defendablecloud.com/legal/privacy
+- Terms: https://defendablecloud.com/legal/terms
+- DPA: https://defendablecloud.com/legal/dpa
+- GEO context: https://defendablecloud.com/geo
+
+Security posture: production fail-closed checks, owner/member RBAC, hashed magic-link/API tokens, immutable hash-chained receipts, dataset download quotas, signed URLs, and public receipt redaction.
+
 ## Ecosystem
 
 - DefendableOS: https://defendableos.com (the engine — Proof of Execution)

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from functools import lru_cache
 from typing import List, Optional
+from urllib.parse import urlparse
 
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -44,6 +45,7 @@ class Settings(BaseSettings):
     email_from: str = Field(default="DefendableCloud <build@defendableos.com>", alias="EMAIL_FROM")
 
     cors_origins_raw: str = Field(default="", alias="CORS_ORIGINS")
+    checkout_return_origins_raw: str = Field(default="", alias="CHECKOUT_RETURN_ORIGINS")
 
     # Membership · members-only community cap. $100/year, trust-based monthly
     # billing once active. Donovan's call: keep it ~100 at a time, real valued
@@ -91,11 +93,68 @@ class Settings(BaseSettings):
     stripe_success_path: str = Field(default="/org?checkout=success", alias="STRIPE_SUCCESS_PATH")
     stripe_cancel_path: str = Field(default="/org?checkout=cancel", alias="STRIPE_CANCEL_PATH")
 
+    # Dataset access guardrail. Counts are enforced against the immutable
+    # download receipt ledger, so changing this value does not require a DB
+    # migration. Default: 500 dataset grants per email/principal per rolling day.
+    dataset_download_daily_limit: int = Field(default=500, alias="DATASET_DOWNLOAD_DAILY_LIMIT")
+
     @property
     def cors_origins(self) -> List[str]:
         if not self.cors_origins_raw:
             return ["*"]
         return [o.strip() for o in self.cors_origins_raw.split(",") if o.strip()]
+
+    @property
+    def is_production(self) -> bool:
+        return self.app_env.strip().lower() in {"prod", "production"}
+
+    @property
+    def checkout_return_origins(self) -> List[str]:
+        configured = [
+            o.strip().rstrip("/")
+            for o in self.checkout_return_origins_raw.split(",")
+            if o.strip()
+        ]
+        app_origin = _origin(self.app_base_url)
+        out = [o for o in configured if o]
+        if app_origin and app_origin not in out:
+            out.append(app_origin)
+        return out
+
+    def validate_runtime(self) -> None:
+        """Fail fast on production configs that would weaken auth or access.
+
+        Development remains frictionless, but a live deploy should never boot
+        with placeholder auth, wildcard CORS, or disabled email delivery.
+        """
+        if not self.is_production:
+            return
+        problems: list[str] = []
+        if self.jwt_secret == "dev-insecure-change-me" or len(self.jwt_secret) < 32:
+            problems.append("JWT_SECRET must be set to a strong non-default value")
+        if not self.resend_api_key:
+            problems.append("RESEND_API_KEY must be set so magic links are never returned inline")
+        if "*" in self.cors_origins:
+            problems.append("CORS_ORIGINS must be explicit in production")
+        if not self.app_base_url.startswith("https://"):
+            problems.append("APP_BASE_URL must be https in production")
+        if not self.api_base_url.startswith("https://"):
+            problems.append("API_BASE_URL must be https in production")
+        if self.dataset_download_daily_limit < 1:
+            problems.append("DATASET_DOWNLOAD_DAILY_LIMIT must be at least 1")
+        if problems:
+            raise RuntimeError("Invalid production configuration: " + "; ".join(problems))
+
+    def allowed_checkout_origin(self, origin: str | None) -> bool:
+        if not origin:
+            return False
+        candidate = origin.strip().rstrip("/")
+        parsed = urlparse(candidate)
+        if parsed.scheme not in {"https", "http"} or not parsed.netloc:
+            return False
+        if parsed.scheme == "http" and parsed.hostname not in {"localhost", "127.0.0.1"}:
+            return False
+        return candidate in self.checkout_return_origins
 
     @property
     def email_configured(self) -> bool:
@@ -105,3 +164,10 @@ class Settings(BaseSettings):
 @lru_cache(maxsize=1)
 def settings() -> Settings:
     return Settings()  # type: ignore[call-arg]
+
+
+def _origin(url: str) -> str:
+    parsed = urlparse(url)
+    if not parsed.scheme or not parsed.netloc:
+        return ""
+    return f"{parsed.scheme}://{parsed.netloc}".rstrip("/")

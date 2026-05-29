@@ -21,7 +21,7 @@
         "capital-markets_*"
       ],
       "eval_notes": "Internal eval-receipt rail · books-and-records on the per-org chain.",
-      "weights_location": "rails:/mnt/swarm/models/atlas-qwen-27b/",
+      "weights_location": "private-model-registry:atlas-qwen-27b",
       "compute_class": "rtx-pro-6000-blackwell-96gb",
       "default_rate_usd_per_hour": 5.0,
       "status": "active",
@@ -40,7 +40,7 @@
         "capital-markets_*"
       ],
       "eval_notes": "Lift over Atlas measured on capital-markets eval set; receipts on per-org chain.",
-      "weights_location": "rails:/mnt/swarm/models/katnis-qwen-27b/",
+      "weights_location": "private-model-registry:katnis-qwen-27b",
       "compute_class": "rtx-pro-6000-blackwell-96gb",
       "default_rate_usd_per_hour": 5.0,
       "status": "active",
@@ -60,7 +60,7 @@
         "tribunal_grade_v1"
       ],
       "eval_notes": "Used as the in-house referee for SwarmJelly extraction and pair grading.",
-      "weights_location": "rails:/mnt/swarm/models/swarmcurator-qwen-9b/",
+      "weights_location": "private-model-registry:swarmcurator-qwen-9b",
       "compute_class": "rtx-pro-6000-blackwell-96gb",
       "default_rate_usd_per_hour": 5.0,
       "status": "active",
@@ -79,7 +79,7 @@
         "marketing_outreach_v1"
       ],
       "eval_notes": "Field-deployed on sigedge for landing-page A/B and outreach drafts.",
-      "weights_location": "sigedge:/srv/swarm-marketer/",
+      "weights_location": "private-model-registry:swarm-marketer-gemma-2-2b",
       "compute_class": "jetson-orin-nano",
       "default_rate_usd_per_hour": 0.50,
       "status": "active",

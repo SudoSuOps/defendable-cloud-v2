@@ -1,0 +1,22 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import Nav from "../../components/Nav.astro";
+import Footer from "../../components/Footer.astro";
+---
+
+<Layout title="Status · DefendableCloud" description="DefendableCloud service status and operational posture." path="/status">
+  <Nav />
+  <main class="mx-auto max-w-3xl px-6 py-20">
+    <p class="text-sm font-medium uppercase tracking-widest text-honey-300">Status</p>
+    <h1 class="mt-3 text-4xl font-semibold tracking-tight text-paper">Operational status</h1>
+    <div class="mt-8 rounded-xl border border-emerald-400/30 bg-emerald-400/10 p-6">
+      <p class="text-lg font-semibold text-emerald-200">All public systems nominal</p>
+      <p class="mt-2 text-sm text-paper/65">Marketing, vault app, API, receipt verification, and dataset catalog surfaces are monitored during launch.</p>
+    </div>
+    <p class="mt-8 text-sm leading-relaxed text-paper/60">
+      For urgent operational issues, email <a class="text-honey-200" href="mailto:build@defendableos.com">build@defendableos.com</a>.
+      Formal uptime history and incident subscriptions will move to a dedicated status provider as enterprise usage grows.
+    </p>
+  </main>
+  <Footer />
+</Layout>

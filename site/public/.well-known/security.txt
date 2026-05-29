@@ -1,0 +1,5 @@
+Contact: mailto:build@defendableos.com
+Preferred-Languages: en
+Canonical: https://defendablecloud.com/.well-known/security.txt
+Policy: https://defendablecloud.com/contact
+Expires: 2027-05-29T00:00:00Z

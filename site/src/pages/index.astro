@@ -93,6 +93,25 @@ const audiences = [
     body: "Validate a machine, a benchmark, and a power state — and hand the buyer a receipt.",
   },
 ];
+
+const enterpriseProtocols = [
+  {
+    title: "Secure-by-default access",
+    body: "Magic-link auth, API-key hashing, admin allowlists, internal-key gates, and production boot checks for secrets, email delivery, HTTPS, and CORS.",
+  },
+  {
+    title: "Immutable proof rails",
+    body: "Per-organization receipt chains, SHA-256 payload hashes, parent hashes, JSON/PDF exports, and public verification links with redacted operational fields.",
+  },
+  {
+    title: "Dataset abuse controls",
+    body: "Members-only catalog access, short-lived signed URLs, rolling download quotas, staging receipts, and durable books-and-records for every grant.",
+  },
+  {
+    title: "Operational boundaries",
+    body: "Private staging hosts stay off the public surface, public catalogs expose only customer-safe metadata, and Cloudflare Pages ships hardened headers.",
+  },
+];
 ---
 
 <Layout path="/">
@@ -260,6 +279,29 @@ const audiences = [
     >
       <div class="mx-auto mt-10 grid max-w-5xl gap-5 md:grid-cols-3">
         {audiences.map((a) => <ValueCard title={a.title} body={a.body} />)}
+      </div>
+    </Section>
+
+    <!-- Enterprise trust posture -->
+    <Section
+      id="enterprise"
+      eyebrow="Enterprise posture"
+      title="Built for teams that need control, proof, and clean boundaries."
+      intro="DefendableCloud keeps the UX simple, but the operating model is serious: least-privilege access, immutable receipts, private staging, signed delivery, and verification-first workflows."
+      class="border-b border-white/5"
+    >
+      <div class="mx-auto mt-10 grid max-w-5xl gap-5 md:grid-cols-2">
+        {enterpriseProtocols.map((p) => <ValueCard title={p.title} body={p.body} />)}
+      </div>
+      <div class="reveal mx-auto mt-10 max-w-4xl rounded-xl border border-honey-400/20 bg-honey-300/[0.04] p-6 text-left">
+        <p class="text-sm font-semibold uppercase tracking-widest text-honey-300/80">
+          Protocol line
+        </p>
+        <p class="mt-3 text-base leading-relaxed text-paper/75">
+          No proof, no production. Every agent run, dataset grant, model pin, and compute receipt should answer
+          the same questions: what happened, who approved it, what evidence was used, what changed, and what hash
+          proves the record.
+        </p>
       </div>
     </Section>
 

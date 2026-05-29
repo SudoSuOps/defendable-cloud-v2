@@ -15,15 +15,16 @@ export function AuthCallback() {
     if (ran.current) return;
     ran.current = true;
     const token = params.get("token");
-    if (!token) {
+    const invite = params.get("invite");
+    if (!token && !invite) {
       setErr("missing token");
       return;
     }
     (async () => {
       try {
-        const r = await api<{ access_token: string }>("/auth/verify", {
+        const r = await api<{ access_token: string }>(invite ? "/auth/accept-invite" : "/auth/verify", {
           method: "POST",
-          body: { token },
+          body: { token: invite || token },
           auth: false,
         });
         setToken(r.access_token);
