@@ -552,6 +552,15 @@ def test_model_catalog_response_hides_internal_fields():
     )
 
 
+def test_dataset_samples_endpoint_registered():
+    """Sprint 22 · GET /datasets/catalog/{slug}/samples must land in OpenAPI."""
+    schema = app.openapi()
+    paths = set(schema.get("paths", {}).keys())
+    assert "/datasets/catalog/{slug}/samples" in paths, (
+        "/datasets/catalog/{slug}/samples missing from OpenAPI"
+    )
+
+
 def test_admin_surface_registered():
     """Sprint 18 · Admin Approval UI must surface 3 paths in OpenAPI."""
     schema = app.openapi()

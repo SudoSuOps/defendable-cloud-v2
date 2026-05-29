@@ -34,7 +34,7 @@ from app.schemas import (
     DatasetDownloadRequest,
     DatasetPackage,
 )
-from app.storage import head_object
+from app.storage import get_object_partial, head_object, head_object_meta
 
 router = APIRouter(prefix="/datasets/catalog", tags=["datasets"])
 
@@ -129,3 +129,88 @@ async def request_download(
             "expires_at": expires_at,
             "package": customer_pkg,
         }
+
+
+@router.get("/{slug}/samples")
+async def get_samples(
+    slug: str,
+    limit: int = 10,
+    _: Principal = Depends(require_member),
+):
+    """Cheap sample preview from the staged Tigris object · for the public
+    share view's "crystal clear" rendering.
+
+    Reads a small byte range from the dataset's staged Tigris object,
+    parses the first N JSONL rows, and returns them with file metadata
+    (size, etag, content-length). Capped at 50 rows to keep the payload
+    tile-shaped.
+
+    Behavior:
+      - object not staged → 425 Too Early with Retry-After hint (member
+        triggers staging via POST /datasets/catalog/{slug}/download)
+      - object staged → 200 with {rows, count, file_bytes, sha256_or_etag}
+    """
+    import hashlib
+    import json
+    import os
+
+    if limit < 1 or limit > 50:
+        raise HTTPException(status_code=422, detail="limit must be 1..50")
+
+    raw_pkg = raw_package_by_slug(slug)
+    customer_pkg = package_by_slug(slug)
+    if raw_pkg is None or customer_pkg is None:
+        raise HTTPException(status_code=404, detail=f"package not found: {slug}")
+
+    tigris_key = _tigris_key_for(slug, raw_pkg.get("path", ""))
+    meta = head_object_meta(tigris_key)
+    if meta is None:
+        from fastapi.responses import JSONResponse
+
+        return JSONResponse(
+            status_code=425,
+            content={
+                "detail": "dataset not yet staged · request a download to trigger staging",
+                "tigris_key": tigris_key,
+            },
+            headers={"Retry-After": "120"},
+        )
+
+    file_bytes = int(meta.get("ContentLength", 0))
+    etag = (meta.get("ETag") or "").strip('"')
+
+    # Read up to ~128KB · enough for ~10 rows of even verbose CRE memos
+    # without burning bandwidth. Bound the range to actual file size.
+    read_cap = min(128 * 1024, file_bytes - 1) if file_bytes else 128 * 1024
+    body = get_object_partial(tigris_key, byte_range=(0, read_cap))
+    if body is None:
+        raise HTTPException(status_code=500, detail="failed to read tigris partial")
+
+    # Parse JSONL · stop at limit or first malformed line. The last line may
+    # be truncated (we stop early), so we ignore it deliberately.
+    rows: list[dict] = []
+    text = body.decode("utf-8", errors="replace")
+    for raw_line in text.split("\n"):
+        if len(rows) >= limit:
+            break
+        line = raw_line.strip()
+        if not line:
+            continue
+        try:
+            rows.append(json.loads(line))
+        except json.JSONDecodeError:
+            # Truncated last line; stop here.
+            break
+
+    return {
+        "package": customer_pkg,
+        "tigris_key": tigris_key,
+        "file_bytes": file_bytes,
+        "file_etag": etag,
+        # NOTE: ETag is the s3 standard hash for non-multipart uploads
+        # (single-part = MD5 over content). For files >5GB it diverges from
+        # a plain sha256, but our datasets are well under that ceiling.
+        "rows": rows,
+        "count": len(rows),
+        "basename": os.path.basename(tigris_key),
+    }

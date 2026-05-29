@@ -81,6 +81,33 @@ def head_object(key: str) -> bool:
         return False
 
 
+def get_object_partial(key: str, *, byte_range: tuple[int, int]) -> Optional[bytes]:
+    """Read a byte range from a Tigris object · used for cheap sample previews
+    of large JSONL datasets without streaming the full file.
+
+    `byte_range` is (start, end) inclusive in HTTP Range header style.
+    Returns None if the object doesn't exist or the read fails.
+    """
+    start, end = byte_range
+    try:
+        resp = _client().get_object(
+            Bucket=bucket(), Key=key, Range=f"bytes={start}-{end}"
+        )
+        return resp["Body"].read()
+    except _client().exceptions.NoSuchKey:
+        return None
+    except Exception:
+        return None
+
+
+def head_object_meta(key: str) -> Optional[dict]:
+    """Return the head_object response (size, etag, etc.) or None."""
+    try:
+        return _client().head_object(Bucket=bucket(), Key=key)
+    except Exception:
+        return None
+
+
 def presigned_get_url(key: str, *, expires_in_seconds: int = 86400) -> str:
     """Generate a time-limited signed URL for a GET against the bucket.
     Used by /share/{token}/download to redirect to fresh URLs on each access.
